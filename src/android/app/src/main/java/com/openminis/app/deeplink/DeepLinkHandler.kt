@@ -208,7 +208,12 @@ object DeepLinkHandler {
             "rootfs" -> DeepLinkAction.OpenSettingsScreen(Routes.ROOTFS_MANAGEMENT)
             "gateway" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.gateway.GatewayRoutes.GATEWAY)
             // [fork/mibot-v5] 插件市场 and one plugin (?name=owner/repo).
-            "plugins", "plugin-market" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
+            "plugins", "plugin-market" -> {
+                com.openminis.app.mibot.plugins.PluginMarketNav.pendingTab =
+                    com.openminis.app.mibot.plugins.PluginMarketNav.tabFor(uri.getQueryParameter("tab"))
+                com.openminis.app.mibot.plugins.PluginMarketNav.pendingSection = uri.getQueryParameter("section")
+                DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
+            }
             "plugin" -> uri.getQueryParameter("name")?.takeIf { it.contains('/') }
                 ?.let { DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.detail(it)) }
                 ?: DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)

@@ -140,16 +140,18 @@ fun GlassTabShell(
 private fun GlassSystemBars(lightIcons: Boolean) {
     val view = androidx.compose.ui.platform.LocalView.current
     if (view.isInEditMode) return
-    androidx.compose.runtime.DisposableEffect(lightIcons) {
+    // [fork/mibot-v5] Restore to the APP theme on dispose, not to the value
+    // captured on entry: tab shells overlap during navigation, so the captured
+    // value could be a stale pre-theme default (white icons on the light sidebar).
+    val appDark = com.openminis.app.ui.theme.LocalMibotDark.current
+    androidx.compose.runtime.DisposableEffect(lightIcons, appDark) {
         val window = (view.context as? android.app.Activity)?.window
         val ctl = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, view) }
-        val prevStatus = ctl?.isAppearanceLightStatusBars
-        val prevNav = ctl?.isAppearanceLightNavigationBars
         ctl?.isAppearanceLightStatusBars = !lightIcons
         ctl?.isAppearanceLightNavigationBars = !lightIcons
         onDispose {
-            if (prevStatus != null) ctl.isAppearanceLightStatusBars = prevStatus
-            if (prevNav != null) ctl.isAppearanceLightNavigationBars = prevNav
+            ctl?.isAppearanceLightStatusBars = !appDark
+            ctl?.isAppearanceLightNavigationBars = !appDark
         }
     }
 }

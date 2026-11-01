@@ -101,7 +101,9 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
     val entry = group?.memberEntryIds?.firstNotNullOfOrNull { id -> config.modelEntries.find { it.id == id } }
     val inst = entry?.let { e -> config.instances.find { it.id == e.providerInstanceId } }
     val sameProvider = inst?.let { i -> config.instances.count { it.providerType == i.providerType } } ?: 0
-    val modelLine = if (entry == null || inst == null) {
+    val modelLine = if ((entry == null || inst == null) && config.instances.isNotEmpty()) {
+        t("${config.instances.size} 个服务商 · 未设默认模型组，点此管理", "${config.instances.size} providers · no default group, tap to manage")
+    } else if (entry == null || inst == null) {
         t("未配置 · 点此添加服务商", "Not set up · tap to add a provider")
     } else {
         "${inst.label}（${sameProvider}${t(" 账号", " acct")}）· ${entry.model.displayName}" + (group?.name?.let { " · $it" } ?: "")
@@ -117,7 +119,7 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
                     subtitle = modelLine,
                     icon = Icons.Outlined.Layers,
                     color = MibotTokens.Brick,
-                    onClick = if (entry == null) a.providers else a.gateway,
+                    onClick = if (entry == null && config.instances.isEmpty()) a.providers else a.gateway,
                 )
             }
         }

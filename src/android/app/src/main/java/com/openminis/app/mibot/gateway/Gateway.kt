@@ -539,7 +539,16 @@ object GatewayDemo {
         val app = ctx.applicationContext as? MinisApp ?: return
         val repo = app.providerRepositoryOrNull ?: return
         runCatching {
-            if (repo.config.value.instances.isNotEmpty()) return
+            // Once per install: the vault seed runs on every CI launch, and the
+            // provider config may still be loading, so an emptiness check
+            // alone seeded duplicates.
+            val prefs = ctx.getSharedPreferences("mibot_gateway_demo", Context.MODE_PRIVATE)
+            if (prefs.getBoolean("seeded", false)) return
+            repo.ensureConfigLoaded()
+            if (repo.config.value.instances.any { it.label == "OpenRouter" || it.label == "硅基流动" }) {
+                prefs.edit().putBoolean("seeded", true).commit(); return
+            }
+            prefs.edit().putBoolean("seeded", true).commit()
             GatewayHealth.init(ctx)
             val demo = listOf(
                 ProviderInstance(

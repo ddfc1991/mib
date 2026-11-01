@@ -93,6 +93,29 @@ private fun starText(n: Int): String = when {
     else -> n.toString()
 }
 
+/** [fork/mibot-v5] One-shot deep-link hints (CI / links): which tab / section to show. */
+object PluginMarketNav {
+    @Volatile var pendingTab: String? = null
+    @Volatile var pendingSection: String? = null
+    private val tabAliases = mapOf(
+        "workflow" to "工作流", "dev" to "开发编程", "knowledge" to "知识管理", "agent" to "AI Agent",
+        "efficiency" to "效率", "fun" to "娱乐", "life" to "生活", "other" to "其他",
+    )
+    fun tabFor(alias: String?): String? = alias?.let { tabAliases[it] ?: it.takeIf { t -> t in PluginCategories.tabs } }
+}
+
+/**
+ * README cleanup for the in-app Markdown renderer: drop raw HTML tags,
+ * badge images and image-links (shown as noise otherwise), keep the text.
+ */
+internal fun cleanReadme(md: String): String = md
+    .replace(Regex("""(?s)<!--.*?-->"""), "")
+    .replace(Regex("""\[!\[[^\]]*]\([^)]*\)]\([^)]*\)"""), "")
+    .replace(Regex("""!\[[^\]]*]\([^)]*\)"""), "")
+    .replace(Regex("""(?i)</?(p|div|img|br|picture|source|a|span|sup|sub|center|details|summary|table|tr|td|th|tbody|thead|h[1-6]|b|strong|em|i|video|kbd)\b[^>]*>"""), "")
+    .replace(Regex("""\n{3,}"""), "\n\n")
+    .trim()
+
 /** Shared in-memory list so the detail page can find a plugin without refetching. */
 internal object MarketCache {
     val byName = HashMap<String, MarketPlugin>()
@@ -116,7 +139,8 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     var submitted by rememberSaveable { mutableStateOf("") }
     var sort by rememberSaveable { mutableStateOf(MarketSort.STARS) }
     var oneClickOnly by rememberSaveable { mutableStateOf(false) }
-    var tab by rememberSaveable { mutableStateOf(PluginCategories.ALL) }
+    var tab by rememberSaveable { mutableStateOf(PluginMarketNav.pendingTab ?: PluginCategories.ALL) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val items = remember { mutableStateListOf<MarketPlugin>() }
     var page by remember { mutableIntStateOf(0) }
     var total by remember { mutableIntStateOf(0) }
@@ -141,7 +165,16 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
             .onFailure { error = "加载失败：${it.message ?: "网络错误"}" }
         loading = false
     }
-    LaunchedEffect(sort, submitted, reload) { load(1) }
+    LaunchedEffect(sort, submitted, reload) {
+        load(1)
+        PluginMarketNav.pendingTab = null
+        if (PluginMarketNav.pendingSection == "desktop") {
+            PluginMarketNav.pendingSection = null
+            kotlinx.coroutines.delay(400)
+            // Header item + phone banner + phone card (or empty note) → desktop banner is index 3.
+            runCatching { listState.animateScrollToItem(3) }
+        }
+    }
 
     val filtered = items.filter { p ->
         (!oneClickOnly || p.oneClick) && (tab == PluginCategories.ALL || PluginCategories.of(p) == tab)
@@ -177,7 +210,7 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
         androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     Column(Modifier.fillMaxSize()) {
         MibotTopBar(title = "插件市场", onBack = onBack)
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottom + 32.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = bottom + 32.dp)) {
             item {
                 SearchCapsule(query, { query = it }, onSubmit = { submitted = query })
                 Row(
@@ -453,6 +486,17 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
         val md = SkillHubApi.readme(p)
         readme = md
         if (md.isBlank()) { readmeState = "该插件暂时没有公开说明，可前往 GitHub 查看。"; return@LaunchedEffect }
+        // Prefer the repo's own Chinese README when it ships one.
+        if (!PluginTranslator.isChinese(md)) {
+            for (name in listOf("README.zh.md", "README_zh.md", "README.zh-CN.md", "README_CN.md", "README.zh_CN.md", "docs/README.zh.md")) {
+                val zhDoc = SkillHubApi.rawFile(p, name)
+                if (zhDoc != null && PluginTranslator.isChinese(zhDoc)) {
+                    readmeZh = zhDoc
+                    readmeState = "使用仓库自带的中文说明"
+                    return@LaunchedEffect
+                }
+            }
+        }
         readmeState = "翻译中…（使用你配置的模型，免费模型优先）"
         val zh = PluginTranslator.translateReadme(ctx, md)
         readmeZh = zh
@@ -618,7 +662,8 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
             if (readmeState.isNotEmpty()) Text(readmeState, fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
             val md = if (showOriginal) readme else (readmeZh ?: readme)
             if (!md.isNullOrBlank()) {
-                MarkdownText(md.take(14_000), color = MaterialTheme.colorScheme.onSurface)
+                val clean = remember(md) { cleanReadme(md.take(14_000)) }
+                MarkdownText(clean, color = MaterialTheme.colorScheme.onSurface)
             }
         }
 

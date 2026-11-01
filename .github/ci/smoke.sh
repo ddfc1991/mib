@@ -95,9 +95,12 @@ for th in 1:light 2:dark; do
   # plugins, and one plugin's detail page (needs network on the emulator).
   link plugins;      zshot "$n-13-plugins" 10
   adb shell input swipe 540 1700 540 500 500; zshot "$n-14-plugins-scrolled" 3
-  if tap text "效率"; then zshot "$n-15-plugins-efficiency" 4
-    adb shell input swipe 540 1700 540 500 500; zshot "$n-16-plugins-efficiency-scrolled" 3; fi
   home
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugins?section=desktop' $PKG" >/dev/null
+  zshot "$n-15-plugins-desktop" 10; home
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugins?tab=efficiency' $PKG" >/dev/null
+  zshot "$n-16-plugins-efficiency" 10
+  adb shell input swipe 540 1700 540 500 500; zshot "$n-16b-plugins-efficiency-scrolled" 3; home
   adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=dsh-market/dsh-market' $PKG" >/dev/null
   zshot "$n-17-plugin-detail" 12
   adb shell input swipe 540 1700 540 600 500; zshot "$n-18-plugin-detail-scrolled" 3; home

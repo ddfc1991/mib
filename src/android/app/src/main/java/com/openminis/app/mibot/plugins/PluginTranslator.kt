@@ -62,6 +62,9 @@ object PluginTranslator {
         return s.count { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.HAN }.toFloat() / letters
     }
 
+    /** True when [s] reads as Chinese (≥ 25 % of letters are Han). */
+    fun isChinese(s: String): Boolean = cjkRatio(s.take(4000)) > 0.25f
+
     /**
      * The Chinese part of a (often bilingual) description: segments split on
      * common separators that are mostly Chinese. Null when there is none.
