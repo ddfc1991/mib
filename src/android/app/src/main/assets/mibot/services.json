@@ -1,0 +1,1063 @@
+[
+ {
+  "id": "openrouter",
+  "name": "OpenRouter",
+  "sub": "统一接入 300+ 模型",
+  "cat": "ai",
+  "domains": [
+   "openrouter.ai"
+  ],
+  "packages": [],
+  "auth": "oauth_openrouter",
+  "url": "https://openrouter.ai/settings/keys",
+  "manifest": "openrouter",
+  "free": "免费模型（:free 后缀）",
+  "keyRegex": "sk-or-v1-[0-9a-f]{40,}",
+  "logo": "mibot/logos/openrouter.png",
+  "freeModels": true
+ },
+ {
+  "id": "openai",
+  "name": "OpenAI",
+  "sub": "GPT 模型与语音",
+  "cat": "ai",
+  "domains": [
+   "openai.com",
+   "platform.openai.com",
+   "chatgpt.com"
+  ],
+  "packages": [
+   "com.openai.chatgpt"
+  ],
+  "auth": "api_key",
+  "url": "https://platform.openai.com/api-keys",
+  "keyRegex": "sk-(proj-)?[A-Za-z0-9_\\-]{32,}",
+  "logo": "mibot/logos/openai.png"
+ },
+ {
+  "id": "claude",
+  "name": "Claude",
+  "sub": "Anthropic API",
+  "cat": "ai",
+  "domains": [
+   "anthropic.com",
+   "console.anthropic.com",
+   "claude.ai"
+  ],
+  "packages": [
+   "com.anthropic.claude"
+  ],
+  "auth": "api_key",
+  "url": "https://console.anthropic.com/settings/keys",
+  "keyRegex": "sk-ant-[A-Za-z0-9_\\-]{40,}",
+  "logo": "mibot/logos/claude.png"
+ },
+ {
+  "id": "gemini",
+  "name": "Gemini",
+  "sub": "Google AI Studio",
+  "cat": "ai",
+  "domains": [
+   "aistudio.google.com",
+   "gemini.google.com"
+  ],
+  "packages": [
+   "com.google.android.apps.bard"
+  ],
+  "auth": "api_key",
+  "url": "https://aistudio.google.com/app/apikey",
+  "free": "AI Studio 免费层（Flash / Gemma）",
+  "keyRegex": "AIza[0-9A-Za-z_\\-]{35}",
+  "logo": "mibot/logos/gemini.png",
+  "freeModels": true
+ },
+ {
+  "id": "deepseek",
+  "name": "DeepSeek",
+  "sub": "深度求索",
+  "cat": "ai",
+  "domains": [
+   "deepseek.com",
+   "platform.deepseek.com"
+  ],
+  "packages": [
+   "com.deepseek.chat"
+  ],
+  "auth": "api_key",
+  "url": "https://platform.deepseek.com/api_keys",
+  "manifest": "deepseek",
+  "keyRegex": "sk-[0-9a-f]{32}",
+  "logo": "mibot/logos/deepseek.png"
+ },
+ {
+  "id": "kimi",
+  "name": "Kimi",
+  "sub": "月之暗面",
+  "cat": "ai",
+  "domains": [
+   "moonshot.cn",
+   "platform.moonshot.cn",
+   "kimi.com"
+  ],
+  "packages": [
+   "com.moonshot.kimichat"
+  ],
+  "auth": "api_key",
+  "url": "https://platform.moonshot.cn/console/api-keys",
+  "keyRegex": "sk-[A-Za-z0-9]{40,}",
+  "logo": "mibot/logos/kimi.png"
+ },
+ {
+  "id": "qwen",
+  "name": "通义千问",
+  "sub": "阿里云百炼",
+  "cat": "ai",
+  "domains": [
+   "bailian.console.aliyun.com",
+   "dashscope.aliyuncs.com",
+   "tongyi.aliyun.com"
+  ],
+  "packages": [
+   "com.aliyun.tongyi"
+  ],
+  "auth": "api_key",
+  "url": "https://bailian.console.aliyun.com/?apiKey=1",
+  "free": "新用户百万 tokens 免费额度",
+  "keyRegex": "sk-[0-9a-f]{32}",
+  "logo": "mibot/logos/qwen.png"
+ },
+ {
+  "id": "siliconflow",
+  "name": "硅基流动",
+  "sub": "SiliconFlow",
+  "cat": "ai",
+  "domains": [
+   "siliconflow.cn",
+   "cloud.siliconflow.cn"
+  ],
+  "packages": [],
+  "auth": "api_key",
+  "url": "https://cloud.siliconflow.cn/account/ak",
+  "manifest": "siliconflow",
+  "free": "多款模型永久免费",
+  "keyRegex": "sk-[a-z]{40,}",
+  "logo": "mibot/logos/siliconflow.png",
+  "freeModels": true
+ },
+ {
+  "id": "zhipu",
+  "name": "智谱 GLM",
+  "sub": "BigModel 开放平台",
+  "cat": "ai",
+  "domains": [
+   "bigmodel.cn",
+   "open.bigmodel.cn",
+   "chatglm.cn"
+  ],
+  "packages": [
+   "com.zhipuai.qingyan"
+  ],
+  "auth": "api_key",
+  "url": "https://open.bigmodel.cn/usercenter/apikeys",
+  "free": "GLM-Flash 系列免费",
+  "keyRegex": "[0-9a-f]{32}\\.[A-Za-z0-9]{16}",
+  "logo": "mibot/logos/zhipu.png",
+  "freeModels": true
+ },
+ {
+  "id": "doubao",
+  "name": "火山方舟 · 豆包",
+  "sub": "字节跳动",
+  "cat": "ai",
+  "domains": [
+   "volcengine.com",
+   "console.volcengine.com",
+   "doubao.com"
+  ],
+  "packages": [
+   "com.larus.nova"
+  ],
+  "auth": "api_key",
+  "url": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
+  "keyRegex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+  "logo": "mibot/logos/doubao.png"
+ },
+ {
+  "id": "hunyuan",
+  "name": "腾讯混元 · 元宝",
+  "sub": "腾讯",
+  "cat": "ai",
+  "domains": [
+   "hunyuan.tencent.com",
+   "yuanbao.tencent.com"
+  ],
+  "packages": [
+   "com.tencent.hunyuan.app.chat"
+  ],
+  "auth": "web",
+  "url": "https://yuanbao.tencent.com/",
+  "logo": "mibot/logos/hunyuan.png"
+ },
+ {
+  "id": "minimax",
+  "name": "MiniMax",
+  "sub": "海螺 / abab 模型、语音",
+  "cat": "ai",
+  "domains": [
+   "minimaxi.com",
+   "minimax.io",
+   "hailuoai.com"
+  ],
+  "packages": [
+   "com.minimax.ai"
+  ],
+  "auth": "api_key",
+  "url": "https://platform.minimaxi.com/user-center/basic-information/interface-key",
+  "keyRegex": "eyJ[A-Za-z0-9_\\-]{60,}\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+",
+  "logo": "mibot/logos/minimax.png"
+ },
+ {
+  "id": "groq",
+  "name": "Groq",
+  "sub": "超快推理",
+  "cat": "ai",
+  "domains": [
+   "groq.com",
+   "console.groq.com"
+  ],
+  "packages": [],
+  "auth": "api_key",
+  "url": "https://console.groq.com/keys",
+  "free": "免费层，全部模型可用",
+  "keyRegex": "gsk_[A-Za-z0-9]{40,}",
+  "logo": "mibot/logos/groq.png",
+  "freeModels": true
+ },
+ {
+  "id": "mistral",
+  "name": "Mistral",
+  "sub": "Mistral AI",
+  "cat": "ai",
+  "domains": [
+   "mistral.ai",
+   "console.mistral.ai"
+  ],
+  "packages": [
+   "ai.mistral.chat"
+  ],
+  "auth": "api_key",
+  "url": "https://console.mistral.ai/api-keys",
+  "keyRegex": "[A-Za-z0-9]{32}",
+  "logo": "mibot/logos/mistral.png",
+  "freeModels": true,
+  "free": "Experiment 免费层"
+ },
+ {
+  "id": "perplexity",
+  "name": "Perplexity",
+  "sub": "联网搜索模型",
+  "cat": "ai",
+  "domains": [
+   "perplexity.ai"
+  ],
+  "packages": [
+   "ai.perplexity.app.android"
+  ],
+  "auth": "api_key",
+  "url": "https://www.perplexity.ai/settings/api",
+  "keyRegex": "pplx-[A-Za-z0-9]{40,}",
+  "logo": "mibot/logos/perplexity.png"
+ },
+ {
+  "id": "xai",
+  "name": "xAI Grok",
+  "sub": "Grok API",
+  "cat": "ai",
+  "domains": [
+   "x.ai",
+   "console.x.ai",
+   "grok.com"
+  ],
+  "packages": [
+   "ai.x.grok"
+  ],
+  "auth": "api_key",
+  "url": "https://console.x.ai/",
+  "keyRegex": "xai-[A-Za-z0-9]{40,}",
+  "logo": "mibot/logos/xai.png"
+ },
+ {
+  "id": "huggingface",
+  "name": "Hugging Face",
+  "sub": "模型与数据集",
+  "cat": "ai",
+  "domains": [
+   "huggingface.co"
+  ],
+  "packages": [],
+  "auth": "api_key",
+  "url": "https://huggingface.co/settings/tokens",
+  "free": "推理 API 每月免费额度",
+  "keyRegex": "hf_[A-Za-z0-9]{30,}",
+  "logo": "mibot/logos/huggingface.png",
+  "freeModels": true
+ },
+ {
+  "id": "elevenlabs",
+  "name": "ElevenLabs",
+  "sub": "语音合成",
+  "cat": "ai",
+  "domains": [
+   "elevenlabs.io"
+  ],
+  "packages": [
+   "io.elevenlabs.readerapp"
+  ],
+  "auth": "api_key",
+  "url": "https://elevenlabs.io/app/settings/api-keys",
+  "keyRegex": "sk_[0-9a-f]{40,}",
+  "logo": "mibot/logos/elevenlabs.png"
+ },
+ {
+  "id": "coze",
+  "name": "扣子 Coze",
+  "sub": "Bot 平台",
+  "cat": "ai",
+  "domains": [
+   "coze.cn",
+   "coze.com"
+  ],
+  "packages": [
+   "com.ss.android.coze"
+  ],
+  "auth": "web",
+  "url": "https://www.coze.cn/",
+  "logo": "mibot/logos/coze.png"
+ },
+ {
+  "id": "manus",
+  "name": "Manus",
+  "sub": "通用 Agent",
+  "cat": "ai",
+  "domains": [
+   "manus.im"
+  ],
+  "packages": [
+   "tech.butterfly.app"
+  ],
+  "auth": "web",
+  "url": "https://manus.im/login",
+  "logo": "mibot/logos/manus.png"
+ },
+ {
+  "id": "sensenova",
+  "name": "商汤 SenseNova",
+  "sub": "日日新大模型",
+  "cat": "ai",
+  "domains": [
+   "sensenova.cn",
+   "platform.sensenova.cn"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://platform.sensenova.cn/",
+  "logo": "mibot/logos/sensenova.png"
+ },
+ {
+  "id": "gmail",
+  "name": "Gmail",
+  "sub": "Google 邮箱",
+  "cat": "mail",
+  "domains": [
+   "mail.google.com",
+   "gmail.com"
+  ],
+  "packages": [
+   "com.google.android.gm"
+  ],
+  "auth": "web",
+  "url": "https://mail.google.com/",
+  "logo": "mibot/logos/gmail.png"
+ },
+ {
+  "id": "outlook",
+  "name": "Microsoft · Outlook",
+  "sub": "微软邮箱",
+  "cat": "mail",
+  "domains": [
+   "outlook.live.com",
+   "outlook.com",
+   "live.com"
+  ],
+  "packages": [
+   "com.microsoft.office.outlook"
+  ],
+  "auth": "web",
+  "url": "https://outlook.live.com/mail/",
+  "color": "#0078D4"
+ },
+ {
+  "id": "neteasemail",
+  "name": "网易邮箱",
+  "sub": "163 / 126",
+  "cat": "mail",
+  "domains": [
+   "mail.163.com",
+   "mail.126.com"
+  ],
+  "packages": [
+   "com.netease.mail"
+  ],
+  "auth": "web",
+  "url": "https://mail.163.com/",
+  "color": "#D0021B"
+ },
+ {
+  "id": "qqmail",
+  "name": "QQ 邮箱",
+  "sub": "腾讯邮箱",
+  "cat": "mail",
+  "domains": [
+   "mail.qq.com"
+  ],
+  "packages": [
+   "com.tencent.androidqqmail"
+  ],
+  "auth": "web",
+  "url": "https://mail.qq.com/",
+  "logo": "mibot/logos/qqmail.png"
+ },
+ {
+  "id": "github",
+  "name": "GitHub",
+  "sub": "代码仓库",
+  "cat": "dev",
+  "domains": [
+   "github.com"
+  ],
+  "packages": [
+   "com.github.android"
+  ],
+  "auth": "web",
+  "url": "https://github.com/login",
+  "logo": "mibot/logos/github.png"
+ },
+ {
+  "id": "cloudflare",
+  "name": "Cloudflare",
+  "sub": "CDN / Workers",
+  "cat": "dev",
+  "domains": [
+   "cloudflare.com",
+   "dash.cloudflare.com"
+  ],
+  "packages": [
+   "com.cloudflare.onedotonedotonedotone"
+  ],
+  "auth": "web",
+  "url": "https://dash.cloudflare.com/login",
+  "free": "Workers AI 每日免费额度",
+  "logo": "mibot/logos/cloudflare.png",
+  "freeModels": true
+ },
+ {
+  "id": "aliyun",
+  "name": "阿里云",
+  "sub": "云服务器、域名",
+  "cat": "dev",
+  "domains": [
+   "aliyun.com",
+   "console.aliyun.com"
+  ],
+  "packages": [
+   "com.alibaba.aliyun"
+  ],
+  "auth": "web",
+  "url": "https://account.aliyun.com/login/login.htm",
+  "logo": "mibot/logos/aliyun.png"
+ },
+ {
+  "id": "tencentcloud",
+  "name": "腾讯云",
+  "sub": "云服务器、COS、域名",
+  "cat": "dev",
+  "domains": [
+   "cloud.tencent.com",
+   "console.cloud.tencent.com"
+  ],
+  "packages": [
+   "com.tencent.qcloud.qcloud"
+  ],
+  "auth": "web",
+  "url": "https://cloud.tencent.com/login",
+  "logo": "mibot/logos/tencentcloud.png"
+ },
+ {
+  "id": "digitalocean",
+  "name": "DigitalOcean",
+  "sub": "云主机",
+  "cat": "dev",
+  "domains": [
+   "digitalocean.com",
+   "cloud.digitalocean.com"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://cloud.digitalocean.com/login",
+  "logo": "mibot/logos/digitalocean.png"
+ },
+ {
+  "id": "vercel",
+  "name": "Vercel",
+  "sub": "前端部署",
+  "cat": "dev",
+  "domains": [
+   "vercel.com"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://vercel.com/login",
+  "free": "Hobby 免费",
+  "logo": "mibot/logos/vercel.png"
+ },
+ {
+  "id": "supabase",
+  "name": "Supabase",
+  "sub": "Postgres 后端",
+  "cat": "dev",
+  "domains": [
+   "supabase.com"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://supabase.com/dashboard/sign-in",
+  "free": "免费项目 2 个",
+  "logo": "mibot/logos/supabase.png"
+ },
+ {
+  "id": "railway",
+  "name": "Railway",
+  "sub": "应用托管",
+  "cat": "dev",
+  "domains": [
+   "railway.app",
+   "railway.com"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://railway.com/login",
+  "logo": "mibot/logos/railway.png"
+ },
+ {
+  "id": "netlify",
+  "name": "Netlify",
+  "sub": "静态站点部署",
+  "cat": "dev",
+  "domains": [
+   "netlify.com",
+   "app.netlify.com"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://app.netlify.com/login",
+  "logo": "mibot/logos/netlify.png"
+ },
+ {
+  "id": "neon",
+  "name": "Neon",
+  "sub": "Serverless Postgres",
+  "cat": "dev",
+  "domains": [
+   "neon.tech",
+   "console.neon.tech"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://console.neon.tech/login",
+  "logo": "mibot/logos/neon.png"
+ },
+ {
+  "id": "sentry",
+  "name": "Sentry",
+  "sub": "错误监控",
+  "cat": "dev",
+  "domains": [
+   "sentry.io"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://sentry.io/auth/login/",
+  "logo": "mibot/logos/sentry.png"
+ },
+ {
+  "id": "gitee",
+  "name": "Gitee",
+  "sub": "码云",
+  "cat": "dev",
+  "domains": [
+   "gitee.com"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://gitee.com/login",
+  "logo": "mibot/logos/gitee.png"
+ },
+ {
+  "id": "wechat",
+  "name": "微信",
+  "sub": "即时通讯",
+  "cat": "social",
+  "domains": [
+   "weixin.qq.com",
+   "wx.qq.com"
+  ],
+  "packages": [
+   "com.tencent.mm"
+  ],
+  "auth": "web",
+  "url": "https://weixin.qq.com/",
+  "logo": "mibot/logos/wechat.png"
+ },
+ {
+  "id": "qq",
+  "name": "QQ",
+  "sub": "QQ 空间 / QQ 邮箱网页登录",
+  "cat": "social",
+  "domains": [
+   "qq.com",
+   "im.qq.com"
+  ],
+  "packages": [
+   "com.tencent.mobileqq"
+  ],
+  "auth": "web",
+  "url": "https://im.qq.com/",
+  "logo": "mibot/logos/qq.png"
+ },
+ {
+  "id": "telegram",
+  "name": "Telegram",
+  "sub": "个人账号（网页版登录）",
+  "cat": "social",
+  "domains": [
+   "web.telegram.org",
+   "telegram.org"
+  ],
+  "packages": [
+   "org.telegram.messenger",
+   "org.telegram.messenger.web"
+  ],
+  "auth": "web",
+  "url": "https://web.telegram.org/",
+  "logo": "mibot/logos/telegram.png"
+ },
+ {
+  "id": "discord",
+  "name": "Discord",
+  "sub": "服务器与私信",
+  "cat": "social",
+  "domains": [
+   "discord.com"
+  ],
+  "packages": [
+   "com.discord"
+  ],
+  "auth": "web",
+  "url": "https://discord.com/login",
+  "logo": "mibot/logos/discord.png"
+ },
+ {
+  "id": "x",
+  "name": "X / Twitter",
+  "sub": "推文与私信",
+  "cat": "social",
+  "domains": [
+   "x.com",
+   "twitter.com"
+  ],
+  "packages": [
+   "com.twitter.android"
+  ],
+  "auth": "web",
+  "url": "https://x.com/login",
+  "logo": "mibot/logos/x.png"
+ },
+ {
+  "id": "weibo",
+  "name": "微博",
+  "sub": "微博账号",
+  "cat": "social",
+  "domains": [
+   "weibo.com",
+   "m.weibo.cn"
+  ],
+  "packages": [
+   "com.sina.weibo"
+  ],
+  "auth": "web",
+  "url": "https://m.weibo.cn/",
+  "logo": "mibot/logos/weibo.png"
+ },
+ {
+  "id": "xiaohongshu",
+  "name": "小红书",
+  "sub": "小红书账号",
+  "cat": "social",
+  "domains": [
+   "xiaohongshu.com"
+  ],
+  "packages": [
+   "com.xingin.xhs"
+  ],
+  "auth": "web",
+  "url": "https://www.xiaohongshu.com/",
+  "logo": "mibot/logos/xiaohongshu.png"
+ },
+ {
+  "id": "bilibili",
+  "name": "哔哩哔哩",
+  "sub": "B 站账号",
+  "cat": "social",
+  "domains": [
+   "bilibili.com"
+  ],
+  "packages": [
+   "tv.danmaku.bili"
+  ],
+  "auth": "web",
+  "url": "https://passport.bilibili.com/login",
+  "logo": "mibot/logos/bilibili.png"
+ },
+ {
+  "id": "douyin",
+  "name": "抖音",
+  "sub": "抖音账号",
+  "cat": "social",
+  "domains": [
+   "douyin.com"
+  ],
+  "packages": [
+   "com.ss.android.ugc.aweme"
+  ],
+  "auth": "web",
+  "url": "https://www.douyin.com/",
+  "logo": "mibot/logos/douyin.png"
+ },
+ {
+  "id": "youtube",
+  "name": "YouTube",
+  "sub": "视频",
+  "cat": "social",
+  "domains": [
+   "youtube.com"
+  ],
+  "packages": [
+   "com.google.android.youtube"
+  ],
+  "auth": "web",
+  "url": "https://m.youtube.com/",
+  "logo": "mibot/logos/youtube.png"
+ },
+ {
+  "id": "slack",
+  "name": "Slack",
+  "sub": "团队沟通",
+  "cat": "social",
+  "domains": [
+   "slack.com"
+  ],
+  "packages": [
+   "com.Slack"
+  ],
+  "auth": "web",
+  "url": "https://slack.com/signin",
+  "color": "#4A154B"
+ },
+ {
+  "id": "line",
+  "name": "LINE",
+  "sub": "消息推送",
+  "cat": "social",
+  "domains": [
+   "line.me"
+  ],
+  "packages": [
+   "jp.naver.line.android"
+  ],
+  "auth": "web",
+  "url": "https://access.line.me/",
+  "logo": "mibot/logos/line.png"
+ },
+ {
+  "id": "binance",
+  "name": "Binance",
+  "sub": "看资产与行情（交易需你确认）",
+  "cat": "finance",
+  "domains": [
+   "binance.com"
+  ],
+  "packages": [
+   "com.binance.dev"
+  ],
+  "auth": "web",
+  "url": "https://accounts.binance.com/login",
+  "logo": "mibot/logos/binance.png"
+ },
+ {
+  "id": "okx",
+  "name": "OKX",
+  "sub": "看资产与行情（交易需你确认）",
+  "cat": "finance",
+  "domains": [
+   "okx.com"
+  ],
+  "packages": [
+   "com.okinc.okex.gp"
+  ],
+  "auth": "web",
+  "url": "https://www.okx.com/account/login",
+  "logo": "mibot/logos/okx.png"
+ },
+ {
+  "id": "coinbase",
+  "name": "Coinbase",
+  "sub": "看资产与行情",
+  "cat": "finance",
+  "domains": [
+   "coinbase.com"
+  ],
+  "packages": [
+   "com.coinbase.android"
+  ],
+  "auth": "web",
+  "url": "https://login.coinbase.com/",
+  "logo": "mibot/logos/coinbase.png"
+ },
+ {
+  "id": "stripe",
+  "name": "Stripe",
+  "sub": "收款与订阅",
+  "cat": "finance",
+  "domains": [
+   "stripe.com",
+   "dashboard.stripe.com"
+  ],
+  "packages": [
+   "com.stripe.android.dashboard"
+  ],
+  "auth": "web",
+  "url": "https://dashboard.stripe.com/login",
+  "logo": "mibot/logos/stripe.png"
+ },
+ {
+  "id": "paypal",
+  "name": "PayPal",
+  "sub": "支付",
+  "cat": "finance",
+  "domains": [
+   "paypal.com"
+  ],
+  "packages": [
+   "com.paypal.android.p2pmobile"
+  ],
+  "auth": "web",
+  "url": "https://www.paypal.com/signin",
+  "logo": "mibot/logos/paypal.png"
+ },
+ {
+  "id": "alipay",
+  "name": "支付宝",
+  "sub": "只读账单（付款需你确认）",
+  "cat": "finance",
+  "domains": [
+   "alipay.com"
+  ],
+  "packages": [
+   "com.eg.android.AlipayGphone"
+  ],
+  "auth": "web",
+  "url": "https://auth.alipay.com/login/index.htm",
+  "logo": "mibot/logos/alipay.png"
+ },
+ {
+  "id": "google",
+  "name": "Google 账号",
+  "sub": "Gmail / 日历 / 云端硬盘",
+  "cat": "office",
+  "domains": [
+   "accounts.google.com",
+   "google.com"
+  ],
+  "packages": [
+   "com.google.android.gms"
+  ],
+  "auth": "web",
+  "url": "https://accounts.google.com/",
+  "logo": "mibot/logos/google.png"
+ },
+ {
+  "id": "notion",
+  "name": "Notion",
+  "sub": "笔记与知识库",
+  "cat": "office",
+  "domains": [
+   "notion.so",
+   "notion.com"
+  ],
+  "packages": [
+   "notion.id"
+  ],
+  "auth": "web",
+  "url": "https://www.notion.so/login",
+  "logo": "mibot/logos/notion.png"
+ },
+ {
+  "id": "googlecalendar",
+  "name": "Google 日历",
+  "sub": "日程",
+  "cat": "office",
+  "domains": [
+   "calendar.google.com"
+  ],
+  "packages": [
+   "com.google.android.calendar"
+  ],
+  "auth": "web",
+  "url": "https://calendar.google.com/",
+  "logo": "mibot/logos/googlecalendar.png"
+ },
+ {
+  "id": "googledrive",
+  "name": "Google 云端硬盘",
+  "sub": "云盘",
+  "cat": "office",
+  "domains": [
+   "drive.google.com"
+  ],
+  "packages": [
+   "com.google.android.apps.docs"
+  ],
+  "auth": "web",
+  "url": "https://drive.google.com/",
+  "logo": "mibot/logos/googledrive.png"
+ },
+ {
+  "id": "todoist",
+  "name": "Todoist",
+  "sub": "待办清单",
+  "cat": "office",
+  "domains": [
+   "todoist.com",
+   "app.todoist.com"
+  ],
+  "packages": [
+   "com.todoist"
+  ],
+  "auth": "web",
+  "url": "https://app.todoist.com/auth/login",
+  "logo": "mibot/logos/todoist.png"
+ },
+ {
+  "id": "linear",
+  "name": "Linear",
+  "sub": "项目与 Issue",
+  "cat": "office",
+  "domains": [
+   "linear.app"
+  ],
+  "packages": [
+   "com.linear"
+  ],
+  "auth": "web",
+  "url": "https://linear.app/login",
+  "logo": "mibot/logos/linear.png"
+ },
+ {
+  "id": "airtable",
+  "name": "Airtable",
+  "sub": "在线表格数据库",
+  "cat": "office",
+  "domains": [
+   "airtable.com"
+  ],
+  "packages": [
+   "com.formagrid.airtable"
+  ],
+  "auth": "web",
+  "url": "https://airtable.com/login",
+  "logo": "mibot/logos/airtable.png"
+ },
+ {
+  "id": "dropbox",
+  "name": "Dropbox",
+  "sub": "云盘",
+  "cat": "office",
+  "domains": [
+   "dropbox.com"
+  ],
+  "packages": [
+   "com.dropbox.android"
+  ],
+  "auth": "web",
+  "url": "https://www.dropbox.com/login",
+  "logo": "mibot/logos/dropbox.png"
+ },
+ {
+  "id": "zapier",
+  "name": "Zapier",
+  "sub": "自动化流程",
+  "cat": "office",
+  "domains": [
+   "zapier.com"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://zapier.com/app/login",
+  "logo": "mibot/logos/zapier.png"
+ },
+ {
+  "id": "feishu",
+  "name": "飞书",
+  "sub": "飞书账号（网页版登录）",
+  "cat": "office",
+  "domains": [
+   "feishu.cn",
+   "larksuite.com"
+  ],
+  "packages": [
+   "com.ss.android.lark"
+  ],
+  "auth": "web",
+  "url": "https://www.feishu.cn/",
+  "color": "#3370FF"
+ },
+ {
+  "id": "dingtalk",
+  "name": "钉钉",
+  "sub": "工作沟通",
+  "cat": "office",
+  "domains": [
+   "dingtalk.com"
+  ],
+  "packages": [
+   "com.alibaba.android.rimet"
+  ],
+  "auth": "web",
+  "url": "https://im.dingtalk.com/",
+  "color": "#0089FF"
+ },
+ {
+  "id": "kaggle",
+  "name": "Kaggle",
+  "sub": "数据科学竞赛",
+  "cat": "other",
+  "domains": [
+   "kaggle.com"
+  ],
+  "packages": [],
+  "auth": "web",
+  "url": "https://www.kaggle.com/account/login",
+  "free": "免费 GPU 时长",
+  "logo": "mibot/logos/kaggle.png"
+ }
+]

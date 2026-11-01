@@ -1,0 +1,193 @@
+# Fork CI (dl1991/mib): build the Android debug APK and smoke-test it on
+# an emulator, uploading screenshots. Native deps (proot, Alpine rootfs,
+# rclone.aar) are built from source per BUILDING.md and cached.
+name: Android
+
+on:
+  push:
+    branches: [main, dev, "feat/**"]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NDK_VERSION: "28.2.13676358"
+  CMAKE_VERSION: "3.22.1"
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout (with deps/proot submodule)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Init only the Android submodule
+        run: git submodule update --init --depth 1 deps/proot
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install SDK packages (NDK r28, CMake, platform 36)
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}" "platforms;android-36" "build-tools;35.0.0" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: deps/rclone-mobile/go.mod
+          cache-dependency-path: deps/rclone-mobile/go.sum
+
+      - name: Native deps cache key
+        id: nkey
+        run: |
+          PROOT_SHA=$(git -C deps/proot rev-parse HEAD)
+          H=$(cat deps/build_proot.sh scripts/prepare_android_sandbox.sh deps/build_rclone_android.sh \
+                 deps/rclone-mobile/go.mod deps/rclone-mobile/go.sum | sha256sum | cut -c1-16)
+          R=$(find deps/rclone-mobile -name '*.go' -type f | sort | xargs cat | sha256sum | cut -c1-16)
+          echo "key=native-${NDK_VERSION}-${PROOT_SHA}-${H}-${R}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore native deps
+        id: ncache
+        uses: actions/cache@v4
+        with:
+          path: |
+            src/android/app/src/main/assets/proot-aarch64
+            src/android/app/src/main/assets/alpine-minirootfs.tar.gz
+            src/android/app/src/main/jniLibs/arm64-v8a
+            src/android/app/libs/rclone.aar
+          key: ${{ steps.nkey.outputs.key }}
+
+      - name: Build proot + Alpine rootfs
+        if: steps.ncache.outputs.cache-hit != 'true'
+        run: |
+          ./deps/build_proot.sh
+          ./scripts/prepare_android_sandbox.sh
+
+      - name: Build rclone.aar (gomobile)
+        if: steps.ncache.outputs.cache-hit != 'true'
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          gomobile init
+          ./deps/build_rclone_android.sh
+          mkdir -p src/android/app/libs
+          cp deps/build/rclone/rclone.aar src/android/app/libs/
+
+      - name: Verify native payload
+        run: |
+          ls -la src/android/app/src/main/jniLibs/arm64-v8a src/android/app/libs
+          test -f src/android/app/src/main/jniLibs/arm64-v8a/libproot-loader.so
+          test -f src/android/app/libs/rclone.aar
+
+      - name: Locale check (zh / zh-rTW new keys)
+        run: python3 .github/ci/check_new_locale_keys.py
+
+      - name: Build-time customization (empty values)
+        run: cp src/android/app/provider-customization.properties.example src/android/app/provider-customization.properties
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # [fork/mibot-v3] One fixed signing key for every build (stored as an
+      # Actions secret, never in git) so new APKs install over old ones.
+      - name: Signing keystore
+        env:
+          KS: ${{ secrets.MIBOT_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/mibot.p12"
+            echo "MIBOT_KEYSTORE_FILE=$RUNNER_TEMP/mibot.p12" >> "$GITHUB_ENV"
+            echo "fixed signing key: yes"
+          else
+            echo "::warning::MIBOT_KEYSTORE_B64 not set; using the runner's debug key"
+          fi
+
+      - name: assembleDebug
+        working-directory: src/android
+        env:
+          MIBOT_KEYSTORE_PASSWORD: ${{ secrets.MIBOT_KEYSTORE_PASSWORD }}
+          MIBOT_KEY_ALIAS: ${{ secrets.MIBOT_KEY_ALIAS }}
+          MIBOT_KEY_PASSWORD: ${{ secrets.MIBOT_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon :app:assembleDebug -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8"
+
+      - name: Collect APK
+        run: |
+          mkdir -p out
+          cp $(find src/android/app/build/outputs/apk -name '*.apk' | head -n1) out/minis-debug.apk
+          unzip -l out/minis-debug.apk | grep -E 'libproot|libgojni' || true
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs out/minis-debug.apk | tee out/signing.txt || true
+          ls -la out
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: minis-debug-apk
+          path: |
+            out/minis-debug.apk
+            out/signing.txt
+          retention-days: 14
+
+  smoke:
+    name: Emulator smoke test (API ${{ matrix.api }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # The app ships arm64-v8a only. x86_64 Google APIs images with
+        # ARM->x86 native-bridge translation: API 30 has it; 33's image does
+        # not (INSTALL_FAILED_NO_MATCHING_ABIS). 31 is tried for real blur.
+        api: [30, 31]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: minis-debug-apk
+          path: apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run emulator + smoke script
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disk-size: 6000M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash .github/ci/smoke.sh apk/minis-debug.apk screens
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots-api${{ matrix.api }}
+          path: screens/
+          retention-days: 14

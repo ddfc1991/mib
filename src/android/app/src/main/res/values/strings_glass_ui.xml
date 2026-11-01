@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- [fork/glass-ui] Strings for the glass sidebar, backdrop settings and
+     placeholder screens. Checked by .github/ci/check_new_locale_keys.py. -->
+<resources>
+    <string name="glass_open_sidebar">Open sidebar</string>
+    <string name="glass_search_hint">Search</string>
+    <string name="glass_new_chat">New chat</string>
+    <string name="glass_tab_chats">Chats</string>
+    <string name="glass_tab_bots">Bots</string>
+    <string name="glass_tab_feed">Feed</string>
+    <string name="glass_recent">Recent</string>
+    <string name="glass_untitled">Untitled chat</string>
+    <string name="glass_empty_recent">No chats yet</string>
+    <string name="glass_no_results">No matches</string>
+    <string name="glass_report_bug">Report a bug</string>
+    <string name="glass_coming_soon">Coming soon</string>
+    <string name="glass_bots_desc">Build bots from plain language or role cards, and let them work together in group chats.</string>
+    <string name="glass_feed_desc">One stream Mibot curates and orders for you from your interests. Like, discuss, or delete any post.</string>
+    <string name="glass_backdrop_title">Backdrop &amp; Glass</string>
+    <string name="glass_backdrop_subtitle">Glass sidebar, photo or ambient background</string>
+    <string name="glass_enable">Glass interface</string>
+    <string name="glass_enable_desc">Frosted sidebar and a translucent home screen</string>
+    <string name="glass_section_backdrop">Background</string>
+    <string name="glass_mode_ambient">Ambient</string>
+    <string name="glass_mode_ambient_desc">Slowly drifting mist tinted by the time of day and the weather. Weather is never shown.</string>
+    <string name="glass_mode_photo">Photo</string>
+    <string name="glass_mode_photo_desc">Use an image from your gallery</string>
+    <string name="glass_mode_plain">Plain</string>
+    <string name="glass_mode_plain_desc">Theme background colour</string>
+    <string name="glass_pick_photo">Choose photo…</string>
+    <string name="glass_dim">Background dimming</string>
+    <string name="glass_photo_failed">Could not load that image</string>
+    <string name="glass_bug_subject">Mibot bug report</string>
+    <string name="glass_bug_chooser">Send bug report</string>
+    <string name="glass_bug_body_hint">Describe what happened:</string>
+    <string name="glass_tab_ideas">Ideas</string>
+    <string name="glass_tab_settings">Settings</string>
+    <string name="glass_ideas_desc">Capture ideas and lay them out on a canvas.</string>
+    <string name="glass_section_feedback">Feedback</string>
+    <string name="glass_report_bug_desc">Opens a pre-filled issue with your app and device details</string>
+    <string name="glass_group_label">Group</string>
+    <string name="glass_sample_notice">Preview · sample content</string>
+    <string name="glass_feed_post1">Three long reads on local-first software you bookmarked last week, summarised in two minutes each.</string>
+    <string name="glass_feed_post2">Autumn leaves peak around the West Lake hills next weekend. A quiet morning route that avoids the crowds.</string>
+    <string name="glass_feed_post3">Kotlin 2.2 is out. What changes for coroutines and Compose in projects like yours.</string>
+    <string name="glass_idea1">A weekend app that turns voice memos into a reading list</string>
+    <string name="glass_idea2">Bot group chat: planner + critic + writer for weekly reports</string>
+    <string name="glass_idea3">Backup NAS photos to cold storage every month</string>
+    <string name="glass_idea4">Gift ideas for Mum, under 500</string>
+    <string name="glass_bot1_desc">Breaks a goal into steps and schedules them</string>
+    <string name="glass_bot2_desc">Reviews drafts and points out weak arguments</string>
+    <string name="glass_bot3_desc">Writes in your tone from short notes</string>
+    <string name="glass_create_bot">Create bot</string>
+    <string name="glass_section_style">Style</string>
+    <string name="glass_style_dusk">Dusk glass</string>
+    <string name="glass_style_dusk_desc">Dark, deep frosted glass</string>
+    <string name="glass_style_warm">Warm white</string>
+    <string name="glass_style_warm_desc">Light, warm and minimal</string>
+</resources>

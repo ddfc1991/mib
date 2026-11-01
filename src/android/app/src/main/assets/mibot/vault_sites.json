@@ -1,0 +1,60 @@
+[
+  {
+    "id": "openrouter",
+    "name": "OpenRouter",
+    "match": ["openrouter.ai"],
+    "category": "AI 服务",
+    "doc": "https://openrouter.ai/docs/api/reference/limits",
+    "status": {
+      "type": "http", "method": "GET", "url": "https://openrouter.ai/api/v1/key",
+      "headers": {"Authorization": "Bearer {{secret}}"},
+      "fields": {"credits": "$.data.limit_remaining", "points": "$.data.usage", "quota": "$.data.free_model_daily_requests.remaining"},
+      "format": {"credits": "${} left", "points": "${} used", "quota": "{} free req left today"}
+    }
+  },
+  {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "match": ["deepseek.com"],
+    "category": "AI 服务",
+    "doc": "https://api-docs.deepseek.com/api/get-user-balance",
+    "status": {
+      "type": "http", "method": "GET", "url": "https://api.deepseek.com/user/balance",
+      "headers": {"Authorization": "Bearer {{secret}}"},
+      "fields": {"balance": "$.balance_infos[0].total_balance"},
+      "format": {"balance": "¥{}"}
+    }
+  },
+  {
+    "id": "siliconflow",
+    "name": "SiliconFlow 硅基流动",
+    "match": ["siliconflow.cn", "siliconflow.com"],
+    "category": "AI 服务",
+    "doc": "https://docs.siliconflow.cn/cn/api-reference/userinfo/get-user-info",
+    "status": {
+      "type": "http", "method": "GET", "url": "https://api.siliconflow.cn/v1/user/info",
+      "headers": {"Authorization": "Bearer {{secret}}"},
+      "fields": {"balance": "$.data.totalBalance"},
+      "format": {"balance": "¥{}"}
+    }
+  },
+  {
+    "id": "template.webview-checkin",
+    "name": "通用网页签到 (手动) / Generic web check-in (manual)",
+    "match": [],
+    "category": "其他",
+    "checkin": {"type": "webview"}
+  },
+  {
+    "id": "template.http-checkin",
+    "name": "HTTP 签到模板 / HTTP check-in template",
+    "match": [],
+    "category": "其他",
+    "note": "Copy, set url/headers/paths for your site, then `vault site add`. {{secret}} is the stored session token or cookie.",
+    "checkin": {
+      "type": "http", "method": "POST", "url": "https://example.invalid/api/checkin",
+      "headers": {"Authorization": "Bearer {{secret}}"},
+      "success_path": "$.success", "message_path": "$.message", "points_path": "$.data.points"
+    }
+  }
+]

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- [fork/glass-ui] Strings for the glass sidebar, backdrop settings and
+     placeholder screens. Checked by .github/ci/check_new_locale_keys.py. -->
+<resources>
+    <string name="glass_open_sidebar">開啟側邊欄</string>
+    <string name="glass_search_hint">搜尋</string>
+    <string name="glass_new_chat">新對話</string>
+    <string name="glass_tab_chats">對話</string>
+    <string name="glass_tab_bots">Bots</string>
+    <string name="glass_tab_feed">動態</string>
+    <string name="glass_recent">最近</string>
+    <string name="glass_untitled">未命名對話</string>
+    <string name="glass_empty_recent">還沒有對話</string>
+    <string name="glass_no_results">沒有符合的結果</string>
+    <string name="glass_report_bug">一鍵回報 Bug</string>
+    <string name="glass_coming_soon">即將推出</string>
+    <string name="glass_bots_desc">用自然語言或角色卡建立 Bot，並讓它們在群聊中協作。</string>
+    <string name="glass_feed_desc">Mibot 根據你的興趣整理並排序的一條動態流，每則都可以按讚、討論或刪除。</string>
+    <string name="glass_backdrop_title">背景與毛玻璃</string>
+    <string name="glass_backdrop_subtitle">毛玻璃側邊欄、照片或氛圍背景</string>
+    <string name="glass_enable">毛玻璃介面</string>
+    <string name="glass_enable_desc">磨砂側邊欄與半透明首頁</string>
+    <string name="glass_section_backdrop">背景</string>
+    <string name="glass_mode_ambient">氛圍</string>
+    <string name="glass_mode_ambient_desc">隨時間與天氣變換色調、緩慢飄動的薄霧，不會顯示天氣資訊。</string>
+    <string name="glass_mode_photo">照片</string>
+    <string name="glass_mode_photo_desc">使用相簿中的圖片</string>
+    <string name="glass_mode_plain">純色</string>
+    <string name="glass_mode_plain_desc">主題背景色</string>
+    <string name="glass_pick_photo">選擇照片…</string>
+    <string name="glass_dim">背景暗度</string>
+    <string name="glass_photo_failed">無法載入該圖片</string>
+    <string name="glass_bug_subject">Mibot 問題回報</string>
+    <string name="glass_bug_chooser">傳送問題回報</string>
+    <string name="glass_bug_body_hint">請描述發生了什麼：</string>
+    <string name="glass_tab_ideas">點子</string>
+    <string name="glass_tab_settings">設定</string>
+    <string name="glass_ideas_desc">記錄點子，在畫布上展開。</string>
+    <string name="glass_section_feedback">回報</string>
+    <string name="glass_report_bug_desc">開啟已填好 App 與裝置資訊的問題單</string>
+    <string name="glass_group_label">群聊</string>
+    <string name="glass_sample_notice">預覽 · 範例內容</string>
+    <string name="glass_feed_post1">你上週收藏的三篇本地優先軟體長文，每篇兩分鐘讀完重點。</string>
+    <string name="glass_feed_post2">西湖群山的秋葉下週末最好看，附一條避開人潮的清晨路線。</string>
+    <string name="glass_feed_post3">Kotlin 2.2 發布了：對你這類專案的協程與 Compose 有哪些影響。</string>
+    <string name="glass_idea1">把語音備忘變成閱讀清單的週末小 App</string>
+    <string name="glass_idea2">Bot 群聊：規劃者 + 評審 + 寫手，一起寫週報</string>
+    <string name="glass_idea3">每月把 NAS 照片備份到冷儲存</string>
+    <string name="glass_idea4">給媽媽的禮物點子，500 以內</string>
+    <string name="glass_bot1_desc">把目標拆成步驟並排好時間</string>
+    <string name="glass_bot2_desc">審閱草稿，指出論證薄弱處</string>
+    <string name="glass_bot3_desc">根據簡短筆記，用你的語氣寫作</string>
+    <string name="glass_create_bot">建立 Bot</string>
+    <string name="glass_section_style">風格</string>
+    <string name="glass_style_dusk">暮色玻璃</string>
+    <string name="glass_style_dusk_desc">深色、深邃的磨砂玻璃</string>
+    <string name="glass_style_warm">暖白簡約</string>
+    <string name="glass_style_warm_desc">明亮、溫暖、簡約</string>
+</resources>
