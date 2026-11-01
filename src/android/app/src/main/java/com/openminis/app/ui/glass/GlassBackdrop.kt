@@ -69,21 +69,21 @@ fun GlassBackdrop(
                     modifier = modifier.fillMaxSize(),
                 )
             } else {
-                AmbientGradient(modifier, settings.style)
+                AmbientGradient(modifier, settings.style, settings.motion)
             }
         }
-        BackdropMode.AMBIENT -> AmbientGradient(modifier, settings.style)
+        BackdropMode.AMBIENT -> AmbientGradient(modifier, settings.style, settings.motion)
         BackdropMode.PLAIN -> {
             val dark = com.openminis.app.ui.theme.LocalMibotDark.current
             val c = if (settings.solidColor != 0) androidx.compose.ui.graphics.Color(settings.solidColor)
-            else if (dark) androidx.compose.ui.graphics.Color(0xFF0E121C) else androidx.compose.ui.graphics.Color(0xFFEEF1F5)
+            else if (dark) androidx.compose.ui.graphics.Color(0xFF0E1014) else androidx.compose.ui.graphics.Color(0xFFF3F0EA)
             Box(modifier.fillMaxSize().background(c))
         }
     }
 }
 
 @Composable
-private fun AmbientGradient(modifier: Modifier, style: GlassStyle) {
+private fun AmbientGradient(modifier: Modifier, style: GlassStyle, motion: BackdropMotion = BackdropMotion.FULL) {
     val weather = rememberWeather()
     // Re-read the hour once a minute; the palette only changes on the hour.
     var hour by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) }
@@ -95,8 +95,9 @@ private fun AmbientGradient(modifier: Modifier, style: GlassStyle) {
     }
     if (com.openminis.app.ui.theme.LocalMibotActive.current) {
         val dark = com.openminis.app.ui.theme.LocalMibotDark.current
-        val sky = remember(hour, weather, dark) { AmbientPalette.sky(dark, hour, weather) }
-        CloudSky(sky, dark, modifier)
+        // [fork/mibot-v5] Low-contrast atmospheric sky (replaces CloudSky).
+        val atmos = remember(hour, weather, dark) { AtmospherePalette.of(dark, hour, weather) }
+        AtmosphereBackdrop(atmos, motion, modifier)
         return
     }
     val colors = remember(hour, weather, style) {
@@ -120,10 +121,10 @@ fun MibotBackdrop(modifier: Modifier = Modifier) {
             val veil = if (dark) androidx.compose.ui.graphics.Color.Black.copy(alpha = settings.dim.coerceIn(0.15f, 0.9f))
             else androidx.compose.ui.graphics.Color.White.copy(alpha = (settings.dim * 0.85f).coerceIn(0.15f, 0.85f))
             Box(Modifier.fillMaxSize().background(veil))
-            // [fork/mibot-v3] Optional soft clouds drifting over the user's photo.
+            // [fork/mibot-v5] Optional soft haze drifting over the user's photo.
             if (settings.fogOverPhoto) {
-                val sky = remember(dark) { AmbientPalette.sky(dark, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY), WeatherKind.UNKNOWN) }
-                CloudSky(sky, dark, cloudsOnly = true)
+                val atmos = remember(dark) { AtmospherePalette.of(dark, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY), WeatherKind.UNKNOWN) }
+                AtmosphereBackdrop(atmos.copy(hazeAmount = atmos.hazeAmount * 1.4f), settings.motion, hazeOnly = true)
             }
         }
     }

@@ -184,6 +184,7 @@ class MainActivity : ComponentActivity() {
             }
             if (intent?.getBooleanExtra("ci_vault_demo", false) == true) {
                 com.openminis.app.mibot.vault.VaultStore.seedDemo(this)
+                com.openminis.app.mibot.gateway.GatewayDemo.seed(this)
             }
             // [fork/mibot-v3] CI: write the "start from a computer" helper script
             // (adb shell sh …/usb-start.sh) and/or auto-run the hidden-display demo.
@@ -597,6 +598,15 @@ class MainActivity : ComponentActivity() {
                     SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
                 }
                 enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
+                // [fork/mibot-v5] SystemBarStyle.auto follows the SYSTEM night
+                // mode, not the in-app theme, so a light app on a dark system
+                // (or the light sidebar sheet) got white-on-white icons. Pin
+                // the icon colour to the app theme; glass pages and viewers
+                // still override it per screen.
+                androidx.core.view.WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !darkTheme
+                    isAppearanceLightNavigationBars = !darkTheme
+                }
             }
 
             val mibotOn = androidx.compose.runtime.remember { com.openminis.app.ui.glass.GlassPrefs.flow(this) }

@@ -680,6 +680,7 @@ fun AppNavigation(
                 scrollUnder = true,
             ) {
                 com.openminis.app.mibot.bots.BotsPage(
+                    onPlugins = { navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.MARKET) },
                     onOpen = { id -> navController.navigate("sub_agent/$id") },
                     onNew = { navController.navigate("sub_agent/${com.openminis.app.ui.settings.DRAFT_AGENT_ID}") },
                     onAgentSettings = { navController.safeNavigate(Routes.AGENTS) },
@@ -727,6 +728,7 @@ fun AppNavigation(
                         reportBug = { com.openminis.app.ui.glass.ForkBugReport.open(glassContext) },
                         about = go(Routes.ABOUT),
                         virtualDisplay = go(com.openminis.app.mibot.phone.VdRoutes.PAGE),
+                        plugins = go(com.openminis.app.mibot.plugins.PluginRoutes.MARKET),
                     ),
                 )
             } else
@@ -1778,6 +1780,19 @@ fun AppNavigation(
         }
         composable(com.openminis.app.mibot.vault.VaultRoutes.AUDIT) {
             com.openminis.app.mibot.vault.VaultAuditScreen(onBack = { navController.safePopBackStack() })
+        }
+        // [fork/mibot-v5] 插件市场 (SkillHub DSH plugins) + plugin detail / settings.
+        composable(com.openminis.app.mibot.plugins.PluginRoutes.MARKET) {
+            com.openminis.app.mibot.plugins.PluginMarketScreen(
+                onBack = { navController.safePopBackStack() },
+                onOpen = { name -> navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.detail(name)) },
+            )
+        }
+        composable(com.openminis.app.mibot.plugins.PluginRoutes.DETAIL) { entry ->
+            com.openminis.app.mibot.plugins.PluginDetailScreen(
+                fullName = android.net.Uri.decode(entry.arguments?.getString("name") ?: ""),
+                onBack = { navController.safePopBackStack() },
+            )
         }
         composable(com.openminis.app.mibot.gateway.GatewayRoutes.GATEWAY) {
             com.openminis.app.mibot.gateway.GatewayScreen(

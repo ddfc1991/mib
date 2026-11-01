@@ -207,6 +207,11 @@ object DeepLinkHandler {
             "vault-add", "add-account" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.vault.VaultRoutes.edit("new"))
             "rootfs" -> DeepLinkAction.OpenSettingsScreen(Routes.ROOTFS_MANAGEMENT)
             "gateway" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.gateway.GatewayRoutes.GATEWAY)
+            // [fork/mibot-v5] 插件市场 and one plugin (?name=owner/repo).
+            "plugins", "plugin-market" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
+            "plugin" -> uri.getQueryParameter("name")?.takeIf { it.contains('/') }
+                ?.let { DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.detail(it)) }
+                ?: DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
             "sandbox" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.sandbox.SandboxRoutes.SANDBOX)
             "virtual-display", "vd", "background-control" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.phone.VdRoutes.PAGE)
             "diagnostics" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.settings.DiagnosticsRoutes.DIAGNOSTICS)

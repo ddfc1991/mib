@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Lan
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.MonitorHeart
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.outlined.PhonelinkSetup
 import androidx.compose.material.icons.outlined.Schedule
@@ -80,6 +81,7 @@ class MibotSettingsActions(
     val reportBug: () -> Unit,
     val about: () -> Unit,
     val virtualDisplay: () -> Unit = {},
+    val plugins: () -> Unit = {},
 )
 
 /**
@@ -135,6 +137,7 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
                     MibotGridItem("Bots", Icons.Outlined.SmartToy, MibotTokens.Taupe, a.bots),
                     MibotGridItem(t("人格", "Soul"), Icons.Outlined.Face, MibotTokens.Red, a.soul),
                     MibotGridItem(t("后台操控", "BG control"), Icons.Outlined.PhonelinkSetup, MibotTokens.Brick, a.virtualDisplay),
+                    MibotGridItem(t("插件市场", "Plugins"), Icons.Outlined.Storefront, MibotTokens.Amber, a.plugins),
                     MibotGridItem(t("诊断", "Diagnose"), Icons.Outlined.MonitorHeart, MibotTokens.Steel, a.diagnostics),
                 ),
             )

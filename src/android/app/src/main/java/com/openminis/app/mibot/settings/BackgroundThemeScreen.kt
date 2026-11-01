@@ -105,9 +105,9 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
         MibotSectionHeader(t("主题", "Theme"))
         MibotCard {
             listOf(
-                0 to (t("跟随系统", "Follow system") to t("白天云天，夜里星空", "Cloud sky by day, night sky by night")),
-                1 to (t("浅色 · 云天", "Light · cloud sky") to t("浅色雾天背景，砖红强调色", "Light misty sky, brick-red accent")),
-                2 to (t("深色 · 夜空", "Dark · night sky") to t("星空与云层，柔和橙红强调色", "Stars and clouds, soft salmon accent")),
+                0 to (t("跟随系统", "Follow system") to t("跟随系统浅色 / 深色", "Follows the system light / dark setting")),
+                1 to (t("浅色 · 暖瓷", "Light · porcelain") to t("暖瓷白底，低对比天空，朱砂强调色", "Warm porcelain, low-contrast sky, cinnabar accent")),
+                2 to (t("深色 · 石墨", "Dark · graphite") to t("冷石墨底，层叠玻璃，微光星点", "Cool graphite, layered glass, faint stars")),
             ).forEachIndexed { i, (mode, txt) ->
                 MibotRow(
                     title = txt.first, subtitle = txt.second, chevron = false, showDivider = i < 2,
@@ -123,8 +123,8 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
         MibotSectionHeader(t("背景", "Background"))
         MibotCard {
             MibotRow(
-                t("动态天空", "Living sky"),
-                t("缓慢飘动的云雾；天气只影响色调。后台、熄屏、省电或关闭动画时暂停", "Slow drifting clouds and fog; weather only tints it. Pauses in background, screen off, battery saver or with animations off"),
+                t("氛围天空", "Atmospheric sky"),
+                t("随时段变化的柔和天色与极淡薄雾；天气只做克制的叠加（细雨、微雪、星点、阴天降饱和）", "Soft time-of-day sky with a faint haze; weather is a restrained overlay (thin rain, tiny snow, faint stars, overcast desaturation)"),
                 chevron = false, showDivider = true,
                 onClick = { GlassPrefs.update(ctx) { it.copy(mode = BackdropMode.AMBIENT) } },
                 trailing = { if (settings.mode == BackdropMode.AMBIENT) StatusChip("✓", ChipKind.ACCENT) },
@@ -145,6 +145,22 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
                 trailing = { if (settings.mode == BackdropMode.PLAIN) StatusChip("✓", ChipKind.ACCENT) },
             )
         }
+        if (settings.mode == BackdropMode.AMBIENT || (settings.mode == BackdropMode.PHOTO && settings.fogOverPhoto)) {
+            MibotSectionHeader(t("动态背景", "Background motion"))
+            MibotCard {
+                listOf(
+                    com.openminis.app.ui.glass.BackdropMotion.FULL to (t("开", "On") to t("薄雾缓慢流动，最高 30 帧；后台、熄屏、省电或关闭系统动画时自动暂停", "Haze drifts slowly, ≤30 fps; pauses in background, screen off, battery saver or with animations off")),
+                    com.openminis.app.ui.glass.BackdropMotion.REDUCED to (t("降低动态", "Reduced") to t("更慢更省电（约 8 帧）", "Slower and lighter (about 8 fps)")),
+                    com.openminis.app.ui.glass.BackdropMotion.OFF to (t("关", "Off") to t("静态天色，不播放动画", "Static sky, no animation")),
+                ).forEachIndexed { i, (m, txt) ->
+                    MibotRow(
+                        title = txt.first, subtitle = txt.second, chevron = false, showDivider = i < 2,
+                        onClick = { GlassPrefs.update(ctx) { it.copy(motion = m) } },
+                        trailing = { if (settings.motion == m) StatusChip("✓", ChipKind.ACCENT) },
+                    )
+                }
+            }
+        }
         photoError?.let {
             Text(t("无法加载图片：", "Couldn't load the image: ") + it, color = MaterialTheme.colorScheme.error, fontSize = com.openminis.app.mibot.design.MibotType.Secondary,
                 modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 8.dp))
@@ -157,8 +173,8 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
             }
             MibotCard(Modifier.padding(top = 8.dp)) {
                 MibotRow(
-                    t("照片上叠加云雾", "Clouds over the photo"),
-                    t("在照片上缓慢飘过一层柔和云雾", "A soft drifting cloud layer over your photo"),
+                    t("照片上叠加薄雾", "Haze over the photo"),
+                    t("在照片上缓慢飘过一层极淡的薄雾", "A very faint drifting haze over your photo"),
                     chevron = false,
                     trailing = { Switch(checked = settings.fogOverPhoto, onCheckedChange = { on -> GlassPrefs.update(ctx) { it.copy(fogOverPhoto = on) } }) },
                 )
@@ -167,8 +183,8 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
         }
         if (settings.mode == BackdropMode.PLAIN) {
             MibotSectionHeader(t("颜色", "Colour"))
-            val swatches = listOf(0, Color(0xFFEEF1F5).toArgb(), Color(0xFFF6EFE7).toArgb(), Color(0xFFE6EEF2).toArgb(),
-                Color(0xFF0E121C).toArgb(), Color(0xFF1B1F2A).toArgb(), Color(0xFF2A1E1A).toArgb())
+            val swatches = listOf(0, Color(0xFFF3F0EA).toArgb(), Color(0xFFEDEAE4).toArgb(), Color(0xFFE6E9EC).toArgb(),
+                Color(0xFF0E1014).toArgb(), Color(0xFF16181D).toArgb(), Color(0xFF1C1A19).toArgb())
             Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 swatches.forEach { argb ->
                     val c = if (argb == 0) MibotTokens.accent().copy(alpha = 0.25f) else Color(argb)

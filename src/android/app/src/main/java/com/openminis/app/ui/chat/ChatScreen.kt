@@ -2628,7 +2628,10 @@ fun ChatScreen(
     // hardware keyboard, where focusing the composer raises no soft keyboard
     // and lets the user type straight away, as it did before.
     LaunchedEffect(sessionId) {
-        if (sessionId.startsWith("__new__") || hasHardwareKeyboard) {
+        // [fork/mibot-v5] A new chat no longer pops the soft keyboard: the
+        // user sees the empty chat first and taps the composer when ready.
+        // Hardware keyboards still get focus (no soft keyboard is raised).
+        if (hasHardwareKeyboard) {
             // Small delay to let the layout settle before requesting focus
             kotlinx.coroutines.delay(300)
             try {
@@ -3169,6 +3172,7 @@ fun ChatScreen(
                                     // stack glyph rather than by swapping the
                                     // text out. Match that chain so the row
                                     // always names something.
+                                    var mibotNoModel = false
                                     val groupNameDisplay = selectedGroupName.ifEmpty {
                                         if (selectedGroupId == null) {
                                             // Direct-entry pick: name the model
@@ -3188,9 +3192,25 @@ fun ChatScreen(
                                         // yet. Still name the state instead of
                                         // collapsing to a dot, so the picker
                                         // keeps a visible, tappable label.
+                                        mibotNoModel = true
                                         stringResource(R.string.model_picker_no_model_selected)
                                     }
-                                    if (groupNameDisplay.isNotEmpty()) {
+                                    if (mibotNoModel && com.openminis.app.ui.theme.LocalMibotActive.current) {
+                                        // [fork/mibot-v5] Nothing resolves: a clear
+                                        // "选择模型" chip instead of "未选择模型".
+                                        Text(
+                                            text = com.openminis.app.mibot.design.t("选择模型", "Choose model") + " ›",
+                                            fontSize = 12.sp,
+                                            lineHeight = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            maxLines = 1,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(50))
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+                                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                                        )
+                                    } else if (groupNameDisplay.isNotEmpty()) {
                                         // [T-android-topbar-manual-entry-name]
                                         // Row 1 now names a model as readily as
                                         // a group, so the two cases would read

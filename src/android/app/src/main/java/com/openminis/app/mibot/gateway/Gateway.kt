@@ -527,3 +527,40 @@ private fun SmallAction(text: String, enabled: Boolean = true, onClick: () -> Un
             .padding(horizontal = 10.dp, vertical = 5.dp),
     )
 }
+
+/**
+ * [fork/mibot-v5] Debug/CI only: seed the gateway with the SAME providers the
+ * vault demo shows as connected (OpenRouter, 硅基流动), so 账号 and AI 网关
+ * tell one consistent story in screenshots. Keys are fake; the health line
+ * says so ("CI 演示数据，未真实检测") instead of pretending a probe ran.
+ */
+object GatewayDemo {
+    fun seed(ctx: Context) {
+        val app = ctx.applicationContext as? MinisApp ?: return
+        val repo = app.providerRepositoryOrNull ?: return
+        runCatching {
+            if (repo.config.value.instances.isNotEmpty()) return
+            GatewayHealth.init(ctx)
+            val demo = listOf(
+                ProviderInstance(
+                    id = java.util.UUID.randomUUID().toString(), label = "OpenRouter",
+                    providerType = ProviderType.openRouter, credentialType = com.openminis.app.data.model.ProviderCredential.apiKey,
+                ) to "sk-or-demo",
+                ProviderInstance(
+                    id = java.util.UUID.randomUUID().toString(), label = "硅基流动",
+                    providerType = ProviderType.openAI, credentialType = com.openminis.app.data.model.ProviderCredential.apiKey,
+                    customBaseURL = "https://api.siliconflow.cn/v1", appendV1Suffix = false,
+                ) to "sk-demo",
+            )
+            demo.forEachIndexed { i, (inst, key) ->
+                repo.addInstance(inst)
+                repo.saveApiKey(inst.id, key)
+                GatewayHealth.recordProbe(
+                    inst.id,
+                    GatewayNet.Outcome(GatewayNet.Kind.OK, 200, 280L + i * 140L, "demo"),
+                    label = "CI 演示数据，未真实检测",
+                )
+            }
+        }
+    }
+}

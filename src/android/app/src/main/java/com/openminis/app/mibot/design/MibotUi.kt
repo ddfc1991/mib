@@ -128,33 +128,35 @@ object MibotTokens {
     val ScreenPadding: Dp = MibotSpace.Screen
     val CardShape = MibotRadius.CardShape
 
-    // Icon chip colours (apps grid / rows), tuned to sit on both variants.
-    val Slate = Color(0xFF3E6A8C)
-    val Sky = Color(0xFF4A87C9)
-    val Brick = Color(0xFFC4553B)
-    val Green = Color(0xFF3E8E5E)
-    val Purple = Color(0xFF7B5BB5)
-    val Red = Color(0xFFD0483C)
-    val Teal = Color(0xFF2E9B8A)
-    val Amber = Color(0xFFC99323)
-    val Taupe = Color(0xFF7A6A60)
-    val Rose = Color(0xFFC0504D)
-    val Navy = Color(0xFF2F5E86)
-    val Steel = Color(0xFF5F6E82)
+    // [fork/mibot-v5] Identity colours (avatars, tags): low-saturation, mid
+    // lightness so they sit quietly on both porcelain and graphite. The UI
+    // accent itself is MaterialTheme.colorScheme.primary (deep cinnabar).
+    val Slate = Color(0xFF66778A)
+    val Sky = Color(0xFF6E8AA3)
+    val Brick = Color(0xFFA9604F)
+    val Green = Color(0xFF6C8A74)
+    val Purple = Color(0xFF7F7591)
+    val Red = Color(0xFFA36565)
+    val Teal = Color(0xFF5F8B86)
+    val Amber = Color(0xFFA68B5B)
+    val Taupe = Color(0xFF8A7D72)
+    val Rose = Color(0xFF9E6B73)
+    val Navy = Color(0xFF55687D)
+    val Steel = Color(0xFF6E7784)
 
-    val Ok = Color(0xFF3E9B63)
-    val Warn = Color(0xFFD08B2C)
-    val Err = Color(0xFFD0483C)
+    val Ok = Color(0xFF6C8A74)
+    val Warn = Color(0xFFA68B5B)
+    val Err = Color(0xFFA8404C)
 
     @Composable
     @ReadOnlyComposable
     fun hairline(): Color =
-        if (LocalMibotDark.current) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.07f)
+        if (LocalMibotDark.current) Color.White.copy(alpha = 0.09f) else Color(0xFF1B1D22).copy(alpha = 0.08f)
 
     /** [fork/mibot-v4] Frosted card fill: translucent so the sky shows through. */
     @Composable
     @ReadOnlyComposable
-    fun card(): Color = if (LocalMibotDark.current) Color(0xB81A1F2B) else Color(0xB8FFFFFF)
+    fun card(): Color = if (LocalMibotDark.current) Color(0xB8181A1F) else Color(0xB8FFFFFF)
 
     /** Muted tint for every line icon in rows (one consistent colour, no multicolour). */
     @Composable
@@ -164,7 +166,7 @@ object MibotTokens {
     /** Neutral tile behind grid icons. */
     @Composable
     @ReadOnlyComposable
-    fun tile(): Color = if (LocalMibotDark.current) Color.White.copy(alpha = 0.07f) else Color(0x14243048)
+    fun tile(): Color = if (LocalMibotDark.current) Color.White.copy(alpha = 0.07f) else Color(0x0F1B1D22)
 
     /** Field fill inside cards. */
     @Composable
@@ -173,13 +175,27 @@ object MibotTokens {
 
     @Composable
     @ReadOnlyComposable
-    fun okColor(): Color = if (LocalMibotDark.current) Color(0xFF6FD39A) else Color(0xFF1F8A4C)
+    fun okColor(): Color = if (LocalMibotDark.current) com.openminis.app.ui.theme.MibotPalette.SuccessDark else com.openminis.app.ui.theme.MibotPalette.SuccessLight
 
     @Composable
     @ReadOnlyComposable
-    fun warnColor(): Color = if (LocalMibotDark.current) Color(0xFFF2B35B) else Color(0xFFB26A00)
+    fun warnColor(): Color = if (LocalMibotDark.current) com.openminis.app.ui.theme.MibotPalette.WarnDark else com.openminis.app.ui.theme.MibotPalette.WarnLight
 
-    /** Brick-red accent (salmon on the night variant). */
+    @Composable
+    @ReadOnlyComposable
+    fun errColor(): Color = if (LocalMibotDark.current) com.openminis.app.ui.theme.MibotPalette.ErrorDark else com.openminis.app.ui.theme.MibotPalette.ErrorLight
+
+    /** [fork/mibot-v5] Secondary (tonal glass) button / chip fill. */
+    @Composable
+    @ReadOnlyComposable
+    fun tonal(): Color = if (LocalMibotDark.current) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.72f)
+
+    /** [fork/mibot-v5] Selected chip fill: a faint accent wash, never a solid block. */
+    @Composable
+    @ReadOnlyComposable
+    fun selected(): Color = MaterialTheme.colorScheme.primary.copy(alpha = if (LocalMibotDark.current) 0.18f else 0.10f)
+
+    /** The one accent (deep cinnabar; lighter on graphite). Use sparingly. */
     @Composable
     @ReadOnlyComposable
     fun accent(): Color = MaterialTheme.colorScheme.primary
@@ -429,15 +445,14 @@ fun MibotGrid(items: List<MibotGridItem>, columns: Int = 4) {
 
 enum class ChipKind { OK, WARN, ERR, NEUTRAL, ACCENT }
 
-/** Small rounded status chip (可用 / 冷却中 / 失效 / 等你 / 完成 / 出错). */
+/** Small rounded status chip (可用 / 冷却中 / 失效 / 等你 / 完成 / 出错). Low-saturation fill. */
 @Composable
 fun StatusChip(text: String, kind: ChipKind) {
-    val accent = MibotTokens.accent()
     val c = when (kind) {
         ChipKind.OK -> MibotTokens.okColor()
         ChipKind.WARN -> MibotTokens.warnColor()
-        ChipKind.ERR -> MibotTokens.Err
-        ChipKind.ACCENT -> accent
+        ChipKind.ERR -> MibotTokens.errColor()
+        ChipKind.ACCENT -> MibotTokens.accent()
         ChipKind.NEUTRAL -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val dark = LocalMibotDark.current
@@ -445,27 +460,31 @@ fun StatusChip(text: String, kind: ChipKind) {
         text,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(c.copy(alpha = if (dark) 0.22f else 0.14f))
+            .background(c.copy(alpha = if (dark) 0.16f else 0.11f))
             .padding(horizontal = 8.dp, vertical = 2.dp),
         fontSize = MibotType.Caption,
         fontWeight = FontWeight.SemiBold,
-        color = if (kind == ChipKind.ERR && dark) lighten(c) else c,
+        color = c,
         maxLines = 1,
     )
 }
 
-/** Filled brick-red capsule button. */
+/**
+ * [fork/mibot-v5] Capsule button. Filled accent = the ONE main action on a
+ * screen; [tonal] = secondary, a neutral frosted-glass capsule with a hairline
+ * and ink text (high contrast in both themes, no tinted text on tinted fill).
+ */
 @Composable
 fun MibotButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, tonal: Boolean = false) {
     val accent = MibotTokens.accent()
     val bg = when {
-        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
-        tonal -> accent.copy(alpha = if (LocalMibotDark.current) 0.24f else 0.13f)
+        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+        tonal -> MibotTokens.tonal()
         else -> accent
     }
     val fg = when {
         !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        tonal -> if (LocalMibotDark.current) lighten(accent) else accent
+        tonal -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onPrimary
     }
     Box(
@@ -473,6 +492,7 @@ fun MibotButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
             .heightIn(min = MibotSpace.ButtonMin)
             .clip(MibotRadius.Pill)
             .background(bg)
+            .then(if (tonal && enabled) Modifier.border(1.dp, MibotTokens.hairline(), MibotRadius.Pill) else Modifier)
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = MibotSpace.L, vertical = MibotSpace.S),
         contentAlignment = Alignment.Center,
@@ -512,11 +532,12 @@ fun MibotFilterChips(options: List<String>, selected: String, onSelect: (String)
                 opt,
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(if (sel) MibotTokens.accent() else MibotTokens.card())
-                    .border(1.dp, if (sel) Color.Transparent else MibotTokens.hairline(), RoundedCornerShape(50))
+                    .background(if (sel) MibotTokens.selected() else MibotTokens.card())
+                    .border(1.dp, if (sel) MibotTokens.accent().copy(alpha = 0.35f) else MibotTokens.hairline(), RoundedCornerShape(50))
                     .clickable { onSelect(opt) }
                     .padding(horizontal = MibotSpace.M, vertical = 5.dp),
-                color = if (sel) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                color = if (sel) MibotTokens.accent() else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (sel) MibotType.Semi else MibotType.Regular,
                 fontSize = MibotType.Section,
             )
         }

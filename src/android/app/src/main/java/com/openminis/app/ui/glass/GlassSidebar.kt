@@ -189,14 +189,15 @@ private fun RecentRow(item: RecentItem, fg: Color, fgMuted: Color, dark: Boolean
 }
 
 private val AvatarColors = listOf(
-    Color(0xFF7C8CF8), Color(0xFFF59E7A), Color(0xFF5CC8A8), Color(0xFFE88BC4), Color(0xFFF2C14E),
+    // [fork/mibot-v5] Muted identity tones (see MibotTokens).
+    Color(0xFF66778A), Color(0xFFA9604F), Color(0xFF6C8A74), Color(0xFF7F7591), Color(0xFFA68B5B),
 )
 
 /** Up to three small overlapping bot avatars (initials), for group rows. */
 @Composable
 private fun StackedAvatars(members: List<String>, dark: Boolean) {
     val shown = members.take(3)
-    val ring = if (dark) Color(0xFF22262E) else Color.White
+    val ring = if (dark) Color(0xFF1B1D22) else Color.White
     Box(Modifier.width((18 + 11 * (shown.size - 1)).dp).height(18.dp)) {
         shown.forEachIndexed { i, name ->
             Box(

@@ -205,69 +205,93 @@ val LocalMibotActive = androidx.compose.runtime.staticCompositionLocalOf { false
 /** [fork/mibot-v2] Whether the app is currently rendering its dark variant. */
 val LocalMibotDark = androidx.compose.runtime.staticCompositionLocalOf { false }
 
-// [fork/mibot-v2] Mibot palettes. `background` is transparent so every stock
-// Scaffold shows the shared backdrop; cards/sheets are frosted (translucent)
-// and dialogs stay opaque for legibility.
+// [fork/mibot-v5] Mibot palettes — refined, restrained system.
+// Dark = neutral cool graphite (#0E1014 base, layered glass at 6–10 % white);
+// light = warm porcelain. ONE accent (deep cinnabar), used sparingly; every
+// other role is neutral. Contrast (WCAG AA, checked on the frosted card fill):
+//   light accent #AE4530 on card 5.5, white on accent 5.7, on tonal 4.8
+//   dark  accent #E07E66 on glass 5.5, #1A0F0B on accent 6.6
+//   onSurfaceVariant: light #5C606A 6.1, dark #9EA3AD 6.2
+// `background` stays transparent so every stock Scaffold shows the shared
+// backdrop; cards/sheets are frosted and dialogs stay opaque.
+object MibotPalette {
+    val AccentLight = Color(0xFFAE4530)
+    val AccentDark = Color(0xFFE07E66)
+    val InkLight = Color(0xFF1B1D22)
+    val InkMutedLight = Color(0xFF5C606A)
+    val InkDark = Color(0xFFE8EAEE)
+    val InkMutedDark = Color(0xFF9EA3AD)
+    val Porcelain = Color(0xFFF3F0EA)
+    val Graphite = Color(0xFF0E1014)
+    // Muted semantic colours (text-safe on the card fill in each theme).
+    val SuccessLight = Color(0xFF456E53)
+    val WarnLight = Color(0xFF87591A)
+    val ErrorLight = Color(0xFFA8404C)
+    val SuccessDark = Color(0xFF8FBE9D)
+    val WarnDark = Color(0xFFDDB067)
+    val ErrorDark = Color(0xFFEC939C)
+}
+
 val MibotLightColorScheme = lightColorScheme(
-    primary = Color(0xFFB9503A),
+    primary = MibotPalette.AccentLight,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFF7DCD0),
-    onPrimaryContainer = Color(0xFF4A1D12),
-    secondary = Color(0xFF7D5A4E),
+    primaryContainer = Color(0xFFF1E3DD),
+    onPrimaryContainer = Color(0xFF3E160D),
+    secondary = Color(0xFF5E6470),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFF1E2DA),
-    onSecondaryContainer = Color(0xFF2E1810),
-    tertiary = Color(0xFF3F729C),
+    secondaryContainer = Color(0xFFE9E6E1),
+    onSecondaryContainer = MibotPalette.InkLight,
+    tertiary = Color(0xFF4F6577),
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFD6E6F4),
-    onTertiaryContainer = Color(0xFF0E2A40),
+    tertiaryContainer = Color(0xFFE2E7EC),
+    onTertiaryContainer = Color(0xFF17232D),
     background = Color.Transparent,
-    onBackground = Color(0xFF1C212C),
+    onBackground = MibotPalette.InkLight,
     surface = Color(0x8CFFFFFF),
-    onSurface = Color(0xFF1C212C),
+    onSurface = MibotPalette.InkLight,
     surfaceVariant = Color(0xD9FFFFFF),
-    onSurfaceVariant = Color(0xFF545B6A),
+    onSurfaceVariant = MibotPalette.InkMutedLight,
     surfaceContainerLowest = Color(0x99FFFFFF),
-    surfaceContainerLow = Color(0xDEFFFFFF),
-    surfaceContainer = Color(0xEBFBFCFE),
-    surfaceContainerHigh = Color(0xF5F8F9FB),
-    surfaceContainerHighest = Color(0xFFF1F3F7),
-    outline = Color(0xFFA3AAB8),
-    outlineVariant = Color(0x33707A8C),
-    inverseSurface = Color(0xFF2A2F3A),
-    inverseOnSurface = Color(0xFFF1F3F7),
-    error = Color(0xFFC0392B),
+    surfaceContainerLow = Color(0xE0FCFBF9),
+    surfaceContainer = Color(0xEDFAF9F6),
+    surfaceContainerHigh = Color(0xF5F7F5F1),
+    surfaceContainerHighest = Color(0xFFF1EEE9),
+    outline = Color(0xFF9EA1A8),
+    outlineVariant = Color(0x2E1B1D22),
+    inverseSurface = Color(0xFF26282D),
+    inverseOnSurface = Color(0xFFF1EFEB),
+    error = MibotPalette.ErrorLight,
 )
 
 val MibotDarkColorScheme = darkColorScheme(
-    primary = Color(0xFFEE8E70),
-    onPrimary = Color(0xFF3A1408),
-    primaryContainer = Color(0xFF5C2B1F),
-    onPrimaryContainer = Color(0xFFFFDBCF),
-    secondary = Color(0xFFD8B9AD),
-    onSecondary = Color(0xFF3A2219),
-    secondaryContainer = Color(0xFF3B2E2C),
-    onSecondaryContainer = Color(0xFFF5DED5),
-    tertiary = Color(0xFF9CC4E8),
-    onTertiary = Color(0xFF0E2A40),
-    tertiaryContainer = Color(0xFF26405A),
-    onTertiaryContainer = Color(0xFFD6E6F4),
+    primary = MibotPalette.AccentDark,
+    onPrimary = Color(0xFF1A0F0B),
+    primaryContainer = Color(0xFF3A2620),
+    onPrimaryContainer = Color(0xFFF6DDD5),
+    secondary = Color(0xFFB4B9C2),
+    onSecondary = Color(0xFF1A1C21),
+    secondaryContainer = Color(0xFF262930),
+    onSecondaryContainer = MibotPalette.InkDark,
+    tertiary = Color(0xFFA9BCCB),
+    onTertiary = Color(0xFF15202A),
+    tertiaryContainer = Color(0xFF243039),
+    onTertiaryContainer = Color(0xFFDCE5EC),
     background = Color.Transparent,
-    onBackground = Color(0xFFECEFF6),
-    surface = Color(0x8C10141E),
-    onSurface = Color(0xFFECEFF6),
-    surfaceVariant = Color(0xCC1A1F2C),
-    onSurfaceVariant = Color(0xFFAAB1C3),
-    surfaceContainerLowest = Color(0x990C0F17),
-    surfaceContainerLow = Color(0xD91A1F2B),
-    surfaceContainer = Color(0xE61D2230),
-    surfaceContainerHigh = Color(0xF2242A38),
-    surfaceContainerHighest = Color(0xFF2C3242),
-    outline = Color(0xFF8E97AB),
-    outlineVariant = Color(0x33FFFFFF),
-    inverseSurface = Color(0xFFECEFF6),
-    inverseOnSurface = Color(0xFF1A1F2B),
-    error = Color(0xFFFF8A80),
+    onBackground = MibotPalette.InkDark,
+    surface = Color(0x8C0E1014),
+    onSurface = MibotPalette.InkDark,
+    surfaceVariant = Color(0xCC1A1C21),
+    onSurfaceVariant = MibotPalette.InkMutedDark,
+    surfaceContainerLowest = Color(0x990B0C10),
+    surfaceContainerLow = Color(0xE0181A1F),
+    surfaceContainer = Color(0xEB1B1D22),
+    surfaceContainerHigh = Color(0xF2212328),
+    surfaceContainerHighest = Color(0xFF282A30),
+    outline = Color(0xFF7E838D),
+    outlineVariant = Color(0x29FFFFFF),
+    inverseSurface = MibotPalette.InkDark,
+    inverseOnSurface = Color(0xFF1A1C21),
+    error = MibotPalette.ErrorDark,
 )
 
 /**

@@ -91,6 +91,16 @@ for th in 1:light 2:dark; do
   link virtual-display; zshot "$n-10-vd" 4
   adb shell input swipe 540 1700 540 700 400; zshot "$n-11-vd-scrolled" 2; home
   link backdrop;     zshot "$n-12-backdrop" 4; home
+  # [fork/mibot-v5] 插件市场: list (both sections), a category with desktop
+  # plugins, and one plugin's detail page (needs network on the emulator).
+  link plugins;      zshot "$n-13-plugins" 10
+  adb shell input swipe 540 1700 540 500 500; zshot "$n-14-plugins-scrolled" 3
+  if tap text "效率"; then zshot "$n-15-plugins-efficiency" 4
+    adb shell input swipe 540 1700 540 500 500; zshot "$n-16-plugins-efficiency-scrolled" 3; fi
+  home
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=dsh-market/dsh-market' $PKG" >/dev/null
+  zshot "$n-17-plugin-detail" 12
+  adb shell input swipe 540 1700 540 600 500; zshot "$n-18-plugin-detail-scrolled" 3; home
   alive || { echo "::error::app died during zh $n pass"; fail=1; }
 done
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$ZH/last-ui.xml" || true

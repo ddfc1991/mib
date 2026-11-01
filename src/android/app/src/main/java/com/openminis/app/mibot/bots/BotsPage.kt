@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -92,7 +93,7 @@ private fun BotAvatar(ctx: Context, def: SubAgentDefinition, index: Int) {
  * Temporary sub-agent runs show inside the chat that started them.
  */
 @Composable
-fun BotsPage(onOpen: (String) -> Unit, onNew: () -> Unit, onAgentSettings: () -> Unit) {
+fun BotsPage(onOpen: (String) -> Unit, onNew: () -> Unit, onAgentSettings: () -> Unit, onPlugins: () -> Unit = {}) {
     val ctx = LocalContext.current
     val repo = remember { (ctx.applicationContext as MinisApp).providerRepository }
     var gen by remember { mutableIntStateOf(0) }
@@ -117,6 +118,17 @@ fun BotsPage(onOpen: (String) -> Unit, onNew: () -> Unit, onAgentSettings: () ->
                 MibotButton(t("导入人设卡", "Import card"), tonal = true, enabled = roster.size < SubAgentLimits.MAX_COUNT, modifier = Modifier.weight(1f), onClick = {
                     importer.launch(arrayOf("application/json", "image/png", "text/plain", "application/octet-stream"))
                 })
+            }
+        }
+        item {
+            // [fork/mibot-v5] Entry to the plugin market (SkillHub DSH plugins).
+            MibotCard(Modifier.padding(top = 4.dp)) {
+                MibotRow(
+                    title = t("插件市场", "Plugin market"),
+                    subtitle = t("SkillHub 开源插件 · 手机能用的优先 · 试装 / 转换（实验）", "SkillHub open-source plugins · phone-ready first · try / convert (beta)"),
+                    icon = Icons.Outlined.Extension,
+                    onClick = onPlugins,
+                )
             }
         }
         item {

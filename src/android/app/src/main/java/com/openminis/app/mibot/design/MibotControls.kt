@@ -160,9 +160,9 @@ fun mibotSwitchColors(accent: Color = MibotTokens.accent(), dark: Boolean = Loca
     checkedTrackColor = accent,
     checkedBorderColor = accent,
     checkedIconColor = accent,
-    uncheckedThumbColor = if (dark) Color(0xFFB7BECC) else Color(0xFF7A8294),
+    uncheckedThumbColor = if (dark) Color(0xFFB4B9C2) else Color(0xFF7E838D),
     uncheckedTrackColor = if (dark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.06f),
-    uncheckedBorderColor = if (dark) Color(0xFF9AA3B5) else Color(0xFF8A92A3),
+    uncheckedBorderColor = if (dark) Color(0xFF8E939D) else Color(0xFF9EA1A8),
 )
 
 /** Permission / capability state shown on a row. */

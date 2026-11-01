@@ -22,20 +22,20 @@ object GlassPalette {
     // A: dark dusk glass
     // [fork/mibot-v2] "Dusk" now means the night variant of the unified
     // Mibot design system, "Warm" the light cloud-sky variant.
-    val DuskBackground = Color(0xFF0E121C)
-    val DuskSurface = Color(0xFF1A1F2B)
-    val DuskOn = Color(0xFFECEFF6)
-    val DuskOnMuted = Color(0xFFAAB1C3)
-    val DuskAccent = Color(0xFFEE8E70)
-    val DuskTint = Color(0xFF141925)
+    val DuskBackground = Color(0xFF0E1014)
+    val DuskSurface = Color(0xFF1B1D22)
+    val DuskOn = Color(0xFFE8EAEE)
+    val DuskOnMuted = Color(0xFF9EA3AD)
+    val DuskAccent = Color(0xFFE07E66)
+    val DuskTint = Color(0xFF14161A)
 
     // B: warm-white minimal
-    val WarmBackground = Color(0xFFF2F4F7)
+    val WarmBackground = Color(0xFFF3F0EA)
     val WarmSurface = Color(0xFFFFFFFF)
-    val WarmOn = Color(0xFF1C212C)
-    val WarmOnMuted = Color(0xFF545B6A)
-    val WarmAccent = Color(0xFFB9503A)
-    val WarmTint = Color(0xFFF7F8FA)
+    val WarmOn = Color(0xFF1B1D22)
+    val WarmOnMuted = Color(0xFF5C606A)
+    val WarmAccent = Color(0xFFAE4530)
+    val WarmTint = Color(0xFFF8F6F2)
 
     fun scheme(base: ColorScheme, style: GlassStyle): ColorScheme = when (style) {
         GlassStyle.DUSK -> base.copy(

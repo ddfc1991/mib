@@ -25,6 +25,8 @@ data class GlassSettings(
     val solidColor: Int = 0,
     /** [fork/mibot-v3] Draw the drifting cloud layer over the user's photo too. */
     val fogOverPhoto: Boolean = false,
+    /** [fork/mibot-v5] 动态背景: 开 / 降低动态 / 关. */
+    val motion: BackdropMotion = BackdropMotion.FULL,
 )
 
 /**
@@ -41,6 +43,7 @@ object GlassPrefs {
     private const val K_STYLE = "style"
     private const val K_SOLID = "solid_color"
     private const val K_FOG_PHOTO = "fog_over_photo"
+    private const val K_MOTION = "backdrop_motion"
 
     private val state = MutableStateFlow(GlassSettings())
     @Volatile private var loaded = false
@@ -62,6 +65,8 @@ object GlassPrefs {
                         .getOrDefault(GlassStyle.DUSK),
                     solidColor = p.getInt(K_SOLID, 0),
                     fogOverPhoto = p.getBoolean(K_FOG_PHOTO, false),
+                    motion = runCatching { BackdropMotion.valueOf(p.getString(K_MOTION, null) ?: "") }
+                        .getOrDefault(BackdropMotion.FULL),
                 )
                 loaded = true
             }
@@ -81,6 +86,7 @@ object GlassPrefs {
             .putString(K_STYLE, next.style.name)
             .putInt(K_SOLID, next.solidColor)
             .putBoolean(K_FOG_PHOTO, next.fogOverPhoto)
+            .putString(K_MOTION, next.motion.name)
             .apply()
     }
 }
