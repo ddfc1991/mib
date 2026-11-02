@@ -187,7 +187,7 @@ object SkillHubApi {
 
 // ------------------------------------------------------------ installed store
 
-enum class PluginStatus(val zh: String) { PREPARING("准备中"), RUNNING("运行中"), STOPPED("已停止") }
+enum class PluginStatus(val zh: String) { PREPARING("准备中"), RUNNING("运行中"), STOPPED("已停止"), IDLE("已安装 · 未运行") }
 
 enum class ConvState(val zh: String) { OK("已转换可用"), PARTIAL("部分可用"), FAIL("无法转换") }
 
@@ -318,8 +318,9 @@ object PluginStore {
                 k to InstalledPlugin(
                     fullName = k, id = j.optString("id"), installedAt = j.optLong("installedAt"), pushedAt = j.optLong("pushedAt"),
                     ref = j.optString("ref"), dir = j.optString("dir"), sizeBytes = j.optLong("size"),
-                    // A process restart stops every (stub) runner.
-                    status = PluginStatus.STOPPED,
+                    // [fork/mibot-v5b2] Only a native adapter really runs; it survives restarts (its
+                    // provider stays registered). Everything else is installed-not-running.
+                    status = if (j.optString("note").startsWith("运行中")) PluginStatus.RUNNING else PluginStatus.IDLE,
                     perms = perms, conversion = conv, note = j.optString("note").ifBlank { null },
                 )
             }.getOrNull()
@@ -439,29 +440,35 @@ object PluginInstaller {
     }
 }
 
-// ------------------------------------------------------------ stub runner
+// ------------------------------------------------------------ runner
 
 /**
- * [fork/mibot-v5] Phase-1 runner: a STUB. Mibot has no DeepSeek Harness host
- * yet, so "运行" only checks the files and the granted permissions and shows
- * the DSH-style status (准备中 → 运行中 → 已停止). Plugin code is NOT executed.
- * The UI labels this as 实验 / 占位运行器.
+ * [fork/mibot-v5b2] Mibot has no DeepSeek Harness host: plugin code is never
+ * executed, so a plugin is never shown 运行中 unless a native adapter really
+ * serves it (PluginAdapters — e.g. dsh-our-free-model's Kilo lane, whose
+ * models are registered in the gateway and probed with a real request).
  */
 object PluginRunner {
-    const val STUB_NOTE = "占位运行器：仅校验文件与权限，未执行插件代码（Mibot 尚无 DSH 宿主桥接）"
+    const val IDLE_NOTE = "Mibot 没有 DSH 宿主，不执行插件代码；这个插件目前只是下载到了本机。"
 
     suspend fun start(ctx: Context, fullName: String) {
         val p = PluginStore.get(ctx, fullName) ?: return
-        PluginStore.update(ctx, fullName) { it.copy(status = PluginStatus.PREPARING, note = "校验文件…") }
-        kotlinx.coroutines.delay(900)
-        val ok = File(p.dir).exists()
+        if (!PluginAdapters.hasAdapter(fullName)) {
+            PluginStore.update(ctx, fullName) { it.copy(status = PluginStatus.IDLE, note = IDLE_NOTE) }
+            return
+        }
+        PluginStore.update(ctx, fullName) { it.copy(status = PluginStatus.PREPARING, note = "审核源码并注册模型…") }
+        val r = runCatching { PluginAdapters.enable(ctx, p) }.getOrNull()
         PluginStore.update(ctx, fullName) {
-            if (ok) it.copy(status = PluginStatus.RUNNING, note = STUB_NOTE)
-            else it.copy(status = PluginStatus.STOPPED, note = "文件缺失，请重新安装")
+            when {
+                r == null -> it.copy(status = PluginStatus.IDLE, note = "适配失败")
+                r.ok -> it.copy(status = PluginStatus.RUNNING, note = "运行中 · ${r.models} 个模型（Kilo 免费池，来自插件）· ${r.probe}")
+                else -> it.copy(status = PluginStatus.IDLE, note = "未运行：${r.probe}" + if (r.models > 0) "（已注册 ${r.models} 个模型）" else "")
+            }
         }
     }
 
     fun stop(ctx: Context, fullName: String) {
-        PluginStore.update(ctx, fullName) { it.copy(status = PluginStatus.STOPPED, note = null) }
+        PluginStore.update(ctx, fullName) { it.copy(status = PluginStatus.IDLE, note = if (PluginAdapters.hasAdapter(fullName)) "已停用适配（模型仍在服务商列表，可在那里删除）" else IDLE_NOTE) }
     }
 }

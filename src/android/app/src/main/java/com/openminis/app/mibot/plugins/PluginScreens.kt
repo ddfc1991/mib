@@ -464,9 +464,18 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
     LaunchedEffect(fullName) {
         if (plugin == null) {
             // Deep link / process restart: find it through the search API.
-            runCatching { SkillHubApi.list(1, MarketSort.STARS, fullName.substringAfter('/'), 24) }
-                .onSuccess { pg -> plugin = pg.items.firstOrNull { it.fullName.equals(fullName, true) }; if (plugin == null) loadErr = "找不到插件 $fullName" }
-                .onFailure { loadErr = "加载失败：${it.message}" }
+            // SkillHub search does not always match the exact repo name (e.g. "dsh-our-free-model"
+            // returns nothing), so try the repo name, the owner, then the name as words.
+            val repoName = fullName.substringAfter('/')
+            val queries = listOf(repoName, fullName.substringBefore('/'), repoName.removePrefix("dsh-").replace('-', ' ')).distinct()
+            var lastErr: Throwable? = null
+            for (q in queries) {
+                runCatching { SkillHubApi.list(1, MarketSort.STARS, q, 24) }
+                    .onSuccess { pg -> plugin = pg.items.firstOrNull { it.fullName.equals(fullName, true) } }
+                    .onFailure { lastErr = it }
+                if (plugin != null) break
+            }
+            if (plugin == null) loadErr = lastErr?.let { "加载失败：${it.message}" } ?: "找不到插件 $fullName"
             plugin?.let { MarketCache.byName[it.fullName] = it }
         }
         val p = plugin ?: return@LaunchedEffect
@@ -607,23 +616,48 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
             MibotFootnote("转换为实验功能：兼容层把桌面窗口改为插件面板、把桌面自动化请求排入虚拟屏/无障碍桥队列（执行端尚未接入），并把系统路径重定向到沙箱。")
         }
 
+        val adapterReport = remember(inst?.installedAt, inst?.status) {
+            if (inst != null && PluginAdapters.hasAdapter(fullName)) PluginAdapters.audit(inst) else PluginAdapters.preview(fullName)
+        }
+        if (adapterReport != null) {
+            MibotSectionHeader("Mibot 原生适配 · 源码审核")
+            MibotCard(padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)) {
+                Text(adapterReport.note, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurface)
+                adapterReport.findings.forEach { f ->
+                    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Top) {
+                        StatusChip(f.verdict, when (f.verdict) { "已启用" -> ChipKind.OK; "拒绝" -> ChipKind.ERR; "不运行" -> ChipKind.WARN; else -> ChipKind.NEUTRAL })
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(f.part, fontSize = MibotType.Secondary, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface)
+                            Text(f.reason, fontSize = MibotType.Caption, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+            MibotFootnote(PluginAdapters.ATTRIBUTION)
+        }
+
         if (inst != null) {
+            val running = inst.status == PluginStatus.RUNNING
             MibotSectionHeader("插件设置")
             MibotCard {
                 MibotRow(
                     title = "状态",
-                    subtitle = inst.note ?: "实验 · 占位运行器（不执行插件代码）",
+                    subtitle = inst.note ?: PluginRunner.IDLE_NOTE,
                     chevron = false, showDivider = true,
                     trailing = {
                         StatusChip(
-                            (if (inst.status == PluginStatus.PREPARING) "◌ " else if (inst.status == PluginStatus.RUNNING) "● " else "○ ") + inst.status.zh,
-                            when (inst.status) { PluginStatus.RUNNING -> ChipKind.OK; PluginStatus.PREPARING -> ChipKind.WARN; PluginStatus.STOPPED -> ChipKind.NEUTRAL },
+                            (if (inst.status == PluginStatus.PREPARING) "◌ " else if (running) "● " else "○ ") + inst.status.zh,
+                            when (inst.status) { PluginStatus.RUNNING -> ChipKind.OK; PluginStatus.PREPARING -> ChipKind.WARN; PluginStatus.STOPPED, PluginStatus.IDLE -> ChipKind.NEUTRAL },
                         )
                     },
                 )
                 Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (inst.status == PluginStatus.STOPPED) MibotButton("启动（实验）", tonal = true, modifier = Modifier.weight(1f), onClick = { scope.launch { PluginRunner.start(ctx, fullName) } })
-                    else MibotButton("停止", tonal = true, modifier = Modifier.weight(1f), enabled = inst.status == PluginStatus.RUNNING, onClick = { PluginRunner.stop(ctx, fullName) })
+                    when {
+                        running -> MibotButton("停止", tonal = true, modifier = Modifier.weight(1f), onClick = { PluginRunner.stop(ctx, fullName) })
+                        inst.status == PluginStatus.PREPARING -> MibotButton("启用中…", tonal = true, enabled = false, modifier = Modifier.weight(1f), onClick = {})
+                        PluginAdapters.hasAdapter(fullName) -> MibotButton("启用原生适配", tonal = true, modifier = Modifier.weight(1f), onClick = { scope.launch { PluginRunner.start(ctx, fullName) } })
+                    }
                     MibotButton("卸载", tonal = true, modifier = Modifier.weight(1f), onClick = { PluginStore.remove(ctx, fullName) })
                 }
                 MibotDivider()

@@ -600,6 +600,11 @@
             android:name=".scheduled.ScheduledTaskAlarmReceiver"
             android:exported="false" />
 
+        <!-- [fork/mibot-v5b2] 撤销 button on the "sending in 10 s" mail notification. -->
+        <receiver
+            android:name=".mibot.mail.MailUndoReceiver"
+            android:exported="false" />
+
         <!-- [T-android-user-ask-notify] Answers given in a user_ask notification
              (option buttons, Allow / Cancel, the "Other…" text reply). -->
         <receiver

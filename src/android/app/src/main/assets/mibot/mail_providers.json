@@ -1,0 +1,797 @@
+{
+ "version": 1,
+ "updated": "2026-11-01",
+ "providers": [
+  {
+   "id": "mailtm",
+   "name": "mail.tm",
+   "site": "https://mail.tm",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "verified": "2026-11-01 HTTP 200",
+   "keyless": true,
+   "create": [
+    {
+     "method": "GET",
+     "url": "https://api.mail.tm/domains",
+     "save": {
+      "domain": "$.hydra:member[0].domain"
+     }
+    },
+    {
+     "method": "POST",
+     "url": "https://api.mail.tm/accounts",
+     "json": {
+      "address": "{{rand}}@{{domain}}",
+      "password": "{{pass}}"
+     },
+     "save": {
+      "address": "$.address",
+      "accountId": "$.id"
+     }
+    },
+    {
+     "method": "POST",
+     "url": "https://api.mail.tm/token",
+     "json": {
+      "address": "{{address}}",
+      "password": "{{pass}}"
+     },
+     "save": {
+      "token": "$.token"
+     }
+    }
+   ],
+   "login": [
+    {
+     "method": "POST",
+     "url": "https://api.mail.tm/token",
+     "json": {
+      "address": "{{address}}",
+      "password": "{{pass}}"
+     },
+     "save": {
+      "token": "$.token"
+     }
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://api.mail.tm/messages",
+    "headers": {
+     "Authorization": "Bearer {{token}}"
+    },
+    "items": "$.hydra:member",
+    "map": {
+     "id": "$.id",
+     "from": "$.from.address",
+     "subject": "$.subject",
+     "date": "$.createdAt",
+     "preview": "$.intro"
+    }
+   },
+   "read": {
+    "method": "GET",
+    "url": "https://api.mail.tm/messages/{{id}}",
+    "headers": {
+     "Authorization": "Bearer {{token}}"
+    },
+    "text": "$.text",
+    "html": "$.html[0]"
+   },
+   "delete": {
+    "method": "DELETE",
+    "url": "https://api.mail.tm/accounts/{{accountId}}",
+    "headers": {
+     "Authorization": "Bearer {{token}}"
+    }
+   },
+   "tokenTtlHours": 24,
+   "probe": {
+    "method": "GET",
+    "url": "https://api.mail.tm/domains"
+   }
+  },
+  {
+   "id": "mailgw",
+   "name": "mail.gw",
+   "site": "https://mail.gw",
+   "kind": "temp",
+   "send": false,
+   "enabled": false,
+   "disabledReason": "2026-11-01 探测：api.mail.gw 连接失败（代理 CONNECT 502），与 mail.tm 同一 Hydra API，恢复后可在 App 内启用",
+   "keyless": true,
+   "create": [
+    {
+     "method": "GET",
+     "url": "https://api.mail.gw/domains",
+     "save": {
+      "domain": "$.hydra:member[0].domain"
+     }
+    },
+    {
+     "method": "POST",
+     "url": "https://api.mail.gw/accounts",
+     "json": {
+      "address": "{{rand}}@{{domain}}",
+      "password": "{{pass}}"
+     },
+     "save": {
+      "address": "$.address",
+      "accountId": "$.id"
+     }
+    },
+    {
+     "method": "POST",
+     "url": "https://api.mail.gw/token",
+     "json": {
+      "address": "{{address}}",
+      "password": "{{pass}}"
+     },
+     "save": {
+      "token": "$.token"
+     }
+    }
+   ],
+   "login": [
+    {
+     "method": "POST",
+     "url": "https://api.mail.gw/token",
+     "json": {
+      "address": "{{address}}",
+      "password": "{{pass}}"
+     },
+     "save": {
+      "token": "$.token"
+     }
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://api.mail.gw/messages",
+    "headers": {
+     "Authorization": "Bearer {{token}}"
+    },
+    "items": "$.hydra:member",
+    "map": {
+     "id": "$.id",
+     "from": "$.from.address",
+     "subject": "$.subject",
+     "date": "$.createdAt",
+     "preview": "$.intro"
+    }
+   },
+   "read": {
+    "method": "GET",
+    "url": "https://api.mail.gw/messages/{{id}}",
+    "headers": {
+     "Authorization": "Bearer {{token}}"
+    },
+    "text": "$.text",
+    "html": "$.html[0]"
+   },
+   "delete": {
+    "method": "DELETE",
+    "url": "https://api.mail.gw/accounts/{{accountId}}",
+    "headers": {
+     "Authorization": "Bearer {{token}}"
+    }
+   },
+   "tokenTtlHours": 24,
+   "probe": {
+    "method": "GET",
+    "url": "https://api.mail.gw/domains"
+   }
+  },
+  {
+   "id": "guerrilla",
+   "name": "Guerrilla Mail",
+   "site": "https://www.guerrillamail.com",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "verified": "2026-11-01 HTTP 200",
+   "keyless": true,
+   "create": [
+    {
+     "method": "GET",
+     "url": "https://api.guerrillamail.com/ajax.php?f=get_email_address",
+     "save": {
+      "address": "$.email_addr",
+      "token": "$.sid_token"
+     }
+    }
+   ],
+   "login": [
+    {
+     "method": "GET",
+     "url": "https://api.guerrillamail.com/ajax.php?f=set_email_user&email_user={{local}}&sid_token={{token}}",
+     "save": {
+      "token": "$.sid_token"
+     }
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://api.guerrillamail.com/ajax.php?f=check_email&seq=0&sid_token={{token}}",
+    "items": "$.list",
+    "map": {
+     "id": "$.mail_id",
+     "from": "$.mail_from",
+     "subject": "$.mail_subject",
+     "date": "$.mail_date",
+     "preview": "$.mail_excerpt"
+    }
+   },
+   "read": {
+    "method": "GET",
+    "url": "https://api.guerrillamail.com/ajax.php?f=fetch_email&email_id={{id}}&sid_token={{token}}",
+    "html": "$.mail_body"
+   },
+   "delete": {
+    "method": "GET",
+    "url": "https://api.guerrillamail.com/ajax.php?f=forget_me&email_addr={{address}}&sid_token={{token}}"
+   },
+   "idleExpiryMinutes": 60,
+   "probe": {
+    "method": "GET",
+    "url": "https://api.guerrillamail.com/ajax.php?f=get_email_address"
+   }
+  },
+  {
+   "id": "tempmail-lol",
+   "name": "TempMail.lol",
+   "site": "https://tempmail.lol",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "verified": "2026-11-01 HTTP 201",
+   "keyless": true,
+   "create": [
+    {
+     "method": "GET",
+     "url": "https://api.tempmail.lol/v2/inbox/create",
+     "save": {
+      "address": "$.address",
+      "token": "$.token"
+     }
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://api.tempmail.lol/v2/inbox?token={{token}}",
+    "items": "$.emails",
+    "expiredFlag": "$.expired",
+    "map": {
+     "id": "$.date",
+     "from": "$.from",
+     "subject": "$.subject",
+     "date": "$.date",
+     "text": "$.body",
+     "html": "$.html"
+    }
+   },
+   "lifetimeHours": 1,
+   "probe": {
+    "method": "GET",
+    "url": "https://api.tempmail.lol/v2/inbox?token=probe"
+   }
+  },
+  {
+   "id": "tempmail-io",
+   "name": "Temp-Mail.io",
+   "site": "https://temp-mail.io",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "verified": "2026-11-01 HTTP 200",
+   "keyless": true,
+   "create": [
+    {
+     "method": "POST",
+     "url": "https://api.internal.temp-mail.io/api/v3/email/new",
+     "json": {
+      "min_name_length": 10,
+      "max_name_length": 10
+     },
+     "save": {
+      "address": "$.email",
+      "token": "$.token"
+     }
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://api.internal.temp-mail.io/api/v3/email/{{address}}/messages",
+    "items": "$",
+    "map": {
+     "id": "$.id",
+     "from": "$.from",
+     "subject": "$.subject",
+     "date": "$.created_at",
+     "text": "$.body_text",
+     "html": "$.body_html"
+    }
+   },
+   "delete": {
+    "method": "DELETE",
+    "url": "https://api.internal.temp-mail.io/api/v3/email/{{address}}",
+    "json": {
+     "token": "{{token}}"
+    }
+   },
+   "probe": {
+    "method": "GET",
+    "url": "https://api.internal.temp-mail.io/api/v3/domains"
+   }
+  },
+  {
+   "id": "maildrop",
+   "name": "Maildrop",
+   "site": "https://maildrop.cc",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "verified": "2026-11-01 HTTP 200",
+   "keyless": true,
+   "publicInbox": true,
+   "create": [
+    {
+     "local": "{{rand}}",
+     "address": "{{rand}}@maildrop.cc"
+    }
+   ],
+   "list": {
+    "method": "POST",
+    "url": "https://api.maildrop.cc/graphql",
+    "json": {
+     "query": "query { inbox(mailbox:\"{{local}}\") { id headerfrom subject date } }"
+    },
+    "items": "$.data.inbox",
+    "map": {
+     "id": "$.id",
+     "from": "$.headerfrom",
+     "subject": "$.subject",
+     "date": "$.date"
+    }
+   },
+   "read": {
+    "method": "POST",
+    "url": "https://api.maildrop.cc/graphql",
+    "json": {
+     "query": "query { message(mailbox:\"{{local}}\", id:\"{{id}}\") { id subject html } }"
+    },
+    "html": "$.data.message.html"
+   },
+   "delete": {
+    "method": "POST",
+    "url": "https://api.maildrop.cc/graphql",
+    "json": {
+     "query": "mutation { delete(mailbox:\"{{local}}\", id:\"{{id}}\") }"
+    },
+    "perMessage": true
+   },
+   "probe": {
+    "method": "POST",
+    "url": "https://api.maildrop.cc/graphql",
+    "json": {
+     "query": "query { inbox(mailbox:\"mibotprobe\") { id } }"
+    }
+   }
+  },
+  {
+   "id": "inboxes",
+   "name": "Inboxes.com (getnada)",
+   "site": "https://inboxes.com",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "verified": "2026-11-01 HTTP 200",
+   "keyless": true,
+   "publicInbox": true,
+   "create": [
+    {
+     "method": "GET",
+     "url": "https://inboxes.com/api/v2/domain",
+     "save": {
+      "domain": "$.domains[0].qdn"
+     }
+    },
+    {
+     "address": "{{rand}}@{{domain}}"
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://inboxes.com/api/v2/inbox/{{address}}",
+    "items": "$.msgs",
+    "map": {
+     "id": "$.uid",
+     "from": "$.f",
+     "subject": "$.s",
+     "date": "$.cr"
+    }
+   },
+   "read": {
+    "method": "GET",
+    "url": "https://inboxes.com/api/v2/message/{{id}}",
+    "text": "$.text",
+    "html": "$.html"
+   },
+   "probe": {
+    "method": "GET",
+    "url": "https://inboxes.com/api/v2/domain"
+   }
+  },
+  {
+   "id": "tempmail-plus",
+   "name": "TempMail.plus",
+   "site": "https://tempmail.plus",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "verified": "2026-11-01 HTTP 200",
+   "keyless": true,
+   "publicInbox": true,
+   "create": [
+    {
+     "address": "{{rand}}@mailto.plus"
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://tempmail.plus/api/mails?email={{address}}&limit=20",
+    "items": "$.mail_list",
+    "map": {
+     "id": "$.mail_id",
+     "from": "$.from_mail",
+     "subject": "$.subject",
+     "date": "$.time"
+    }
+   },
+   "read": {
+    "method": "GET",
+    "url": "https://tempmail.plus/api/mails/{{id}}?email={{address}}",
+    "text": "$.text",
+    "html": "$.html"
+   },
+   "probe": {
+    "method": "GET",
+    "url": "https://tempmail.plus/api/mails?email=probe@mailto.plus&limit=1"
+   }
+  },
+  {
+   "id": "mailsac",
+   "name": "Mailsac",
+   "site": "https://mailsac.com",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "needs": [
+    "apiKey"
+   ],
+   "verified": "2026-11-01 API 在线（401 未带 Key，需免费 API Key）",
+   "create": [
+    {
+     "address": "{{rand}}@mailsac.com"
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://mailsac.com/api/addresses/{{address}}/messages",
+    "headers": {
+     "Mailsac-Key": "{{apiKey}}"
+    },
+    "items": "$",
+    "map": {
+     "id": "$._id",
+     "from": "$.from[0].address",
+     "subject": "$.subject",
+     "date": "$.received"
+    }
+   },
+   "read": {
+    "method": "GET",
+    "url": "https://mailsac.com/api/text/{{address}}/{{id}}",
+    "headers": {
+     "Mailsac-Key": "{{apiKey}}"
+    },
+    "raw": true
+   },
+   "delete": {
+    "method": "DELETE",
+    "url": "https://mailsac.com/api/addresses/{{address}}/messages",
+    "headers": {
+     "Mailsac-Key": "{{apiKey}}"
+    }
+   },
+   "probe": {
+    "method": "GET",
+    "url": "https://mailsac.com/api/me",
+    "headers": {
+     "Mailsac-Key": "{{apiKey}}"
+    }
+   }
+  },
+  {
+   "id": "dropmail",
+   "name": "DropMail",
+   "site": "https://dropmail.me",
+   "kind": "temp",
+   "send": false,
+   "enabled": true,
+   "needs": [
+    "apiKey"
+   ],
+   "verified": "2026-11-01 旧 token 已停用（legacy_token_disabled），需在 dropmail.me 申请新 API token",
+   "create": [
+    {
+     "method": "GET",
+     "url": "https://dropmail.me/api/graphql/{{apiKey}}",
+     "query": {
+      "query": "mutation {introduceSession {id, expiresAt, addresses {address}}}"
+     },
+     "save": {
+      "token": "$.data.introduceSession.id",
+      "address": "$.data.introduceSession.addresses[0].address",
+      "expiresAt": "$.data.introduceSession.expiresAt"
+     }
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://dropmail.me/api/graphql/{{apiKey}}",
+    "query": {
+     "query": "query {session(id:\"{{token}}\") {mails {id, fromAddr, headerSubject, text, receivedAt}}}"
+    },
+    "items": "$.data.session.mails",
+    "map": {
+     "id": "$.id",
+     "from": "$.fromAddr",
+     "subject": "$.headerSubject",
+     "text": "$.text",
+     "date": "$.receivedAt"
+    }
+   },
+   "lifetimeHours": 10,
+   "probe": {
+    "method": "GET",
+    "url": "https://dropmail.me/api/graphql/{{apiKey}}",
+    "query": {
+     "query": "query {domains {name}}"
+    }
+   }
+  },
+  {
+   "id": "cf-worker",
+   "name": "自建 · Cloudflare temp-email",
+   "site": "https://github.com/dreamhunter2333/cloudflare_temp_email",
+   "kind": "selfhost",
+   "send": {
+    "method": "POST",
+    "url": "{{base}}/api/send_mail",
+    "headers": {
+     "Authorization": "Bearer {{token}}"
+    },
+    "json": {
+     "from_name": "Mibot",
+     "to_name": "{{to}}",
+     "to_mail": "{{to}}",
+     "subject": "{{subject}}",
+     "is_html": false,
+     "content": "{{text}}"
+    }
+   },
+   "enabled": true,
+   "needs": [
+    "base",
+    "adminToken",
+    "domain"
+   ],
+   "verified": "自建服务，按你的 base URL 探测",
+   "create": [
+    {
+     "method": "POST",
+     "url": "{{base}}/admin/new_address",
+     "headers": {
+      "x-admin-auth": "{{adminToken}}"
+     },
+     "json": {
+      "name": "{{rand}}",
+      "domain": "{{domain}}",
+      "enablePrefix": true
+     },
+     "save": {
+      "token": "$.jwt",
+      "address": "$.address"
+     }
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "{{base}}/api/mails?limit=20&offset=0",
+    "headers": {
+     "Authorization": "Bearer {{token}}"
+    },
+    "items": "$.results",
+    "map": {
+     "id": "$.id",
+     "from": "$.source",
+     "subject": "$.subject",
+     "date": "$.created_at",
+     "raw": "$.raw"
+    }
+   },
+   "probe": {
+    "method": "GET",
+    "url": "{{base}}/open_api/settings"
+   }
+  },
+  {
+   "id": "agentmail",
+   "name": "AgentMail",
+   "site": "https://agentmail.to",
+   "kind": "agent",
+   "send": {
+    "method": "POST",
+    "url": "https://api.agentmail.to/v0/inboxes/{{address}}/messages/send",
+    "headers": {
+     "Authorization": "Bearer {{apiKey}}"
+    },
+    "json": {
+     "to": [
+      "{{to}}"
+     ],
+     "subject": "{{subject}}",
+     "text": "{{text}}"
+    }
+   },
+   "enabled": true,
+   "needs": [
+    "apiKey"
+   ],
+   "verified": "API v0（https://api.agentmail.to/v0）文档 2026-11-01；需 API Key（有免费层）",
+   "create": [
+    {
+     "method": "POST",
+     "url": "https://api.agentmail.to/v0/inboxes",
+     "headers": {
+      "Authorization": "Bearer {{apiKey}}"
+     },
+     "json": {
+      "display_name": "Mibot"
+     },
+     "save": {
+      "address": "$.inbox_id",
+      "token": "$.inbox_id"
+     }
+    }
+   ],
+   "list": {
+    "method": "GET",
+    "url": "https://api.agentmail.to/v0/inboxes/{{address}}/messages?limit=20",
+    "headers": {
+     "Authorization": "Bearer {{apiKey}}"
+    },
+    "items": "$.messages",
+    "map": {
+     "id": "$.message_id",
+     "from": "$.from",
+     "subject": "$.subject",
+     "date": "$.timestamp",
+     "preview": "$.preview"
+    }
+   },
+   "read": {
+    "method": "GET",
+    "url": "https://api.agentmail.to/v0/inboxes/{{address}}/messages/{{id}}",
+    "headers": {
+     "Authorization": "Bearer {{apiKey}}"
+    },
+    "text": "$.text",
+    "html": "$.html"
+   },
+   "reply": {
+    "method": "POST",
+    "url": "https://api.agentmail.to/v0/inboxes/{{address}}/messages/{{id}}/reply",
+    "headers": {
+     "Authorization": "Bearer {{apiKey}}"
+    },
+    "json": {
+     "text": "{{text}}"
+    }
+   },
+   "forward": {
+    "method": "POST",
+    "url": "https://api.agentmail.to/v0/inboxes/{{address}}/messages/{{id}}/forward",
+    "headers": {
+     "Authorization": "Bearer {{apiKey}}"
+    },
+    "json": {
+     "to": [
+      "{{to}}"
+     ],
+     "text": "{{text}}"
+    }
+   },
+   "delete": {
+    "method": "DELETE",
+    "url": "https://api.agentmail.to/v0/inboxes/{{address}}",
+    "headers": {
+     "Authorization": "Bearer {{apiKey}}"
+    }
+   },
+   "probe": {
+    "method": "GET",
+    "url": "https://api.agentmail.to/v0/inboxes?limit=1",
+    "headers": {
+     "Authorization": "Bearer {{apiKey}}"
+    }
+   }
+  },
+  {
+   "id": "1secmail",
+   "name": "1secmail",
+   "site": "https://www.1secmail.com",
+   "kind": "temp",
+   "send": false,
+   "enabled": false,
+   "disabledReason": "2026-11-01 探测：API 无响应（服务已关闭）"
+  },
+  {
+   "id": "mailtd",
+   "name": "mail.td",
+   "site": "https://mail.td",
+   "kind": "temp",
+   "send": false,
+   "enabled": false,
+   "disabledReason": "2026-11-01 探测：建箱要求工作量证明（proof of work required），Mibot 不做反滥用绕过"
+  },
+  {
+   "id": "mohmal",
+   "name": "Mohmal",
+   "site": "https://www.mohmal.com",
+   "kind": "temp",
+   "send": false,
+   "enabled": false,
+   "disabledReason": "无公开 API（/api 返回 404），仅网页"
+  },
+  {
+   "id": "emailnator",
+   "name": "Emailnator",
+   "site": "https://www.emailnator.com",
+   "kind": "temp",
+   "send": false,
+   "enabled": false,
+   "disabledReason": "无公开 API，只能抓网页（需 XSRF 会话），不做"
+  },
+  {
+   "id": "yopmail",
+   "name": "YOPmail",
+   "site": "https://yopmail.com",
+   "kind": "temp",
+   "send": false,
+   "enabled": false,
+   "disabledReason": "无公开 API，网页有验证码"
+  },
+  {
+   "id": "harakiri",
+   "name": "Harakirimail",
+   "site": "https://harakirimail.com",
+   "kind": "temp",
+   "send": false,
+   "enabled": false,
+   "disabledReason": "2026-11-01 探测：Cloudflare 人机验证挡住 API"
+  },
+  {
+   "id": "custom",
+   "name": "自定义模板",
+   "site": "",
+   "kind": "custom",
+   "send": false,
+   "enabled": false,
+   "disabledReason": "模板示例：复制本条，改 id/接口后用 `mibot-mail providers add <file.json>` 添加"
+  }
+ ]
+}

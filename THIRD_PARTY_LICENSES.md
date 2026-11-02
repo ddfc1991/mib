@@ -69,6 +69,15 @@ Test-only dependencies: JUnit 4.13.2 (**EPL-1.0**), MockWebServer 4.12.0 (**Apac
 
 No code from Eta (PolyForm Noncommercial) is included.
 
+## Mibot fork — referenced projects (v5-B2, no code copied)
+
+| Project | Where | License | Use |
+|---|---|---|---|
+| [dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model) | `mibot/plugins/PluginAdapters.kt` | **MIT** — Copyright (c) 2026 Ebony-Vinyl | Native adapter for this DSH plugin. Mibot reads the gateway base URL (`src/kilo.js`) and the model roster from the user's *installed* copy at runtime and registers only the public Kilo lane (`https://api.kilo.ai/api/gateway`, `isFree` models). No plugin code is copied or executed; the plugin page shows this attribution and the audit findings (OpenCode lane, EAC, subscription and account channels, self-updater and IP lookups are refused). |
+| [cloudflare_temp_email](https://github.com/dreamhunter2333/cloudflare_temp_email) | `assets/mibot/mail_providers.json` (`cf-worker`) | **MIT** — Copyright (c) dreamhunter2333 | HTTP template for a user's own self-hosted worker (endpoint names only, written from its public API docs). No code copied. |
+
+Temp-mail platform templates in `assets/mibot/mail_providers.json` (mail.tm, Guerrilla Mail, tempmail.lol, temp-mail.io, Maildrop, Mailsac, dropmail, AgentMail …) describe each service's public HTTP API; no third-party code is included.
+
 ## Mibot fork — icons and logos
 
 | Asset | Location | License | Notes |

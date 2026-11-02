@@ -14,7 +14,13 @@
   "free": "免费模型（:free 后缀）",
   "keyRegex": "sk-or-v1-[0-9a-f]{40,}",
   "logo": "mibot/logos/openrouter.png",
-  "freeModels": true
+  "freeModels": true,
+  "keys": "https://openrouter.ai/settings/keys",
+  "probe": {
+   "url": "https://openrouter.ai/api/v1/key",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  }
  },
  {
   "id": "openai",
@@ -32,7 +38,17 @@
   "auth": "api_key",
   "url": "https://platform.openai.com/api-keys",
   "keyRegex": "sk-(proj-)?[A-Za-z0-9_\\-]{32,}",
-  "logo": "mibot/logos/openai.png"
+  "logo": "mibot/logos/openai.png",
+  "keys": "https://platform.openai.com/api-keys",
+  "probe": {
+   "url": "https://api.openai.com/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "ChatGPT",
+   "yieldsKey": false
+  }
  },
  {
   "id": "claude",
@@ -50,7 +66,17 @@
   "auth": "api_key",
   "url": "https://console.anthropic.com/settings/keys",
   "keyRegex": "sk-ant-[A-Za-z0-9_\\-]{40,}",
-  "logo": "mibot/logos/claude.png"
+  "logo": "mibot/logos/claude.png",
+  "keys": "https://console.anthropic.com/settings/keys",
+  "probe": {
+   "url": "https://api.anthropic.com/v1/models",
+   "header": "x-api-key",
+   "prefix": ""
+  },
+  "app": {
+   "name": "Claude",
+   "yieldsKey": false
+  }
  },
  {
   "id": "gemini",
@@ -69,7 +95,17 @@
   "free": "AI Studio 免费层（Flash / Gemma）",
   "keyRegex": "AIza[0-9A-Za-z_\\-]{35}",
   "logo": "mibot/logos/gemini.png",
-  "freeModels": true
+  "freeModels": true,
+  "keys": "https://aistudio.google.com/app/apikey",
+  "probe": {
+   "url": "https://generativelanguage.googleapis.com/v1beta/openai/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "Gemini",
+   "yieldsKey": false
+  }
  },
  {
   "id": "deepseek",
@@ -87,7 +123,17 @@
   "url": "https://platform.deepseek.com/api_keys",
   "manifest": "deepseek",
   "keyRegex": "sk-[0-9a-f]{32}",
-  "logo": "mibot/logos/deepseek.png"
+  "logo": "mibot/logos/deepseek.png",
+  "keys": "https://platform.deepseek.com/api_keys",
+  "probe": {
+   "url": "https://api.deepseek.com/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "DeepSeek",
+   "yieldsKey": false
+  }
  },
  {
   "id": "kimi",
@@ -105,7 +151,17 @@
   "auth": "api_key",
   "url": "https://platform.moonshot.cn/console/api-keys",
   "keyRegex": "sk-[A-Za-z0-9]{40,}",
-  "logo": "mibot/logos/kimi.png"
+  "logo": "mibot/logos/kimi.png",
+  "keys": "https://platform.moonshot.cn/console/api-keys",
+  "probe": {
+   "url": "https://api.moonshot.cn/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "Kimi",
+   "yieldsKey": false
+  }
  },
  {
   "id": "qwen",
@@ -124,7 +180,17 @@
   "url": "https://bailian.console.aliyun.com/?apiKey=1",
   "free": "新用户百万 tokens 免费额度",
   "keyRegex": "sk-[0-9a-f]{32}",
-  "logo": "mibot/logos/qwen.png"
+  "logo": "mibot/logos/qwen.png",
+  "keys": "https://bailian.console.aliyun.com/?apiKey=1",
+  "probe": {
+   "url": "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "通义",
+   "yieldsKey": false
+  }
  },
  {
   "id": "siliconflow",
@@ -142,7 +208,13 @@
   "free": "多款模型永久免费",
   "keyRegex": "sk-[a-z]{40,}",
   "logo": "mibot/logos/siliconflow.png",
-  "freeModels": true
+  "freeModels": true,
+  "keys": "https://cloud.siliconflow.cn/account/ak",
+  "probe": {
+   "url": "https://api.siliconflow.cn/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  }
  },
  {
   "id": "zhipu",
@@ -162,7 +234,17 @@
   "free": "GLM-Flash 系列免费",
   "keyRegex": "[0-9a-f]{32}\\.[A-Za-z0-9]{16}",
   "logo": "mibot/logos/zhipu.png",
-  "freeModels": true
+  "freeModels": true,
+  "keys": "https://open.bigmodel.cn/usercenter/apikeys",
+  "probe": {
+   "url": "https://open.bigmodel.cn/api/paas/v4/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "智谱清言",
+   "yieldsKey": false
+  }
  },
  {
   "id": "doubao",
@@ -180,23 +262,46 @@
   "auth": "api_key",
   "url": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
   "keyRegex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-  "logo": "mibot/logos/doubao.png"
+  "logo": "mibot/logos/doubao.png",
+  "keys": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
+  "probe": {
+   "url": "https://ark.cn-beijing.volces.com/api/v3/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "豆包",
+   "yieldsKey": false
+  }
  },
  {
   "id": "hunyuan",
-  "name": "腾讯混元 · 元宝",
-  "sub": "腾讯",
+  "name": "腾讯混元",
+  "sub": "混元 API · 元宝",
   "cat": "ai",
   "domains": [
    "hunyuan.tencent.com",
-   "yuanbao.tencent.com"
+   "yuanbao.tencent.com",
+   "console.cloud.tencent.com/hunyuan",
+   "hunyuan.cloud.tencent.com"
   ],
   "packages": [
    "com.tencent.hunyuan.app.chat"
   ],
-  "auth": "web",
-  "url": "https://yuanbao.tencent.com/",
-  "logo": "mibot/logos/hunyuan.png"
+  "auth": "api_key",
+  "url": "https://console.cloud.tencent.com/hunyuan/api-key",
+  "logo": "mibot/logos/hunyuan.png",
+  "keyRegex": "sk-[A-Za-z0-9]{40,}",
+  "keys": "https://console.cloud.tencent.com/hunyuan/api-key",
+  "probe": {
+   "url": "https://api.hunyuan.cloud.tencent.com/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "元宝",
+   "yieldsKey": false
+  }
  },
  {
   "id": "minimax",
@@ -214,7 +319,17 @@
   "auth": "api_key",
   "url": "https://platform.minimaxi.com/user-center/basic-information/interface-key",
   "keyRegex": "eyJ[A-Za-z0-9_\\-]{60,}\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+",
-  "logo": "mibot/logos/minimax.png"
+  "logo": "mibot/logos/minimax.png",
+  "keys": "https://platform.minimaxi.com/user-center/basic-information/interface-key",
+  "probe": {
+   "url": "https://api.minimaxi.com/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "海螺 AI",
+   "yieldsKey": false
+  }
  },
  {
   "id": "groq",
@@ -231,7 +346,13 @@
   "free": "免费层，全部模型可用",
   "keyRegex": "gsk_[A-Za-z0-9]{40,}",
   "logo": "mibot/logos/groq.png",
-  "freeModels": true
+  "freeModels": true,
+  "keys": "https://console.groq.com/keys",
+  "probe": {
+   "url": "https://api.groq.com/openai/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  }
  },
  {
   "id": "mistral",
@@ -250,7 +371,17 @@
   "keyRegex": "[A-Za-z0-9]{32}",
   "logo": "mibot/logos/mistral.png",
   "freeModels": true,
-  "free": "Experiment 免费层"
+  "free": "Experiment 免费层",
+  "keys": "https://console.mistral.ai/api-keys",
+  "probe": {
+   "url": "https://api.mistral.ai/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "Le Chat",
+   "yieldsKey": false
+  }
  },
  {
   "id": "perplexity",
@@ -266,7 +397,12 @@
   "auth": "api_key",
   "url": "https://www.perplexity.ai/settings/api",
   "keyRegex": "pplx-[A-Za-z0-9]{40,}",
-  "logo": "mibot/logos/perplexity.png"
+  "logo": "mibot/logos/perplexity.png",
+  "keys": "https://www.perplexity.ai/settings/api",
+  "app": {
+   "name": "Perplexity",
+   "yieldsKey": false
+  }
  },
  {
   "id": "xai",
@@ -284,7 +420,17 @@
   "auth": "api_key",
   "url": "https://console.x.ai/",
   "keyRegex": "xai-[A-Za-z0-9]{40,}",
-  "logo": "mibot/logos/xai.png"
+  "logo": "mibot/logos/xai.png",
+  "keys": "https://console.x.ai/",
+  "probe": {
+   "url": "https://api.x.ai/v1/models",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  },
+  "app": {
+   "name": "Grok",
+   "yieldsKey": false
+  }
  },
  {
   "id": "huggingface",
@@ -300,7 +446,13 @@
   "free": "推理 API 每月免费额度",
   "keyRegex": "hf_[A-Za-z0-9]{30,}",
   "logo": "mibot/logos/huggingface.png",
-  "freeModels": true
+  "freeModels": true,
+  "keys": "https://huggingface.co/settings/tokens",
+  "probe": {
+   "url": "https://huggingface.co/api/whoami-v2",
+   "header": "Authorization",
+   "prefix": "Bearer "
+  }
  },
  {
   "id": "elevenlabs",
@@ -316,7 +468,17 @@
   "auth": "api_key",
   "url": "https://elevenlabs.io/app/settings/api-keys",
   "keyRegex": "sk_[0-9a-f]{40,}",
-  "logo": "mibot/logos/elevenlabs.png"
+  "logo": "mibot/logos/elevenlabs.png",
+  "keys": "https://elevenlabs.io/app/settings/api-keys",
+  "probe": {
+   "url": "https://api.elevenlabs.io/v1/user",
+   "header": "xi-api-key",
+   "prefix": ""
+  },
+  "app": {
+   "name": "ElevenReader",
+   "yieldsKey": false
+  }
  },
  {
   "id": "coze",
@@ -332,7 +494,11 @@
   ],
   "auth": "web",
   "url": "https://www.coze.cn/",
-  "logo": "mibot/logos/coze.png"
+  "logo": "mibot/logos/coze.png",
+  "app": {
+   "name": "扣子",
+   "yieldsKey": false
+  }
  },
  {
   "id": "manus",
@@ -347,7 +513,11 @@
   ],
   "auth": "web",
   "url": "https://manus.im/login",
-  "logo": "mibot/logos/manus.png"
+  "logo": "mibot/logos/manus.png",
+  "app": {
+   "name": "Manus",
+   "yieldsKey": false
+  }
  },
  {
   "id": "sensenova",

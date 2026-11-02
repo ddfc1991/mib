@@ -325,7 +325,7 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
                     Column {
                         freeOnes.forEachIndexed { i, s ->
                             ServiceRow(s.logo, s.color, s.name, s.free.orEmpty(), trailing = {
-                                PlusButton({ VaultConnect.enqueue(ctx, listOf(s to null)); onDiscover() }, t("连接 ${s.name}", "Connect ${s.name}"))
+                                PlusButton({ VaultConnect.requestSheet(s.id); onDiscover() }, t("连接 ${s.name}", "Connect ${s.name}"))
                             }, chevron = false, onClick = null, showDivider = i < freeOnes.lastIndex)
                         }
                     }
@@ -341,7 +341,7 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
             MibotCard {
                 list.forEachIndexed { i, s ->
                     ServiceRow(s.logo, s.color, s.name, s.sub, trailing = {
-                        PlusButton({ VaultConnect.enqueue(ctx, listOf(s to null)); onDiscover() }, t("连接 ${s.name}", "Connect ${s.name}"))
+                        PlusButton({ VaultConnect.requestSheet(s.id); onDiscover() }, t("连接 ${s.name}", "Connect ${s.name}"))
                     }, chevron = false, onClick = null, showDivider = i < list.lastIndex)
                 }
             }
@@ -398,7 +398,7 @@ fun VaultServiceScreen(key: String, onBack: () -> Unit, onOpen: (String) -> Unit
         g?.service?.let { s ->
             MibotSpacer(12.dp)
             Row(Modifier.padding(horizontal = 16.dp)) {
-                MibotButton(t("再连接一个账号", "Connect another account"), { VaultConnect.enqueue(ctx, listOf(s to null)); onDiscover() }, modifier = Modifier.fillMaxWidth())
+                MibotButton(t("再连接一个账号", "Connect another account"), { VaultConnect.requestSheet(s.id); onDiscover() }, modifier = Modifier.fillMaxWidth())
             }
         }
     }
@@ -436,8 +436,14 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
             if (name != null && type != null) { picked = picked + (type to name); tick++ }
         }
     }
-    val waitingWeb = tasks.firstOrNull { it.phase == VaultConnect.Phase.NEEDS_YOU && it.ask != null }
+    val sheetId by VaultConnect.sheet.collectAsState()
+    val aiServices = remember { VaultServices.all(ctx).filter { it.cat == "ai" && it.needsKey } + listOfNotNull(AutoKeyDemo.service.takeIf { AutoKeyDemo.enabled }) }
+    val aiChecked = remember { mutableStateListOf<String>() }
+    LaunchedEffect(Unit) {
+        if (AutoKeyDemo.autoStart) { AutoKeyDemo.autoStart = false; AutoKeyDemo.seed(ctx); VaultConnect.enqueue(ctx, listOf(AutoKeyDemo.service to null)) }
+    }
 
+    Box(Modifier.fillMaxSize()) {
     MibotScaffold(title = t("自动发现并连接", "Discover & connect"), onBack = onBack) {
         if (tasks.isNotEmpty()) {
             val done = tasks.count { it.phase == VaultConnect.Phase.CONNECTED }
@@ -448,7 +454,9 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
                         VaultConnect.Phase.WAITING -> t("等待", "Waiting") to ChipKind.NEUTRAL
                         VaultConnect.Phase.CONNECTING -> t("连接中", "Connecting") to ChipKind.ACCENT
                         VaultConnect.Phase.NEEDS_YOU -> t("需要你", "Needs you") to ChipKind.WARN
-                        VaultConnect.Phase.CONNECTED -> t("已连接", "Connected") to ChipKind.OK
+                        VaultConnect.Phase.CONNECTED -> (if (tk.autoKey) t("已自动获取 Key", "Key fetched") else t("已连接", "Connected")) to ChipKind.OK
+                        VaultConnect.Phase.UNVERIFIED -> t("待验证", "Unverified") to ChipKind.WARN
+                        VaultConnect.Phase.IN_APP -> t("仅 App", "In app") to ChipKind.NEUTRAL
                         VaultConnect.Phase.FAILED -> t("失败", "Failed") to ChipKind.ERR
                         VaultConnect.Phase.SKIPPED -> t("已跳过", "Skipped") to ChipKind.NEUTRAL
                     }
@@ -461,7 +469,8 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
                                 if (tk.phase == VaultConnect.Phase.CONNECTING) CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.6.dp, color = MibotTokens.accent())
                                 StatusChip(label, kind)
                                 when (tk.phase) {
-                                    VaultConnect.Phase.FAILED, VaultConnect.Phase.SKIPPED ->
+                                    VaultConnect.Phase.IN_APP -> if (tk.service.needsKey) Text(t("取 Key", "Get key"), fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { VaultConnect.enqueue(ctx, listOf(tk.service to null)) })
+                                    VaultConnect.Phase.FAILED, VaultConnect.Phase.SKIPPED, VaultConnect.Phase.UNVERIFIED ->
                                         Text(t("重试", "Retry"), fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { VaultConnect.retry(ctx, tk.service.id) })
                                     VaultConnect.Phase.WAITING, VaultConnect.Phase.NEEDS_YOU, VaultConnect.Phase.CONNECTING ->
                                         Text(t("跳过", "Skip"), fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.clickable { VaultConnect.skip(tk.service.id) })
@@ -474,6 +483,37 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
                 }
             }
         }
+
+        MibotSectionHeader(t("AI 服务商 · 自动获取 Key", "AI providers · fetch keys"), if (aiChecked.size == aiServices.size) t("全不选", "None") else t("全选", "All")) {
+            if (aiChecked.size == aiServices.size) aiChecked.clear() else { aiChecked.clear(); aiChecked.addAll(aiServices.map { it.id }) }
+        }
+        MibotCard {
+            aiServices.forEachIndexed { i, sv ->
+                val on = sv.id in aiChecked
+                val host = android.net.Uri.parse(sv.webStart).host.orEmpty()
+                Row(Modifier.fillMaxWidth().clickable { if (on) aiChecked.remove(sv.id) else aiChecked.add(sv.id) }.padding(horizontal = MibotSpace.M + 2.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                    CheckMark(on, size = 20.dp, ringWhenOff = true)
+                    Spacer(Modifier.width(MibotSpace.M))
+                    BrandLogo(sv.logo, sv.name, sv.color, size = 28.dp)
+                    Spacer(Modifier.width(MibotSpace.M))
+                    Column(Modifier.weight(1f)) {
+                        Text(sv.name, fontSize = MibotType.Body, fontWeight = MibotType.Medium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                        Text(if (sv.auth == "oauth_openrouter") "OAuth · $host" else host, fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    }
+                    Text(t("方式", "Options"), fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { VaultConnect.requestSheet(sv.id) }.padding(4.dp))
+                }
+                if (i < aiServices.lastIndex) MibotDivider(inset = MibotSpace.M * 2 + 50.dp)
+            }
+        }
+        MibotSpacer(10.dp)
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            MibotButton(t("一键获取全部（${aiChecked.size}）", "Fetch all keys (${aiChecked.size})"), enabled = aiChecked.isNotEmpty(), modifier = Modifier.fillMaxWidth(), onClick = {
+                VaultConnect.enqueue(ctx, aiServices.filter { it.id in aiChecked }.map { it to null }, VaultConnect.Mode.AUTO)
+                aiChecked.clear()
+            })
+        }
+        MibotFootnote(t("逐个在后台打开官方控制台：用保存的账号登录、新建名为 Mibot 的 Key、读到后加密保存并真实探测。只在验证码 / 短信 / 扫码时弹出，一次一个；读不到就把页面给你看并标出原因，不会假装成功。",
+            "Runs each provider's console in the background, one at a time; pops up only for captcha / SMS / QR."))
 
         MibotSectionHeader(t("发现的账号 · ${candidates.size}", "Found · ${candidates.size}"), t("重新扫描", "Rescan")) { tick++ }
         MibotCard {
@@ -521,7 +561,7 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             MibotButton(t("开始连接（${checked.size}）", "Connect (${checked.size})"), enabled = checked.isNotEmpty(), modifier = Modifier.weight(1f), onClick = {
                 val sel = candidates.filter { it.service.id in checked }
-                VaultConnect.enqueue(ctx, sel.map { it.service to it.username })
+                VaultConnect.enqueue(ctx, sel.map { it.service to it.username }, VaultConnect.Mode.AUTO)
                 checked.clear()
             })
             MibotButton(t("从系统账户选择", "Pick system account"), tonal = true, modifier = Modifier.weight(1f), onClick = {
@@ -539,92 +579,8 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
         ))
     }
 
-    if (waitingWeb != null) ConnectWebSheet(waitingWeb)
+    sheetId?.let { id -> VaultServices.get(ctx, id)?.let { sv -> ConnectChoiceSheet(sv) { VaultConnect.sheet.value = null } } }
+    ConnectWebLayer()
+    }
 }
 
-/** Built-in browser sheet for one service's login / key page. */
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-private fun ConnectWebSheet(task: VaultConnect.Task) {
-    val ctx = LocalContext.current
-    val ask = task.ask ?: return
-    var web by remember { mutableStateOf<WebView?>(null) }
-    var pasted by remember { mutableStateOf("") }
-    var currentUrl by remember { mutableStateOf(ask.url) }
-    // Watch the page: a newly shown API key, or a signed-in session.
-    LaunchedEffect(task.service.id) {
-        val loginRx = Regex("login|signin|sign-in|sign_in|passport|auth|account/ak", RegexOption.IGNORE_CASE)
-        var stable = 0
-        while (true) {
-            delay(1500)
-            val w = web ?: continue
-            if (ask.captureKey) {
-                w.evaluateJavascript(
-                    "(function(){var t=document.body?document.body.innerText:'';document.querySelectorAll('input,textarea,code').forEach(function(e){t+='\\n'+(e.value||e.textContent||'')});return t.slice(0,200000);})()",
-                ) { raw ->
-                    val text = runCatching { org.json.JSONArray("[$raw]").getString(0) }.getOrDefault("")
-                    VaultConnect.findKey(task.service, text)?.let { VaultConnect.deliverWeb(VaultConnect.WebOutcome.Key(it)) }
-                }
-            } else {
-                val url = w.url.orEmpty()
-                val signedIn = VaultConnect.browserHasLogin(task.service) && !loginRx.containsMatchIn(url.substringAfter("://").substringAfter('/'))
-                stable = if (signedIn) stable + 1 else 0
-                if (stable >= 2) {
-                    CookieManager.getInstance().flush()
-                    VaultConnect.deliverWeb(VaultConnect.WebOutcome.Cookies(VaultConnect.cookiesFor(task.service)))
-                }
-            }
-        }
-    }
-    Dialog(onDismissRequest = { VaultConnect.deliverWeb(VaultConnect.WebOutcome.Cancel) }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
-            Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 14.dp, vertical = 10.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    BrandLogo(task.service.logo, task.service.name, task.service.color, size = 28.dp)
-                    Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(tc(ctx, "连接 ", "Connect ") + task.service.name, fontSize = MibotType.TitleSmall, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface)
-                        Text(currentUrl.substringAfter("://").substringBefore('?').take(60), fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                    }
-                    StatusChip(tc(ctx, "需要你", "Needs you"), ChipKind.WARN)
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(ask.hint, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                AndroidView(factory = { c ->
-                    WebView(c).apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        CookieManager.getInstance().setAcceptCookie(true)
-                        CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, url: String?) { currentUrl = url.orEmpty() }
-                        }
-                        loadUrl(ask.url)
-                        web = this
-                    }
-                }, modifier = Modifier.fillMaxSize(), onRelease = { it.destroy() })
-            }
-            Column(Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(12.dp)) {
-                if (ask.captureKey) {
-                    com.openminis.app.mibot.design.GlassField(pasted, { pasted = it.trim() }, tc(ctx, "或把 Key 粘贴到这里", "Or paste the key here"), secret = true)
-                    Spacer(Modifier.height(8.dp))
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MibotButton(tc(ctx, "跳过", "Skip"), { VaultConnect.deliverWeb(VaultConnect.WebOutcome.Skip) }, tonal = true, modifier = Modifier.weight(1f))
-                    if (ask.captureKey && pasted.length >= 16) {
-                        MibotButton(tc(ctx, "保存 Key", "Save key"), { VaultConnect.deliverWeb(VaultConnect.WebOutcome.Key(pasted)) }, modifier = Modifier.weight(1f))
-                    } else {
-                        MibotButton(tc(ctx, "我已登录，保存", "I'm signed in — save"), {
-                            CookieManager.getInstance().flush()
-                            val ck = VaultConnect.cookiesFor(task.service)
-                            if (ck.isBlank()) Toast.makeText(ctx, tc(ctx, "还没有检测到登录", "No sign-in detected yet"), Toast.LENGTH_SHORT).show()
-                            else VaultConnect.deliverWeb(VaultConnect.WebOutcome.Cookies(ck))
-                        }, modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-}

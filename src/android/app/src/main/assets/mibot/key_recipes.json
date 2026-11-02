@@ -1,0 +1,320 @@
+{
+ "version": 1,
+ "updated": "2026-11-01",
+ "note": "Mibot auto API-key recipes. Override per service with a higher \"v\" in filesDir/vault/key_recipes.json (vault recipe add). URL patterns + DOM selectors; text lists are matched against button labels.",
+ "defaults": {
+  "loginUrl": [
+   "login",
+   "signin",
+   "sign_in",
+   "sign-in",
+   "/auth",
+   "passport",
+   "account/login",
+   "/sso"
+  ],
+  "loginSelectors": [
+   "input[type=password]",
+   "input[autocomplete=current-password]"
+  ],
+  "userSelectors": [
+   "input[type=email]",
+   "input[autocomplete=username]",
+   "input[name*=email i]",
+   "input[name*=user i]",
+   "input[name*=account i]",
+   "input[name*=phone i]",
+   "input[type=tel]",
+   "input[type=text]"
+  ],
+  "submitText": [
+   "登录",
+   "登 录",
+   "立即登录",
+   "Sign in",
+   "Log in",
+   "Login",
+   "Continue",
+   "继续",
+   "下一步",
+   "Next"
+  ],
+  "verifySelectors": [
+   "iframe[src*=captcha]",
+   "iframe[src*=recaptcha]",
+   "iframe[src*=hcaptcha]",
+   "iframe[src*=turnstile]",
+   "iframe[src*='challenges.cloudflare']",
+   "[class*=geetest]",
+   "[id*=captcha]",
+   "[class*=captcha]",
+   "[class*=slider-verify]",
+   "[class*=nc_wrapper]",
+   "#tcaptcha_iframe",
+   "[id*=tcaptcha]",
+   "input[autocomplete=one-time-code]",
+   "[class*=qrcode]",
+   "[class*=qr-code]",
+   "[class*=QrCode]"
+  ],
+  "verifyText": [
+   "人机验证",
+   "安全验证",
+   "拖动滑块",
+   "请完成验证",
+   "请完成安全验证",
+   "扫码登录",
+   "验证码已发送",
+   "请输入验证码",
+   "输入短信验证码",
+   "Verify you are human",
+   "verification code",
+   "two-factor",
+   "2-step",
+   "Two-step"
+  ],
+  "createText": [
+   "创建 API Key",
+   "创建API Key",
+   "创建 API key",
+   "创建 API KEY",
+   "创建API KEY",
+   "创建 API-KEY",
+   "创建API-KEY",
+   "新建 API Key",
+   "新建API Key",
+   "新建 API 密钥",
+   "新建API密钥",
+   "创建 API 密钥",
+   "创建密钥",
+   "新建密钥",
+   "创建新的密钥",
+   "添加新的 API Key",
+   "添加 API Key",
+   "创建 Key",
+   "Create new secret key",
+   "Create API key",
+   "Create API Key",
+   "Create new API key",
+   "Create new key",
+   "Create Key",
+   "Create key",
+   "Create new token",
+   "New API key",
+   "Generate API key",
+   "Generate"
+  ],
+  "nameSelectors": [
+   "[role=dialog] input[type=text]",
+   "[role=dialog] input:not([type])",
+   ".ant-modal input[type=text]",
+   ".ant-modal input:not([type])",
+   ".el-dialog input",
+   ".semi-modal input",
+   ".arco-modal input",
+   "[class*=modal] input[type=text]",
+   "[class*=Modal] input[type=text]",
+   "[class*=dialog] input[type=text]",
+   "[class*=Dialog] input[type=text]",
+   "[class*=drawer] input[type=text]",
+   "input[name*=name i]"
+  ],
+  "confirmText": [
+   "创建",
+   "确定",
+   "确认",
+   "提交",
+   "生成",
+   "新建",
+   "Create",
+   "Create secret key",
+   "Create key",
+   "Create Key",
+   "Create API key",
+   "Create token",
+   "Submit",
+   "Generate",
+   "Generate key",
+   "OK",
+   "Confirm",
+   "Save"
+  ],
+  "copyText": [
+   "复制",
+   "Copy",
+   "复制密钥",
+   "Copy key"
+  ],
+  "keyName": "Mibot",
+  "keyScope": "page"
+ },
+ "recipes": {
+  "openai": {
+   "v": 1,
+   "start": "https://platform.openai.com/api-keys",
+   "keyRegex": "sk-(proj-)?[A-Za-z0-9_\\-]{32,}",
+   "createText": [
+    "Create new secret key"
+   ],
+   "confirmText": [
+    "Create secret key"
+   ]
+  },
+  "claude": {
+   "v": 1,
+   "start": "https://console.anthropic.com/settings/keys",
+   "keyRegex": "sk-ant-[A-Za-z0-9_\\-]{40,}",
+   "createText": [
+    "Create Key"
+   ],
+   "confirmText": [
+    "Add",
+    "Create Key"
+   ]
+  },
+  "gemini": {
+   "v": 1,
+   "start": "https://aistudio.google.com/app/apikey",
+   "keyRegex": "AIza[0-9A-Za-z_\\-]{35}",
+   "createText": [
+    "Create API key",
+    "创建 API 密钥"
+   ],
+   "keyScope": "dialog",
+   "hint": "Google 可能拒绝在内嵌浏览器里登录；遇到时请用「用浏览器打开」登录 AI Studio 后再回来"
+  },
+  "deepseek": {
+   "v": 1,
+   "start": "https://platform.deepseek.com/api_keys",
+   "keyRegex": "sk-[0-9a-f]{32}",
+   "login": "https://platform.deepseek.com/sign_in",
+   "createText": [
+    "创建 API key",
+    "Create new API key"
+   ]
+  },
+  "kimi": {
+   "v": 1,
+   "start": "https://platform.moonshot.cn/console/api-keys",
+   "keyRegex": "sk-[A-Za-z0-9]{40,}",
+   "createText": [
+    "新建 API Key",
+    "新建"
+   ]
+  },
+  "qwen": {
+   "v": 1,
+   "start": "https://bailian.console.aliyun.com/?apiKey=1",
+   "keyRegex": "sk-[0-9a-f]{32}",
+   "createText": [
+    "创建 API-KEY",
+    "创建API-KEY",
+    "创建 API Key"
+   ]
+  },
+  "siliconflow": {
+   "v": 1,
+   "start": "https://cloud.siliconflow.cn/account/ak",
+   "keyRegex": "sk-[a-z]{40,}",
+   "createText": [
+    "新建 API 密钥",
+    "新建API密钥",
+    "新建密钥"
+   ]
+  },
+  "zhipu": {
+   "v": 1,
+   "start": "https://open.bigmodel.cn/usercenter/apikeys",
+   "keyRegex": "[0-9a-f]{32}\\.[A-Za-z0-9]{16}",
+   "createText": [
+    "添加新的 API Key",
+    "添加 API Key"
+   ]
+  },
+  "doubao": {
+   "v": 1,
+   "start": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
+   "keyRegex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+   "createText": [
+    "创建 API Key"
+   ],
+   "keyScope": "dialog"
+  },
+  "hunyuan": {
+   "v": 1,
+   "start": "https://console.cloud.tencent.com/hunyuan/api-key",
+   "keyRegex": "sk-[A-Za-z0-9]{40,}",
+   "createText": [
+    "创建 API KEY",
+    "新建密钥",
+    "创建 API Key"
+   ],
+   "hint": "需腾讯云主账号；首次使用需先在控制台「立即开通」混元服务"
+  },
+  "minimax": {
+   "v": 1,
+   "start": "https://platform.minimaxi.com/user-center/basic-information/interface-key",
+   "keyRegex": "eyJ[A-Za-z0-9_\\-]{60,}\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+",
+   "createText": [
+    "创建新的密钥",
+    "创建密钥"
+   ],
+   "keyScope": "dialog"
+  },
+  "groq": {
+   "v": 1,
+   "start": "https://console.groq.com/keys",
+   "keyRegex": "gsk_[A-Za-z0-9]{40,}",
+   "createText": [
+    "Create API Key"
+   ]
+  },
+  "mistral": {
+   "v": 1,
+   "start": "https://console.mistral.ai/api-keys",
+   "keyRegex": "[A-Za-z0-9]{32}",
+   "createText": [
+    "Create new key"
+   ],
+   "keyScope": "dialog"
+  },
+  "perplexity": {
+   "v": 1,
+   "start": "https://www.perplexity.ai/settings/api",
+   "keyRegex": "pplx-[A-Za-z0-9]{40,}",
+   "createText": [
+    "Create Key",
+    "Generate"
+   ]
+  },
+  "xai": {
+   "v": 1,
+   "start": "https://console.x.ai/",
+   "keyRegex": "xai-[A-Za-z0-9]{40,}",
+   "createText": [
+    "Create API Key",
+    "Create API key"
+   ]
+  },
+  "huggingface": {
+   "v": 1,
+   "start": "https://huggingface.co/settings/tokens",
+   "keyRegex": "hf_[A-Za-z0-9]{30,}",
+   "createText": [
+    "Create new token"
+   ],
+   "confirmText": [
+    "Create token"
+   ]
+  },
+  "elevenlabs": {
+   "v": 1,
+   "start": "https://elevenlabs.io/app/settings/api-keys",
+   "keyRegex": "sk_[0-9a-f]{40,}",
+   "createText": [
+    "Create API Key",
+    "Create Key"
+   ]
+  }
+ }
+}

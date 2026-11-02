@@ -10,7 +10,6 @@ import android.webkit.CookieManager
 import com.openminis.app.auth.OAuthCallbackServer
 import com.openminis.app.auth.OAuthForegroundGate
 import com.openminis.app.auth.OAuthTabLauncher
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -118,61 +117,79 @@ object VaultConnect {
 
     // ------------------------------------------------------------------ queue
 
-    enum class Phase { WAITING, CONNECTING, NEEDS_YOU, CONNECTED, FAILED, SKIPPED }
+    enum class Phase { WAITING, CONNECTING, NEEDS_YOU, CONNECTED, UNVERIFIED, IN_APP, FAILED, SKIPPED }
+
+    /** [fork/mibot-v5b2] AUTO = recipe / OAuth (hidden WebView, key fetched); WEB = visible web login (cookie). */
+    enum class Mode { AUTO, WEB }
 
     data class Task(
         val service: VaultService,
         val username: String? = null,
         val phase: Phase = Phase.WAITING,
         val detail: String = "",
-        /** What the user is asked for while [phase] is NEEDS_YOU. */
-        val ask: Ask? = null,
         val entryId: String? = null,
+        val mode: Mode = Mode.AUTO,
+        /** True only when a key was really captured AND the probe passed. */
+        val autoKey: Boolean = false,
     )
-
-    /** A web step the user completes in the built-in browser sheet. */
-    data class Ask(val url: String, val hint: String, val captureKey: Boolean)
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var runner: Job? = null
-    @Volatile private var webResult: CompletableDeferred<WebOutcome>? = null
 
-    sealed class WebOutcome {
-        data class Key(val key: String) : WebOutcome()
-        data class Cookies(val cookie: String) : WebOutcome()
-        object Skip : WebOutcome()
-        object Cancel : WebOutcome()
-    }
+    /** [fork/mibot-v5b2] Service whose 连接方式 sheet should show (from + / deep links). */
+    val sheet = MutableStateFlow<String?>(null)
+    @Volatile private var appLaunch: Pair<String, Long>? = null
 
-    fun enqueue(ctx: Context, items: List<Pair<VaultService, String?>>) {
+    fun requestSheet(id: String) { sheet.value = id }
+
+    fun enqueue(ctx: Context, items: List<Pair<VaultService, String?>>, mode: Mode = Mode.AUTO) {
         val cur = _tasks.value.toMutableList()
         for ((s, u) in items) {
             val i = cur.indexOfFirst { it.service.id == s.id }
-            if (i >= 0) { if (cur[i].phase in setOf(Phase.FAILED, Phase.SKIPPED)) cur[i] = Task(s, u) } else cur.add(Task(s, u))
+            if (i >= 0) { if (cur[i].phase in setOf(Phase.FAILED, Phase.SKIPPED, Phase.IN_APP, Phase.UNVERIFIED)) cur[i] = Task(s, u, mode = mode) } else cur.add(Task(s, u, mode = mode))
         }
         _tasks.value = cur
         ensureRunning(ctx.applicationContext)
     }
 
+    /** Opens the provider's own app for sign-in; status is set when the user comes back. */
+    fun openApp(ctx: Context, s: VaultService, pkg: String) {
+        val intent = ctx.packageManager.getLaunchIntentForPackage(pkg)?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK) ?: return
+        appLaunch = s.id to System.currentTimeMillis()
+        val cur = _tasks.value.toMutableList()
+        cur.removeAll { it.service.id == s.id && it.phase != Phase.CONNECTED }
+        cur.add(Task(s, phase = Phase.NEEDS_YOU, detail = tc(ctx, "已打开 ${s.appName ?: s.name}，登录后回到 Mibot", "Opened the app — come back after signing in")))
+        _tasks.value = cur
+        sheet.value = null
+        runCatching { ctx.startActivity(intent) }
+    }
+
+    fun returnedFromApp(ctx: Context) {
+        val (id, at) = appLaunch ?: return
+        if (System.currentTimeMillis() - at < 1500) return
+        appLaunch = null
+        update(id) { t ->
+            t.copy(phase = Phase.IN_APP, detail = tc(ctx, "已在 App 登录（Mibot 无法读取其凭证）", "Signed in in the app (Mibot can't read its credentials)") +
+                if (t.service.needsKey) tc(ctx, " · 当模型用需要网页获取 Key", " · a model key still needs the web console") else "")
+        }
+    }
+
     fun retry(ctx: Context, id: String) {
-        update(id) { it.copy(phase = Phase.WAITING, detail = "", ask = null) }
+        update(id) { it.copy(phase = Phase.WAITING, detail = "") }
         ensureRunning(ctx.applicationContext)
     }
 
     fun skip(id: String) {
         val t = _tasks.value.find { it.service.id == id } ?: return
-        if (t.phase == Phase.NEEDS_YOU) webResult?.complete(WebOutcome.Skip)
-        update(id) { it.copy(phase = Phase.SKIPPED, ask = null, detail = "") }
+        if (t.phase == Phase.NEEDS_YOU || t.phase == Phase.CONNECTING) AutoKey.userCancel()
+        update(id) { it.copy(phase = Phase.SKIPPED, detail = "") }
     }
 
     fun clearFinished() {
-        _tasks.value = _tasks.value.filterNot { it.phase in setOf(Phase.CONNECTED, Phase.SKIPPED) }
+        _tasks.value = _tasks.value.filterNot { it.phase in setOf(Phase.CONNECTED, Phase.SKIPPED, Phase.IN_APP) }
     }
-
-    /** Called by the built-in browser sheet. */
-    fun deliverWeb(outcome: WebOutcome) { webResult?.complete(outcome) }
 
     private fun update(id: String, f: (Task) -> Task) {
         _tasks.value = _tasks.value.map { if (it.service.id == id) f(it) else it }
@@ -192,40 +209,45 @@ object VaultConnect {
         val s = t.service
         update(s.id) { it.copy(phase = Phase.CONNECTING, detail = tc(app, "连接中…", "Connecting…")) }
         try {
-            val (secret, kind) = when {
-                s.auth == "oauth_openrouter" -> {
+            val recipe = if (t.mode == Mode.AUTO && s.auth == "api_key") KeyRecipes.forService(app, s) else null
+            val (secret, kind, via) = when {
+                t.mode == Mode.AUTO && s.auth == "oauth_openrouter" -> {
                     update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = tc(app, "在打开的页面里点「授权」", "Tap Authorize on the page that opened")) }
-                    openRouterPkce(app) to "api_key"
+                    Triple(openRouterPkce(app), "api_key", "oauth")
                 }
-                browserHasLogin(s) && s.auth == "web" -> {
-                    update(s.id) { it.copy(detail = tc(app, "复用内置浏览器的登录", "Reusing the built-in browser session")) }
-                    cookiesFor(s) to "cookie"
+                recipe != null -> when (val r = AutoKey.fetchKey(app, s, recipe) { step -> update(s.id) { it.copy(phase = Phase.CONNECTING, detail = step) } }) {
+                    is AutoKey.Result.Key -> Triple(r.key, "api_key", r.via)
+                    is AutoKey.Result.Failed -> error(r.reason)
+                    is AutoKey.Result.Cancelled -> { update(s.id) { it.copy(phase = Phase.SKIPPED, detail = tc(app, "已取消", "Cancelled")) }; return }
+                    is AutoKey.Result.Cookies -> Triple(r.cookie, "cookie", "web")
                 }
-                else -> {
-                    val captureKey = s.auth == "api_key"
-                    val hint = if (captureKey)
-                        tc(app, "登录后新建一个 API Key，出现在页面上会自动保存（验证码、短信码请你自己输入）", "Sign in and create an API key — it is saved as soon as it appears (you type any codes yourself)")
-                    else tc(app, "请登录（验证码、短信码、二次验证由你完成），登录后自动保存", "Sign in (you complete any codes / 2FA) — saved automatically")
-                    val d = CompletableDeferred<WebOutcome>()
-                    webResult = d
-                    update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = hint, ask = Ask(s.url, hint, captureKey)) }
-                    when (val r = d.await()) {
-                        is WebOutcome.Key -> r.key to "api_key"
-                        is WebOutcome.Cookies -> r.cookie to "cookie"
-                        WebOutcome.Skip -> { update(s.id) { it.copy(phase = Phase.SKIPPED, ask = null, detail = "") }; return }
-                        WebOutcome.Cancel -> { update(s.id) { it.copy(phase = Phase.FAILED, ask = null, detail = tc(app, "已取消", "Cancelled")) }; return }
-                    }
+                else -> when (val r = AutoKey.webLogin(app, s)) {
+                    is AutoKey.Result.Cookies -> Triple(r.cookie, "cookie", "web")
+                    is AutoKey.Result.Key -> Triple(r.key, "api_key", r.via)
+                    is AutoKey.Result.Failed -> error(r.reason)
+                    is AutoKey.Result.Cancelled -> { update(s.id) { it.copy(phase = Phase.SKIPPED, detail = tc(app, "已取消", "Cancelled")) }; return }
                 }
             }
             if (secret.isBlank()) error(tc(app, "没有拿到登录凭据", "No credential captured"))
-            update(s.id) { it.copy(phase = Phase.CONNECTING, ask = null, detail = tc(app, "保存并检查状态…", "Saving and checking status…")) }
+            update(s.id) { it.copy(phase = Phase.CONNECTING, detail = tc(app, "保存并探测…", "Saving and probing…")) }
             val entry = save(app, s, t.username, secret, kind)
-            VaultStore.log(app, entry, "user", "auto-connect ($kind)", "ok")
+            VaultStore.log(app, entry, "user", "auto-connect ($kind via $via)", "ok")
+            if (kind == "api_key") {
+                val pr = AutoKey.probe(s, secret)
+                if (pr.ok == false) VaultStore.updateStatus(app, entry.id) { it.copy(error = "HTTP 401 · " + pr.detail, updatedAt = System.currentTimeMillis()) }
+                val viaZh = when (via) { "clipboard" -> "复制按钮"; "network" -> "页面接口"; "oauth" -> "OAuth"; else -> "页面" }
+                when (pr.ok) {
+                    true -> update(s.id) { it.copy(phase = Phase.CONNECTED, autoKey = true, entryId = entry.id, detail = tc(app, "已自动获取 Key · 来自$viaZh · ${pr.detail}", "Key fetched automatically · ${pr.detail}")) }
+                    false -> update(s.id) { it.copy(phase = Phase.FAILED, entryId = entry.id, detail = tc(app, "读到的 Key 没通过探测：${pr.detail}", "Captured key failed the probe: ${pr.detail}")) }
+                    null -> update(s.id) { it.copy(phase = Phase.UNVERIFIED, entryId = entry.id, detail = tc(app, "已保存 Key · ${pr.detail}", "Key saved · ${pr.detail}")) }
+                }
+                runCatching { VaultSites.refreshStatus(app, entry, "user") }
+                return
+            }
             val st = runCatching { VaultSites.refreshStatus(app, entry, "user") }.getOrDefault("")
             val ck = runCatching { VaultSites.checkin(app, entry, "user") }.getOrNull()
             val summary = buildString {
-                append(tc(app, "已连接", "Connected"))
-                if (kind == "cookie") append(tc(app, " · 有网站登录", " · web login"))
+                append(tc(app, "已保存网站登录", "Web login saved"))
                 VaultStore.get(app, entry.id)?.status?.let { stt ->
                     listOfNotNull(stt.balance, stt.credits, stt.points, stt.quota).firstOrNull()?.let { append(" · ").append(it) }
                 }
@@ -237,9 +259,7 @@ object VaultConnect {
             throw c
         } catch (e: Throwable) {
             Log.w(TAG, "${s.id}: ${e.message}")
-            update(s.id) { it.copy(phase = Phase.FAILED, ask = null, detail = e.message ?: e.javaClass.simpleName) }
-        } finally {
-            webResult = null
+            update(s.id) { it.copy(phase = Phase.FAILED, detail = e.message ?: e.javaClass.simpleName) }
         }
     }
 

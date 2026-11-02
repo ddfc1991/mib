@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountTree
+import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.AlternateEmail
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.BugReport
@@ -82,6 +85,10 @@ class MibotSettingsActions(
     val about: () -> Unit,
     val virtualDisplay: () -> Unit = {},
     val plugins: () -> Unit = {},
+    // [fork/mibot-v5b2] 邮箱台账 / AI 邮箱 / 权限与自动化.
+    val mail: () -> Unit = {},
+    val aiMail: () -> Unit = {},
+    val capabilities: () -> Unit = {},
 )
 
 /**
@@ -155,7 +162,11 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
                 MibotRow(t("AI 网关", "AI gateway"), t("账号池、故障切换、冷却与健康检查", "Account pools, failover, cooldown, health checks"),
                     Icons.Outlined.Hub, MibotTokens.Slate, onClick = a.gateway, showDivider = true)
                 MibotRow(t("模型组", "Model groups"), t("模型别名与回退/负载均衡", "Model aliases, fallback / load-balance"),
-                    Icons.Outlined.AccountTree, MibotTokens.Green, onClick = a.modelGroups)
+                    Icons.Outlined.AccountTree, MibotTokens.Green, onClick = a.modelGroups, showDivider = true)
+                MibotRow(t("邮箱台账", "Mailboxes"), t("临时邮箱（仅收信）与 AI 邮箱 · 探针、保活、验证码", "Temp (receive-only) & AI mailboxes · probe, keep-alive, codes"),
+                    Icons.Outlined.Email, MibotTokens.Sky, onClick = a.mail, showDivider = true)
+                MibotRow(t("AI 邮箱", "AI mailbox"), t("能发信的邮箱 · 自动化等级、撤销窗口、发信记录", "Mailboxes that can send · autonomy, undo window, log"),
+                    Icons.Outlined.AlternateEmail, MibotTokens.Teal, onClick = a.aiMail)
             }
         }
         item {
@@ -190,6 +201,8 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
                 MibotRow("Tailscale", null, Icons.Outlined.Lan, MibotTokens.Navy, onClick = a.tailscale, showDivider = true)
                 MibotRow(t("代理", "Proxies"), null, Icons.Outlined.Security, MibotTokens.Slate, onClick = a.proxies, showDivider = true)
                 MibotRow(t("权限", "Permissions"), null, Icons.Outlined.Lock, MibotTokens.Amber, onClick = a.permissions, showDivider = true)
+                MibotRow(t("权限与自动化", "Permissions & automation"), t("已授予什么、实际用来做什么 · 自动化等级", "What is granted and what it is used for · automation level"),
+                    Icons.Outlined.AdminPanelSettings, MibotTokens.Brick, onClick = a.capabilities, showDivider = true)
                 MibotRow(t("后台运行", "Background running"), t("电池优化与自启动", "Battery optimisation & autostart"), Icons.Outlined.BatteryChargingFull, MibotTokens.Green, onClick = a.background, showDivider = true)
                 MibotRow(t("存储与备份", "Storage & backup"), null, Icons.Outlined.Storage, MibotTokens.Steel, onClick = a.backup)
             }

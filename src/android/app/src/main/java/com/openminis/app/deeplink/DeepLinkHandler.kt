@@ -203,7 +203,11 @@ object DeepLinkHandler {
             // [fork/mibot-v2] Mibot pages.
             "vault", "accounts" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.vault.VaultRoutes.LIST)
             // [fork/mibot-v4] Auto-discover flow, and a page per settings screen for CI screenshots.
-            "vault-discover", "discover" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.vault.VaultRoutes.DISCOVER)
+            "vault-discover", "discover" -> {
+                // [fork/mibot-v5b2] ?connect=<service id> opens that service's 连接方式 sheet.
+                uri.getQueryParameter("connect")?.takeIf { it.isNotBlank() }?.let { com.openminis.app.mibot.vault.VaultConnect.requestSheet(it) }
+                DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.vault.VaultRoutes.DISCOVER)
+            }
             "vault-add", "add-account" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.vault.VaultRoutes.edit("new"))
             "rootfs" -> DeepLinkAction.OpenSettingsScreen(Routes.ROOTFS_MANAGEMENT)
             "gateway" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.gateway.GatewayRoutes.GATEWAY)
@@ -217,6 +221,15 @@ object DeepLinkHandler {
             "plugin" -> uri.getQueryParameter("name")?.takeIf { it.contains('/') }
                 ?.let { DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.detail(it)) }
                 ?: DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
+            // [fork/mibot-v5b2] 邮箱台账 (?tab=ai|temp, ?cli=…), AI 邮箱, 权限与自动化.
+            "mail", "mailbox", "mailboxes", "ai-mail" -> {
+                com.openminis.app.mibot.mail.MailRoutes.pendingTab = when (if (head == "ai-mail") "ai" else uri.getQueryParameter("tab")) {
+                    "ai" -> "AI 邮箱"; "temp" -> "临时邮箱"; else -> "全部"
+                }
+                com.openminis.app.mibot.mail.MailRoutes.pendingCli = uri.getQueryParameter("cli")?.takeIf { it.isNotBlank() }
+                DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.mail.MailRoutes.LEDGER)
+            }
+            "capabilities", "automation" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.settings.CapRoutes.PAGE)
             "sandbox" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.sandbox.SandboxRoutes.SANDBOX)
             "virtual-display", "vd", "background-control" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.phone.VdRoutes.PAGE)
             "diagnostics" -> DeepLinkAction.OpenSettingsScreen(com.openminis.app.mibot.settings.DiagnosticsRoutes.DIAGNOSTICS)

@@ -761,6 +761,13 @@ class MinisApp : Application(), ImageLoaderFactory {
         NativeOffloadServer.register("vault", com.openminis.app.mibot.vault.VaultOffloadHandler(this))
         // [fork/mibot-v3] `mibot-vd`: background phone control from the sandbox.
         NativeOffloadServer.register("mibot-vd", com.openminis.app.mibot.phone.VdOffloadHandler(this))
+        // [fork/mibot-v5b2] `mibot-mail`: 临时邮箱 / AI 邮箱 from the sandbox.
+        NativeOffloadServer.register("mibot-mail", com.openminis.app.mibot.mail.MailOffloadHandler(this))
+        // Debug/CI builds: loopback mail platform + local demo console (labelled 演示 everywhere).
+        if (BuildConfig.DEBUG) {
+            com.openminis.app.mibot.mail.MailDemo.enabled = true
+            com.openminis.app.mibot.vault.AutoKeyDemo.enabled = true
+        }
         NativeOffloadServer.register("android-speak", SpeakOffloadHandler(this))
         NativeOffloadServer.register("android-speech", SpeechOffloadHandler(this))
         NativeOffloadServer.register("android-weather", WeatherOffloadHandler(this))

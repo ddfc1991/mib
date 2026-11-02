@@ -40,6 +40,9 @@ class MinisNotificationListenerService : NotificationListenerService() {
         // until the listener has actually observed its own post.
         val key = postKey(sbn.packageName, sbn.id)
         postedLatches.remove(key)?.countDown()
+        // [fork/mibot-v5b2] Verification codes from the user's OWN SMS app,
+        // for the auto-login recipes (never a third-party 接码 platform).
+        runCatching { com.openminis.app.mibot.settings.SmsCodes.onNotification(sbn) }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {}

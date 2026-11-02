@@ -729,6 +729,9 @@ fun AppNavigation(
                         about = go(Routes.ABOUT),
                         virtualDisplay = go(com.openminis.app.mibot.phone.VdRoutes.PAGE),
                         plugins = go(com.openminis.app.mibot.plugins.PluginRoutes.MARKET),
+                        mail = { com.openminis.app.mibot.mail.MailRoutes.pendingTab = "全部"; navController.safeNavigate(com.openminis.app.mibot.mail.MailRoutes.LEDGER) },
+                        aiMail = { com.openminis.app.mibot.mail.MailRoutes.pendingTab = "AI 邮箱"; navController.safeNavigate(com.openminis.app.mibot.mail.MailRoutes.LEDGER) },
+                        capabilities = go(com.openminis.app.mibot.settings.CapRoutes.PAGE),
                     ),
                 )
             } else
@@ -1787,6 +1790,25 @@ fun AppNavigation(
                 onBack = { navController.safePopBackStack() },
                 onOpen = { name -> navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.detail(name)) },
             )
+        }
+        // [fork/mibot-v5b2] 邮箱台账 / AI 邮箱 (one screen, tab), one mailbox, 权限与自动化.
+        composable(com.openminis.app.mibot.mail.MailRoutes.LEDGER) {
+            com.openminis.app.mibot.mail.MailLedgerScreen(
+                onBack = { navController.safePopBackStack() },
+                onOpen = { id -> navController.safeNavigate(com.openminis.app.mibot.mail.MailRoutes.box(id)) },
+            )
+        }
+        composable(
+            com.openminis.app.mibot.mail.MailRoutes.BOX,
+            arguments = listOf(navArgument("id") { type = NavType.StringType }),
+        ) { entry ->
+            com.openminis.app.mibot.mail.MailBoxScreen(
+                id = entry.arguments?.getString("id") ?: "",
+                onBack = { navController.safePopBackStack() },
+            )
+        }
+        composable(com.openminis.app.mibot.settings.CapRoutes.PAGE) {
+            com.openminis.app.mibot.settings.CapabilitiesScreen(onBack = { navController.safePopBackStack() })
         }
         composable(com.openminis.app.mibot.plugins.PluginRoutes.DETAIL) { entry ->
             com.openminis.app.mibot.plugins.PluginDetailScreen(

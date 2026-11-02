@@ -28,11 +28,31 @@ data class VaultService(
     val color: String?,
     /** [fork/mibot-v4] Free sign-up AND free models (not just a trial credit). */
     val freeModels: Boolean = false,
+    /** [fork/mibot-v5b2] The provider's own API-key page (web console). */
+    val keysUrl: String? = null,
+    /** [fork/mibot-v5b2] Separate web login page, when the key page does not redirect to it. */
+    val loginUrl: String? = null,
+    /** [fork/mibot-v5b2] Name of the provider's phone app (packages = its package names). */
+    val appName: String? = null,
+    /** [fork/mibot-v5b2] Probe for a captured key: GET [probeUrl] with header [probeHeader]: [probePrefix]+key. */
+    val probeUrl: String? = null,
+    val probeHeader: String = "Authorization",
+    val probePrefix: String = "Bearer ",
 ) {
+    /** Domains may carry a path ("console.cloud.tencent.com/hunyuan") for consoles shared by several services. */
     fun matchesSite(site: String): Boolean {
-        val s = site.lowercase().removePrefix("https://").removePrefix("http://").substringBefore('/')
-        return s.isNotEmpty() && domains.any { d -> s == d || s.endsWith(".$d") }
+        val raw = site.lowercase().removePrefix("https://").removePrefix("http://")
+        val s = raw.substringBefore('/')
+        return s.isNotEmpty() && domains.any { d ->
+            if ('/' in d) raw.startsWith(d) || raw.startsWith("www.$d") else s == d || s.endsWith(".$d")
+        }
     }
+
+    /** Needs an API key to be useful as a model provider (vs. a plain web / app login). */
+    val needsKey: Boolean get() = auth == "api_key" || auth == "oauth_openrouter"
+    val hasApp: Boolean get() = packages.isNotEmpty()
+    /** Where web sign-in for this service starts: key page for API providers, else its login page. */
+    val webStart: String get() = keysUrl ?: loginUrl ?: url
 }
 
 object VaultServices {
@@ -90,6 +110,12 @@ object VaultServices {
                     manifest = o.optStringOrNull("manifest"), free = o.optStringOrNull("free"), keyRegex = o.optStringOrNull("keyRegex"),
                     logo = o.optStringOrNull("logo"), color = o.optStringOrNull("color"),
                     freeModels = o.optBoolean("freeModels", false),
+                    keysUrl = o.optStringOrNull("keys"),
+                    loginUrl = o.optStringOrNull("login"),
+                    appName = o.optJSONObject("app")?.optStringOrNull("name"),
+                    probeUrl = o.optJSONObject("probe")?.optStringOrNull("url"),
+                    probeHeader = o.optJSONObject("probe")?.optStringOrNull("header") ?: "Authorization",
+                    probePrefix = o.optJSONObject("probe")?.let { if (it.has("prefix")) it.optString("prefix") else null } ?: "Bearer ",
                 )
             }
         }.getOrDefault(emptyList())
@@ -97,7 +123,7 @@ object VaultServices {
         return list
     }
 
-    fun get(ctx: Context, id: String?): VaultService? = id?.let { i -> all(ctx).find { it.id == i } }
+    fun get(ctx: Context, id: String?): VaultService? = id?.let { i -> all(ctx).find { it.id == i } ?: AutoKeyDemo.service.takeIf { it.id == i && AutoKeyDemo.enabled } }
 
     /** Which catalog service an entry belongs to (explicit id, else by domain). */
     fun serviceOf(ctx: Context, e: VaultEntry): VaultService? =

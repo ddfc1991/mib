@@ -104,6 +104,21 @@ for th in 1:light 2:dark; do
   adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=dsh-market/dsh-market' $PKG" >/dev/null
   zshot "$n-17-plugin-detail" 12
   adb shell input swipe 540 1700 540 600 500; zshot "$n-18-plugin-detail-scrolled" 3; home
+  # [fork/mibot-v5b2] 邮箱台账 (demo loopback boxes), AI 邮箱 tab, 权限与自动化,
+  # dsh-our-free-model detail (adapter audit + MIT attribution), 连接方式 sheets.
+  link mail;         zshot "$n-19-mail-ledger" 8
+  adb shell input swipe 540 1700 540 600 500; zshot "$n-19b-mail-ledger-scrolled" 3; home
+  link ai-mail;      zshot "$n-20-ai-mail" 6; home
+  link capabilities; zshot "$n-21-capabilities" 5
+  adb shell input swipe 540 1700 540 600 500; zshot "$n-21b-capabilities-scrolled" 3; home
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=ebony-vinyl/dsh-our-free-model' $PKG" >/dev/null
+  zshot "$n-22-plugin-ofm" 12
+  adb shell input swipe 540 1700 540 600 500; zshot "$n-22b-plugin-ofm-audit" 3
+  adb shell input swipe 540 1700 540 600 500; zshot "$n-22c-plugin-ofm-more" 3; home
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/vault-discover?connect=hunyuan' $PKG" >/dev/null
+  zshot "$n-23-connect-hunyuan" 6; home
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/vault-discover?connect=github' $PKG" >/dev/null
+  zshot "$n-24-connect-github" 6; home
   alive || { echo "::error::app died during zh $n pass"; fail=1; }
 done
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$ZH/last-ui.xml" || true
