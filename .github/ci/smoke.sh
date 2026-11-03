@@ -139,8 +139,7 @@ DSH="$OUT/dsh"; mkdir -p "$DSH"
 adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=alchaincyf/nuwa-skill' $PKG" >/dev/null; sleep 12
 if tap text "试装"; then sleep 40; fi
 adb exec-out screencap -p > "$DSH/1-installed.png"
-adb shell input swipe 540 1700 540 700 500; sleep 2
-if tap text "启动" || { adb shell input swipe 540 1700 540 900 500; sleep 2; tap text "启动"; }; then
+if tap text "启动" || { adb shell input swipe 540 1700 540 1100 500; sleep 2; tap text "启动"; }; then
   for i in $(seq 1 24); do sleep 10; adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
     adb exec-out cat /sdcard/ui.xml > "$DSH/ui.xml"; grep -qE 'text="(运行中|失败|待支持)"' "$DSH/ui.xml" && break; done
   adb exec-out screencap -p > "$DSH/2-started.png"
@@ -151,7 +150,7 @@ if tap text "启动" || { adb shell input swipe 540 1700 540 900 500; sleep 2; t
 else echo "::warning::DSH 启动 button not found"; fi
 adb logcat -d -v time | grep -E "DshHost|MibotPlugins" > "$DSH/log.txt" || true
 alive || { echo "::error::app died during DSH host attempt"; fail=1; }
-adb shell am force-stop $PKG; sleep 1
+home
 
 # [fork/mibot-v3] Hidden-display end-to-end (Android 12+): the app writes its
 # "start from a computer" script, adb (shell uid) runs it -> helper hands its

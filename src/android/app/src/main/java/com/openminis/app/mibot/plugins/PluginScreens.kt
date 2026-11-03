@@ -906,14 +906,9 @@ private fun DshHostSection(p: MarketPlugin, inst: InstalledPlugin?, v: PluginCom
             Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val preparing = live?.phase == DshHostManager.Phase.PREPARING
                 val active = label == "运行中"
-                if (active) MibotButton("停止", tonal = true, modifier = Modifier.weight(1f), onClick = { scope.launch { DshHostManager.stop(ctx, p.fullName) } })
+                if (active) MibotButton("停止", tonal = true, modifier = Modifier.weight(1f), onClick = { DshHostManager.launchStop(ctx, p.fullName) })
                 MibotButton(if (preparing) "启动中…" else if (active) "重新启动" else if (h != null) "重新加载" else "启动",
-                    enabled = !preparing, modifier = Modifier.weight(1f), onClick = {
-                        scope.launch {
-                            if (active) DshHostManager.stop(ctx, p.fullName)
-                            DshHostManager.start(ctx, p.fullName)
-                        }
-                    })
+                    enabled = !preparing, modifier = Modifier.weight(1f), onClick = { DshHostManager.launchStart(ctx, p.fullName, restart = active) })
             }
         }
         live?.commands?.takeIf { it.isNotEmpty() && label == "运行中" }?.let { cmds ->

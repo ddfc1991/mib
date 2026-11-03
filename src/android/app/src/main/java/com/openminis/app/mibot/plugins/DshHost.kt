@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -231,9 +232,24 @@ object DshHostManager {
 
     // ------------------------------------------------------------ start / stop
 
-    /** Never throws (UI launches it from a composition scope). */
+    /** Host work outlives the plugin page (leaving the page must not cancel a start). */
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+
+    fun launchStart(ctx: Context, fullName: String, restart: Boolean = false) {
+        if (_live.value[fullName]?.phase == Phase.PREPARING) return
+        setLive(fullName, Live(Phase.PREPARING, "准备中…"))
+        val app = ctx.applicationContext
+        scope.launch {
+            if (restart) stop(app, fullName)
+            start(app, fullName)
+        }
+    }
+
+    fun launchStop(ctx: Context, fullName: String) { val app = ctx.applicationContext; scope.launch { stop(app, fullName) } }
+
+    /** Never throws. */
     suspend fun start(ctx: Context, fullName: String): HostResult? = try {
-        startInner(ctx, fullName)
+        startInner(ctx, fullName).also { if (it == null) setLive(fullName, Live(Phase.IDLE)) }
     } catch (e: kotlinx.coroutines.CancellationException) {
         throw e
     } catch (e: Throwable) {
