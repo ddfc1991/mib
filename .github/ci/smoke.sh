@@ -115,6 +115,14 @@ for th in 1:light 2:dark; do
   zshot "$n-22-plugin-ofm" 12
   adb shell input swipe 540 1700 540 600 500; zshot "$n-22b-plugin-ofm-audit" 3
   adb shell input swipe 540 1700 540 600 500; zshot "$n-22c-plugin-ofm-more" 3; home
+  # [fork/mibot-v5b4] DSH host verdicts: skill-only (手机能用), blocked (不支持), missing services (待支持).
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=alchaincyf/nuwa-skill' $PKG" >/dev/null
+  zshot "$n-25-plugin-nuwa" 12
+  adb shell input swipe 540 1700 540 600 500; zshot "$n-25b-plugin-nuwa-host" 3; home
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=yujunzhixue/dsh-purge' $PKG" >/dev/null
+  zshot "$n-26-plugin-purge" 12; home
+  adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=liustack/modlens' $PKG" >/dev/null
+  zshot "$n-27-plugin-modlens" 12; home
   adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/vault-discover?connect=hunyuan' $PKG" >/dev/null
   zshot "$n-23-connect-hunyuan" 6; home
   adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/vault-discover?connect=github' $PKG" >/dev/null
@@ -122,6 +130,28 @@ for th in 1:light 2:dark; do
   alive || { echo "::error::app died during zh $n pass"; fail=1; }
 done
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$ZH/last-ui.xml" || true
+
+# [fork/mibot-v5b4] DSH host on the emulator (best effort, never fails the run):
+# install nuwa-skill, press 启动 → Node 22 in the sandbox → skills imported.
+# The x86_64 image runs the arm64 app through native-bridge translation, so the
+# PRoot sandbox may not come up here; the plugin page then shows 失败 + its log.
+DSH="$OUT/dsh"; mkdir -p "$DSH"
+adb shell "am start -W -a android.intent.action.VIEW -d 'minis://settings/plugin?name=alchaincyf/nuwa-skill' $PKG" >/dev/null; sleep 12
+if tap text "试装"; then sleep 40; fi
+adb exec-out screencap -p > "$DSH/1-installed.png"
+adb shell input swipe 540 1700 540 700 500; sleep 2
+if tap text "启动" || { adb shell input swipe 540 1700 540 900 500; sleep 2; tap text "启动"; }; then
+  for i in $(seq 1 24); do sleep 10; adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+    adb exec-out cat /sdcard/ui.xml > "$DSH/ui.xml"; grep -qE 'text="(运行中|失败|待支持)"' "$DSH/ui.xml" && break; done
+  adb exec-out screencap -p > "$DSH/2-started.png"
+  grep -oE 'text="(运行中|失败|待支持|准备中|未启动)"' "$DSH/ui.xml" | head -3 | tee "$DSH/state.txt"
+  tap text "查看日志（$(grep -oE '查看日志（[0-9]+）' "$DSH/ui.xml" | grep -oE '[0-9]+' | head -1)）" >/dev/null 2>&1 || true
+  sleep 2; adb exec-out screencap -p > "$DSH/3-log.png"
+  adb shell input swipe 540 1700 540 700 500; sleep 2; adb exec-out screencap -p > "$DSH/4-log-scrolled.png"
+else echo "::warning::DSH 启动 button not found"; fi
+adb logcat -d -v time | grep -E "DshHost|MibotPlugins" > "$DSH/log.txt" || true
+alive || { echo "::error::app died during DSH host attempt"; fail=1; }
+adb shell am force-stop $PKG; sleep 1
 
 # [fork/mibot-v3] Hidden-display end-to-end (Android 12+): the app writes its
 # "start from a computer" script, adb (shell uid) runs it -> helper hands its

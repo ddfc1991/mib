@@ -78,6 +78,19 @@ No code from Eta (PolyForm Noncommercial) is included.
 
 Temp-mail platform templates in `assets/mibot/mail_providers.json` (mail.tm, Guerrilla Mail, tempmail.lol, temp-mail.io, Maildrop, Mailsac, dropmail, AgentMail …) describe each service's public HTTP API; no third-party code is included.
 
+## Mibot fork — DSH plugin host kit (v5-B4, vendored JavaScript)
+
+Shipped unmodified (built `lib/` / `dist/` files, `package.json` and `LICENSE` only) under `src/android/app/src/main/assets/mibot/dsh-host/node_modules/` and copied into the app's Linux sandbox, where Node runs them. Installed from npm with `--ignore-scripts`.
+
+| Package | Version | License | Use |
+|---|---|---|---|
+| [@deepseek-ai/cordis](https://www.npmjs.com/package/@deepseek-ai/cordis) (deepseek-ai/deepseek-harness `vendor/cordis`) | 4.0.5 | **MIT** — Copyright (c) 2021-present Shigma | Real Cordis kernel that loads DSH plugins (`host.mjs`). |
+| [@deepseek-ai/cosmokit](https://www.npmjs.com/package/@deepseek-ai/cosmokit) | 1.8.6 | **MIT** — Copyright (c) 2021-present Shigma | Cordis runtime dependency. |
+| [@deepseek-ai/schemastery](https://www.npmjs.com/package/@deepseek-ai/schemastery) | 3.18.5 | **MIT** — Copyright (c) 2021-present Shigma | Config schemas plugins import. |
+| [yaml](https://www.npmjs.com/package/yaml) | 2.9.1 | **ISC** — Copyright Eemeli Aro | Parses `cordis.patch.yml` (with `!!js` rows). |
+
+Plugins themselves are not bundled: they are downloaded on demand from GitHub. The market additionally reads the [`dsh-mobile-plugin-catalog`](https://www.npmjs.com/package/dsh-mobile-plugin-catalog) list (CC0-1.0, WSK-build/awesome-dsh-mobile-plugins) at runtime for its 「移动目录」 badge; nothing from it is bundled.
+
 ## Mibot fork — icons and logos
 
 | Asset | Location | License | Notes |

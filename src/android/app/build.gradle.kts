@@ -40,8 +40,8 @@ android {
         applicationId = "com.dl1991.mibot"
         minSdk = 26
         targetSdk = 35
-        versionCode = 42
-        versionName = "1.20"
+        versionCode = 43
+        versionName = "1.21"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
