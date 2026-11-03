@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -80,6 +81,7 @@ import com.openminis.app.mibot.design.StatusChip
 import com.openminis.app.ui.glass.LocalGlassBottomInset
 import com.openminis.app.ui.markdown.MarkdownText
 import kotlinx.coroutines.launch
+import com.openminis.app.ui.theme.LocalMibotDark
 
 object PluginRoutes {
     const val MARKET = "mibot_plugins"
@@ -129,6 +131,15 @@ private fun rememberZh(text: String): String? {
 }
 
 // ------------------------------------------------------------------ list
+// [fork/mibot-v5b2] Industrial / tool-like list: dense aligned rows on hairlines, 40 dp icons,
+// one-line titles, 2-line descriptions, tabular meta, a fixed-width action column, a thin
+// download bar, compact section headers with counts and a sticky filter bar.
+
+private val Tnum = TextStyle(fontFeatureSettings = "tnum")
+private val IconSize = 40.dp
+private val RowPadH = 16.dp
+private val TextInset = RowPadH + IconSize + 12.dp
+private val ActionWidth = 64.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -140,6 +151,7 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     var sort by rememberSaveable { mutableStateOf(MarketSort.STARS) }
     var oneClickOnly by rememberSaveable { mutableStateOf(false) }
     var tab by rememberSaveable { mutableStateOf(PluginMarketNav.pendingTab ?: PluginCategories.ALL) }
+    var noticeDismissed by rememberSaveable { mutableStateOf(false) }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val items = remember { mutableStateListOf<MarketPlugin>() }
     var page by remember { mutableIntStateOf(0) }
@@ -148,9 +160,12 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var reload by remember { mutableIntStateOf(0) }
     val installed by remember { PluginStore.flow(ctx) }.collectAsState()
+    val manifests by PluginManifests.facts.collectAsState()
+    val downloads by PluginInstaller.downloads.collectAsState()
     val trError by PluginTranslator.lastError.collectAsState()
     val showOriginal = remember { mutableStateMapOf<String, Boolean>() }
     val busy = remember { mutableStateMapOf<String, String>() }
+    val desktopIndex = remember { intArrayOf(0) }
 
     suspend fun load(next: Int) {
         loading = true; error = null
@@ -170,23 +185,28 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
         PluginMarketNav.pendingTab = null
         if (PluginMarketNav.pendingSection == "desktop") {
             PluginMarketNav.pendingSection = null
-            kotlinx.coroutines.delay(400)
-            // Header item + phone banner + phone card (or empty note) → desktop banner is index 3.
-            runCatching { listState.animateScrollToItem(3) }
+            kotlinx.coroutines.delay(2500) // let cached manifests settle the sections first
+            runCatching { listState.animateScrollToItem(desktopIndex[0]) }
         }
     }
+    // Real manifests decide 「手机能用」 (cached per pushedAt; fetched once).
+    LaunchedEffect(items.size) { if (items.isNotEmpty()) PluginManifests.ensure(ctx, items.toList()) }
 
     val filtered = items.filter { p ->
         (!oneClickOnly || p.oneClick) && (tab == PluginCategories.ALL || PluginCategories.of(p) == tab)
     }
-    val phone = filtered.filter { PluginCompat.phoneUsable(it, installed[it.fullName]) }
-    val desktop = filtered.filter { !PluginCompat.phoneUsable(it, installed[it.fullName]) }
+    val fit = filtered.associate { it.fullName to PluginCompat.verdict(it, installed[it.fullName], manifests[it.fullName]).kind }
+    val phone = filtered.filter { fit[it.fullName] == PluginCompat.Fit.PHONE }
+    val desktop = filtered.filter { fit[it.fullName] == PluginCompat.Fit.DESKTOP }
+    val unverified = filtered.filter { fit[it.fullName] == PluginCompat.Fit.UNVERIFIED }
+    // search, filter bar, status line, phone header, phone rows (or empty line) → desktop header.
+    desktopIndex[0] = 4 + maxOf(phone.size, 1)
 
     fun install(p: MarketPlugin) {
         if (busy.containsKey(p.fullName)) return
         busy[p.fullName] = "准备中"
         scope.launch {
-            val err = PluginInstaller.install(ctx, p) { s -> busy[p.fullName] = s }
+            val err = PluginInstaller.install(ctx, p) { st -> busy[p.fullName] = st }
             busy.remove(p.fullName)
             if (err != null) android.widget.Toast.makeText(ctx, err, android.widget.Toast.LENGTH_LONG).show()
         }
@@ -196,11 +216,11 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
         busy[p.fullName] = "准备中"
         scope.launch {
             if (installed[p.fullName] == null) {
-                val err = PluginInstaller.install(ctx, p) { s -> busy[p.fullName] = s }
+                val err = PluginInstaller.install(ctx, p) { st -> busy[p.fullName] = st }
                 if (err != null) { busy.remove(p.fullName); android.widget.Toast.makeText(ctx, err, android.widget.Toast.LENGTH_LONG).show(); return@launch }
             }
-            busy[p.fullName] = "转换中（实验）"
-            val c = PluginConverter.convert(ctx, p.fullName) { line -> busy[p.fullName] = line.trim().take(18) }
+            busy[p.fullName] = "转换中"
+            val c = PluginConverter.convert(ctx, p.fullName) { _ -> }
             busy.remove(p.fullName)
             android.widget.Toast.makeText(ctx, "${p.name}：${c.state.zh}" + (c.reason?.let { "（$it）" } ?: ""), android.widget.Toast.LENGTH_LONG).show()
         }
@@ -208,105 +228,128 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
 
     val bottom = LocalGlassBottomInset.current +
         androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+    @Composable
+    fun Rows(list: List<MarketPlugin>, convertible: Boolean) {
+        list.forEachIndexed { i, p ->
+            MarketRow(
+                p, installed[p.fullName], busy[p.fullName], downloads[p.fullName], showOriginal[p.fullName] == true,
+                onToggleOriginal = { showOriginal[p.fullName] = showOriginal[p.fullName] != true },
+                onOpen = { onOpen(p.fullName) }, onInstall = { install(p) },
+                onConvert = if (convertible) ({ convert(p) }) else null,
+            )
+            if (i < list.lastIndex) Hairline(start = TextInset)
+        }
+    }
+
     Column(Modifier.fillMaxSize()) {
         MibotTopBar(title = "插件市场", onBack = onBack)
-        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = bottom + 32.dp)) {
-            item {
-                SearchCapsule(query, { query = it }, onSubmit = { submitted = query })
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = MibotSpace.Screen, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    ToggleChip("星标最多", sort == MarketSort.STARS) { sort = MarketSort.STARS }
-                    ToggleChip("最新", sort == MarketSort.NEWEST) { sort = MarketSort.NEWEST }
-                    ToggleChip("只看可一键装", oneClickOnly) { oneClickOnly = !oneClickOnly }
-                }
-                MibotFilterChips(PluginCategories.tabs, tab) { tab = it }
-                Row(
-                    Modifier.fillMaxWidth().padding(start = MibotSpace.Screen + MibotSpace.M, end = MibotSpace.Screen + MibotSpace.M, top = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("SkillHub 插件 · ${phone.size} 个手机能用", modifier = Modifier.weight(1f), fontSize = MibotType.TitleSmall,
-                        fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onBackground)
-                    Text("skillhub.cn", fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (trError != null) MibotFootnote("译文：$trError（长按条目可看原文）")
-                error?.let { msg ->
-                    MibotFootnote(msg)
-                    Row(Modifier.padding(16.dp)) { MibotButton("重试", tonal = true, onClick = { reload++ }) }
-                }
-                if (loading && items.isEmpty()) MibotFootnote("正在加载 SkillHub 插件广场…")
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = bottom + 24.dp)) {
+            item(key = "search") { SearchField(query, { query = it }, onSubmit = { submitted = query }) }
+            stickyHeader(key = "filters") {
+                FilterBar(sort, { sort = it }, oneClickOnly, { oneClickOnly = !oneClickOnly }, tab, { tab = it })
             }
-            if (phone.isNotEmpty() || desktop.isNotEmpty()) {
-                item { SectionBanner("手机能用", phone.size, "可在 Mibot 沙箱（Node / Python）中使用", accent = true) }
-                if (phone.isEmpty()) item { MibotFootnote("当前筛选下没有手机能用的插件。") }
-                else item {
-                    MibotCard {
-                        phone.forEachIndexed { i, p ->
-                            PluginRow(p, installed[p.fullName], busy[p.fullName], showOriginal[p.fullName] == true,
-                                onToggleOriginal = { showOriginal[p.fullName] = showOriginal[p.fullName] != true },
-                                onOpen = { onOpen(p.fullName) }, onInstall = { install(p) }, onConvert = null)
-                            if (i < phone.lastIndex) MibotDivider(inset = 72.dp)
-                        }
+            item(key = "status") {
+                Column {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = RowPadH, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("SkillHub · 已载入 ${items.size} / ${"%,d".format(total)}", modifier = Modifier.weight(1f), style = Tnum,
+                            fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        if (loading) Text("加载中…", fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                }
-                item {
-                    Spacer(Modifier.height(18.dp))
-                    SectionBanner("需电脑/其他", desktop.size, "依赖桌面窗口、系统原生程序或 DSH 桌面客户端；可尝试转换（实验）", accent = false)
-                }
-                if (desktop.isEmpty()) item { MibotFootnote("当前筛选下没有需要电脑的插件。") }
-                else item {
-                    MibotCard {
-                        desktop.forEachIndexed { i, p ->
-                            PluginRow(p, installed[p.fullName], busy[p.fullName], showOriginal[p.fullName] == true,
-                                onToggleOriginal = { showOriginal[p.fullName] = showOriginal[p.fullName] != true },
-                                onOpen = { onOpen(p.fullName) }, onInstall = { install(p) }, onConvert = { convert(p) })
-                            if (i < desktop.lastIndex) MibotDivider(inset = 72.dp)
-                        }
+                    if (trError != null && !noticeDismissed) NoticeRow("译文：$trError") { noticeDismissed = true }
+                    error?.let { msg ->
+                        NoticeRow(msg, actionLabel = "重试", onAction = { reload++ }, onDismiss = null)
                     }
                 }
             }
-            item {
+            if (filtered.isNotEmpty()) {
+                item(key = "h-phone") { SectionHeader("手机能用", phone.size, "在 Mibot 沙箱或原生适配中可用") }
+                if (phone.isEmpty()) item(key = "e-phone") { EmptyLine("当前筛选下没有确认手机能用的插件") }
+                else item(key = "r-phone") { Column { Rows(phone, convertible = false) } }
+                item(key = "h-desktop") { SectionHeader("需电脑 / DSH 宿主", desktop.size, "依赖 DSH 宿主或桌面环境") }
+                if (desktop.isEmpty()) item(key = "e-desktop") { EmptyLine("无") }
+                else item(key = "r-desktop") { Column { Rows(desktop, convertible = true) } }
+                if (unverified.isNotEmpty()) {
+                    item(key = "h-unv") { SectionHeader("未核实", unverified.size, "还没读到 package.json / requirements.txt") }
+                    item(key = "r-unv") { Column { Rows(unverified, convertible = true) } }
+                }
+            } else if (items.isNotEmpty()) {
+                item(key = "e-filter") { EmptyLine("当前筛选下没有插件") }
+            }
+            item(key = "more") {
                 if (items.isNotEmpty() && items.size < total) {
                     Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.Center) {
-                        MibotButton(if (loading) "加载中…" else "加载更多（已显示 ${items.size} / $total）", tonal = true, enabled = !loading,
+                        MibotButton(if (loading) "加载中…" else "加载更多（${items.size} / ${"%,d".format(total)}）", tonal = true, enabled = !loading,
                             onClick = { scope.launch { load(page + 1) } })
                     }
                 }
-                MibotFootnote("数据来自 SkillHub DSH Plugin 广场，插件为 GitHub 开源项目（许可证见详情）。「手机能用」为启发式判断；安装只下载代码到本机插件目录。")
+                MibotFootnote("数据来自 SkillHub DSH Plugin 广场，插件为 GitHub 开源项目（许可证见详情）。「手机能用」依据插件的 package.json / requirements.txt：依赖 DSH 宿主的插件不算手机能用。安装只下载代码到本机插件目录。")
             }
         }
     }
 }
 
 @Composable
-private fun SectionBanner(title: String, count: Int, sub: String, accent: Boolean) {
-    Column(Modifier.fillMaxWidth().padding(start = MibotSpace.Screen + MibotSpace.M, end = MibotSpace.Screen + MibotSpace.M, top = MibotSpace.L, bottom = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(width = 3.dp, height = 14.dp).clip(RoundedCornerShape(2.dp))
-                .background(if (accent) MibotTokens.accent() else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)))
-            Spacer(Modifier.width(8.dp))
-            Text("「$title」", fontSize = MibotType.TitleSmall, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onBackground)
+private fun Hairline(start: Dp = 0.dp) {
+    Box(Modifier.fillMaxWidth().background(MibotTokens.card()).padding(start = start).height(0.5.dp).background(MibotTokens.hairline()))
+}
+
+@Composable
+private fun SectionHeader(title: String, count: Int, sub: String) {
+    Column(Modifier.fillMaxWidth().padding(top = 14.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = RowPadH, vertical = 4.dp), verticalAlignment = Alignment.Bottom) {
+            Text(title, fontSize = MibotType.Section, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.width(6.dp))
-            StatusChip("$count", if (accent) ChipKind.ACCENT else ChipKind.NEUTRAL)
+            Text("$count", style = Tnum, fontSize = MibotType.Section, fontWeight = MibotType.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(10.dp))
+            Text(sub, modifier = Modifier.weight(1f), fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.End)
         }
-        Text(sub, fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 11.dp, top = 2.dp))
+        Box(Modifier.fillMaxWidth().height(0.5.dp).background(MibotTokens.hairline()))
     }
 }
 
 @Composable
-private fun SearchCapsule(value: String, onChange: (String) -> Unit, onSubmit: () -> Unit) {
+private fun EmptyLine(text: String) {
+    Text(text, modifier = Modifier.fillMaxWidth().background(MibotTokens.card()).padding(horizontal = RowPadH, vertical = 12.dp),
+        fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
+private fun NoticeRow(text: String, actionLabel: String? = null, onAction: () -> Unit = {}, onDismiss: (() -> Unit)?) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = RowPadH, vertical = 2.dp)
+            .clip(RoundedCornerShape(6.dp)).background(MibotTokens.tile()).padding(start = 10.dp, end = 4.dp, top = 5.dp, bottom = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Glyph(LineIcons.Info, size = 14.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(6.dp))
+        Text(text, modifier = Modifier.weight(1f), fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2, overflow = TextOverflow.Ellipsis)
+        if (actionLabel != null) Text(actionLabel, fontSize = MibotType.Caption, fontWeight = MibotType.Semi, color = MibotTokens.accent(),
+            modifier = Modifier.clip(RoundedCornerShape(4.dp)).clickable(onClick = onAction).padding(horizontal = 6.dp, vertical = 2.dp))
+        if (onDismiss != null) Box(Modifier.clip(RoundedCornerShape(4.dp)).clickable(onClick = onDismiss).padding(4.dp)
+            .semantics { contentDescription = "关闭提示" }) {
+            Glyph(LineIcons.X, size = 14.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun SearchField(value: String, onChange: (String) -> Unit, onSubmit: () -> Unit) {
+    val shape = RoundedCornerShape(8.dp)
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = MibotSpace.Screen, vertical = 4.dp)
-            .clip(RoundedCornerShape(50))
+            .padding(horizontal = RowPadH, vertical = 4.dp)
+            .height(40.dp)
+            .clip(shape)
             .background(MibotTokens.card())
-            .border(1.dp, MibotTokens.hairline(), RoundedCornerShape(50))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .border(0.5.dp, MibotTokens.hairline(), shape)
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Glyph(LineIcons.Search, size = MibotIcon.Dense, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Glyph(LineIcons.Search, size = MibotIcon.Small, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(8.dp))
         Box(Modifier.weight(1f)) {
             if (value.isEmpty()) Text("搜索插件（名称、功能）", fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
@@ -320,7 +363,7 @@ private fun SearchCapsule(value: String, onChange: (String) -> Unit, onSubmit: (
             )
         }
         if (value.isNotEmpty()) {
-            Box(Modifier.clip(RoundedCornerShape(50)).clickable { onChange(""); onSubmit() }.padding(2.dp)) {
+            Box(Modifier.clip(RoundedCornerShape(4.dp)).clickable { onChange(""); onSubmit() }.padding(2.dp)) {
                 Glyph(LineIcons.X, size = MibotIcon.Small, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -328,53 +371,110 @@ private fun SearchCapsule(value: String, onChange: (String) -> Unit, onSubmit: (
 }
 
 @Composable
-private fun ToggleChip(label: String, on: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Text(
-        label,
-        modifier = Modifier
-            .clip(shape)
+private fun FilterBar(
+    sort: MarketSort, onSort: (MarketSort) -> Unit,
+    oneClick: Boolean, onOneClick: () -> Unit,
+    tab: String, onTab: (String) -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().background(if (LocalMibotDark.current) Color(0xFF191D23).copy(alpha = 0.97f) else Color(0xFFFBFCFC).copy(alpha = 0.97f))) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = RowPadH, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Segmented(listOf("星标" to MarketSort.STARS, "最新" to MarketSort.NEWEST), sort, onSort)
+            Spacer(Modifier.weight(1f))
+            Row(
+                Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onOneClick).padding(horizontal = 6.dp, vertical = 4.dp)
+                    .semantics { contentDescription = "只看可一键装" },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val shape = RoundedCornerShape(3.dp)
+                Box(
+                    Modifier.size(14.dp).clip(shape)
+                        .background(if (oneClick) MibotTokens.accent() else Color.Transparent)
+                        .border(1.dp, if (oneClick) MibotTokens.accent() else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), shape),
+                    contentAlignment = Alignment.Center,
+                ) { if (oneClick) Glyph(LineIcons.Check, size = 11.dp, tint = MaterialTheme.colorScheme.onPrimary) }
+                Spacer(Modifier.width(6.dp))
+                Text("仅可一键装", fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = RowPadH, end = RowPadH, bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            PluginCategories.tabs.forEach { c -> CategoryChip(c, c == tab) { onTab(c) } }
+        }
+        Box(Modifier.fillMaxWidth().height(0.5.dp).background(MibotTokens.hairline()))
+    }
+}
+
+@Composable
+private fun <T> Segmented(options: List<Pair<String, T>>, selected: T, onSelect: (T) -> Unit) {
+    val outer = RoundedCornerShape(8.dp)
+    Row(Modifier.height(30.dp).clip(outer).background(MibotTokens.tile()).border(0.5.dp, MibotTokens.hairline(), outer).padding(2.dp)) {
+        options.forEach { (label, v) ->
+            val on = v == selected
+            Box(
+                Modifier.fillMaxHeight().width(60.dp).clip(RoundedCornerShape(6.dp))
+                    .background(if (on) MibotTokens.card() else Color.Transparent)
+                    .then(if (on) Modifier.border(0.5.dp, MibotTokens.hairline(), RoundedCornerShape(6.dp)) else Modifier)
+                    .clickable { onSelect(v) }
+                    .semantics { contentDescription = "排序：$label" },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, fontSize = MibotType.Secondary, fontWeight = if (on) MibotType.Semi else MibotType.Regular,
+                    color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryChip(label: String, on: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(6.dp)
+    Box(
+        Modifier.height(28.dp).clip(shape)
             .background(if (on) MibotTokens.selected() else MibotTokens.card())
-            .border(1.dp, if (on) MibotTokens.accent().copy(alpha = 0.35f) else MibotTokens.hairline(), shape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        fontSize = MibotType.Section,
-        fontWeight = if (on) MibotType.Semi else MibotType.Regular,
-        color = if (on) MibotTokens.accent() else MaterialTheme.colorScheme.onSurface,
-    )
+            .border(0.5.dp, if (on) MibotTokens.accent().copy(alpha = 0.45f) else MibotTokens.hairline(), shape)
+            .clickable(onClick = onClick).padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, fontSize = MibotType.Secondary, fontWeight = if (on) MibotType.Semi else MibotType.Regular,
+            color = if (on) MibotTokens.accent() else MaterialTheme.colorScheme.onSurface, maxLines = 1)
+    }
+}
+
+/** Fixed-width compact action: 试装 / 更新 / 已安装 / 转换. */
+@Composable
+private fun ActionButton(label: String, kind: Int, onClick: (() -> Unit)?) {
+    // kind: 0 outline-accent, 1 filled-accent, 2 inert, 3 outline-neutral
+    val shape = RoundedCornerShape(6.dp)
+    val enabled = onClick != null && kind != 2
+    Box(
+        Modifier.width(ActionWidth).height(28.dp).clip(shape)
+            .background(when (kind) { 1 -> MibotTokens.accent(); 2 -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f); else -> Color.Transparent })
+            .then(if (kind == 0 || kind == 3) Modifier.border(0.75.dp, if (kind == 0) MibotTokens.accent().copy(alpha = 0.6f) else MibotTokens.hairline(), shape) else Modifier)
+            .then(if (enabled) Modifier.clickable { onClick?.invoke() } else Modifier)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, fontSize = MibotType.Secondary, fontWeight = MibotType.Semi, maxLines = 1,
+            color = when (kind) {
+                1 -> MaterialTheme.colorScheme.onPrimary
+                0 -> MibotTokens.accent()
+                2 -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> MaterialTheme.colorScheme.onSurface
+            })
+    }
 }
 
 @Composable
-private fun SmallPill(text: String, filled: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Text(
-        text,
-        modifier = Modifier
-            .heightIn(min = 30.dp)
-            .clip(shape)
-            .background(if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f) else if (filled) MibotTokens.accent() else MibotTokens.tonal())
-            .then(if (!filled) Modifier.border(1.dp, MibotTokens.hairline(), shape) else Modifier)
-            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        fontSize = MibotType.Secondary,
-        fontWeight = MibotType.Semi,
-        color = when {
-            !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            filled -> MaterialTheme.colorScheme.onPrimary
-            else -> MibotTokens.accent()
-        },
-        maxLines = 1,
-    )
-}
-
-@Composable
-internal fun PluginAvatar(url: String?, name: String, size: Dp = 44.dp) {
-    val shape = RoundedCornerShape(size * 0.27f)
+internal fun PluginAvatar(url: String?, name: String, size: Dp = IconSize) {
+    val shape = RoundedCornerShape(if (size <= 44.dp) 8.dp else size * 0.2f)
     Box(
         Modifier.size(size).clip(shape).background(MibotTokens.tile()).border(0.5.dp, MibotTokens.hairline(), shape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(name.take(1).uppercase(), fontSize = MibotType.Title, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // Monochrome glyph fallback; the avatar (if it loads) covers it.
+        Glyph(LineIcons.Puzzle, size = size * 0.5f, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
         if (url != null) {
             coil.compose.AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(size).clip(shape))
         }
@@ -383,10 +483,11 @@ internal fun PluginAvatar(url: String?, name: String, size: Dp = 44.dp) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PluginRow(
+private fun MarketRow(
     p: MarketPlugin,
     inst: InstalledPlugin?,
     busy: String?,
+    dl: PluginInstaller.Dl?,
     showOriginal: Boolean,
     onToggleOriginal: () -> Unit,
     onOpen: () -> Unit,
@@ -398,48 +499,66 @@ private fun PluginRow(
     Row(
         Modifier
             .fillMaxWidth()
+            .background(MibotTokens.card())
             .combinedClickable(onClick = onOpen, onLongClick = onToggleOriginal)
-            .padding(horizontal = MibotSpace.M + 2.dp, vertical = 12.dp)
+            .padding(horizontal = RowPadH, vertical = 10.dp)
             .semantics { contentDescription = "插件 ${p.name}" },
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
     ) {
         PluginAvatar(p.avatarUrl, p.name)
-        Spacer(Modifier.width(MibotSpace.M))
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(p.name, fontSize = MibotType.Body, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (desc.isNotBlank()) {
-                Text(desc, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3, overflow = TextOverflow.Ellipsis)
-            }
-            Row(Modifier.padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("★ ${starText(p.stars)} · ${PluginCategories.of(p)}", fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (showOriginal) StatusChip("原文", ChipKind.NEUTRAL)
-                else if (zh == null && p.description.isNotBlank()) StatusChip("待翻译", ChipKind.NEUTRAL)
-                inst?.conversion?.let { c ->
-                    when (c.state) {
-                        ConvState.OK -> StatusChip("已转换", ChipKind.OK)
-                        ConvState.PARTIAL -> StatusChip("已转换 · 部分可用", ChipKind.WARN)
-                        ConvState.FAIL -> StatusChip("无法转换", ChipKind.ERR)
+            Text(p.name, fontSize = MibotType.Body, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+            Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(desc.ifBlank { "（无描述）" }, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.heightIn(min = 34.dp))
+                    val tags = buildList {
+                        if (showOriginal) add("原文")
+                        inst?.conversion?.let { c -> add(when (c.state) { ConvState.OK -> "已转换"; ConvState.PARTIAL -> "部分可用"; ConvState.FAIL -> "无法转换" }) }
                     }
+                    Text(
+                        "★ ${starText(p.stars)} · ${PluginCategories.of(p)} · ${p.license.ifBlank { "未声明" }}" + tags.joinToString("") { " · $it" },
+                        style = Tnum, fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp),
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                when {
+                    busy != null -> ActionButton(if (busy.startsWith("转换")) "转换中" else "处理中", 2, null)
+                    onConvert != null && inst?.conversion == null && !(inst != null && p.pushedAt > inst.pushedAt + 60_000) -> ActionButton("转换", 3, onConvert)
+                    inst == null -> ActionButton("试装", 0, onInstall)
+                    p.pushedAt > inst.pushedAt + 60_000 -> ActionButton("更新", 1, onInstall)
+                    else -> ActionButton("已安装", 2, null)
                 }
             }
+            if (busy != null) DownloadLine(busy, dl)
         }
-        Spacer(Modifier.width(MibotSpace.S))
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            when {
-                busy != null -> StatusChip(busy, ChipKind.WARN)
-                onConvert != null && inst?.conversion == null -> {
-                    SmallPill("尝试转换", filled = false, onClick = onConvert)
-                    Text("实验", fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                inst == null -> SmallPill("试装", filled = false, onClick = onInstall)
-                p.pushedAt > inst.pushedAt + 60_000 -> {
-                    SmallPill("更新", filled = true, onClick = onInstall)
-                    StatusChip("已安装", ChipKind.OK)
-                }
-                else -> StatusChip("已安装", ChipKind.OK)
-            }
+    }
+}
+
+/** Thin progress bar + small 「下载中 32%」 (no host here — that lives in the detail page). */
+@Composable
+private fun DownloadLine(stage: String, dl: PluginInstaller.Dl?) {
+    val downloading = stage.startsWith("下载中")
+    val frac = if (downloading) dl?.fraction else null
+    val label = when {
+        downloading && frac != null -> "下载中 ${(frac * 100).toInt()}%"
+        downloading && dl != null && dl.bytes > 0 -> "下载中 " + String.format("%.1f MB", dl.bytes / 1_048_576f)
+        downloading -> "下载中"
+        else -> stage.substringBefore('（').take(12)
+    }
+    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f).height(2.dp).clip(RoundedCornerShape(1.dp)).background(MibotTokens.hairline())) {
+            if (frac != null) Box(Modifier.fillMaxWidth(frac).fillMaxHeight().background(MibotTokens.accent()))
+            else androidx.compose.material3.LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(), color = MibotTokens.accent(), trackColor = Color.Transparent,
+            )
         }
+        Spacer(Modifier.width(8.dp))
+        Text(label, style = Tnum, fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
     }
 }
 
@@ -480,6 +599,7 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
         }
         val p = plugin ?: return@LaunchedEffect
         PluginTranslator.translateDescriptions(ctx, listOf(p.description))
+        PluginManifests.ensure(ctx, listOf(p))
         // Refine "phone-usable" from the real manifests.
         val pkg = SkillHubApi.rawFile(p, "package.json")
         val req = SkillHubApi.rawFile(p, "requirements.txt")
@@ -519,9 +639,10 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
             return@MibotScaffold
         }
         val zhDesc = rememberZh(p.description)
-        val listReasons = PluginCompat.desktopReasons(p)
-        val reasons = (listReasons + extraReasons).distinct()
-        val phone = inst?.conversion?.let { it.state != ConvState.FAIL } ?: reasons.isEmpty()
+        val manifests by PluginManifests.facts.collectAsState()
+        val v = PluginCompat.verdict(p, inst, manifests[p.fullName])
+        val phone = v.kind == PluginCompat.Fit.PHONE && extraReasons.isEmpty()
+        val reasons = if (phone) emptyList() else (v.reasons + extraReasons).distinct()
 
         // Header
         MibotCard(padding = PaddingValues(16.dp)) {
@@ -545,7 +666,8 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
                     inst?.conversion?.state == ConvState.OK -> StatusChip("已转换 · 手机能用", ChipKind.OK)
                     inst?.conversion?.state == ConvState.PARTIAL -> StatusChip("已转换 · 部分可用", ChipKind.WARN)
                     phone -> StatusChip("手机能用", ChipKind.OK)
-                    else -> StatusChip("需电脑/其他", ChipKind.WARN)
+                    v.kind == PluginCompat.Fit.UNVERIFIED && extraReasons.isEmpty() -> StatusChip("未核实", ChipKind.NEUTRAL)
+                    else -> StatusChip("需电脑 / DSH 宿主", ChipKind.WARN)
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -587,7 +709,7 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
         }
 
         if (reasons.isNotEmpty() && inst?.conversion == null) {
-            MibotSectionHeader("为什么需要电脑")
+            MibotSectionHeader(if (v.kind == PluginCompat.Fit.UNVERIFIED && extraReasons.isEmpty()) "为什么未核实" else "为什么不算手机能用")
             MibotCard(padding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
                 reasons.forEach { Text("· $it", fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }

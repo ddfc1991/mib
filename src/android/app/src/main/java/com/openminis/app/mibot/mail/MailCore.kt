@@ -415,8 +415,14 @@ object MailCore {
         if (p.kind == "demo") return ProbeResult(now, ProbeStatus.OK, 1, "演示 · 本机回环")
         val spec = p.step("probe") ?: p.step("list") ?: return ProbeResult(now, ProbeStatus.ERROR, 0, "模板没有 probe")
         val r = MailHttp.call(spec, MailProviders.configVars(ctx, p) + mapOf("token" to "probe", "address" to "probe@example.com", "local" to "probe"))
-        val st = if (r.ok || r.code == 400) ProbeStatus.OK else classify(r)
-        return ProbeResult(now, st, r.ms, if (r.code < 0) (r.error ?: "network") else "HTTP ${r.code}")
+        // [fork/mibot-v5b2] Platform level: there is no mailbox to have been deleted, so a 404/410
+        // means the platform's endpoint is gone → 平台不可用 (not 邮箱被删).
+        val st = when {
+            r.ok || r.code == 400 -> ProbeStatus.OK
+            r.code == 404 || r.code == 410 -> ProbeStatus.PLATFORM_DOWN
+            else -> classify(r)
+        }
+        return ProbeResult(now, st, r.ms, if (r.code < 0) (r.error ?: "network") else if (st == ProbeStatus.PLATFORM_DOWN && r.code in 404..410) "接口不存在 · HTTP ${r.code}" else "HTTP ${r.code}")
     }
 
     /** Full mailbox probe: platform reachable, login works, token valid, inbox readable. */

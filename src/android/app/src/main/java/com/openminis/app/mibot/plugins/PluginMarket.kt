@@ -124,7 +124,35 @@ object PluginCompat {
     }
 
     fun phoneUsable(p: MarketPlugin, store: InstalledPlugin?): Boolean =
-        store?.conversion?.let { it.state != ConvState.FAIL } ?: desktopReasons(p).isEmpty()
+        verdict(p, store, PluginManifests.get(p.fullName)).kind == Fit.PHONE
+
+    enum class Fit { PHONE, DESKTOP, UNVERIFIED }
+    data class Verdict(val kind: Fit, val reasons: List<String>)
+
+    /**
+     * [fork/mibot-v5b2] Tightened 「手机能用」: needs positive evidence.
+     * PHONE = a Mibot native adapter, a successful conversion, or cached manifests with no
+     * DSH-host dependency and no desktop blocker. Anything written against the DeepSeek
+     * Harness host (dsh manifest / @deepseek-ai/… peer packages) is NOT phone-usable — Mibot has no
+     * DSH host. No manifest data yet → UNVERIFIED (unless the text already shows a desktop blocker).
+     */
+    fun verdict(p: MarketPlugin, store: InstalledPlugin?, m: ManifestFacts?): Verdict {
+        if (PluginAdapters.hasAdapter(p.fullName)) return Verdict(Fit.PHONE, listOf("Mibot 原生适配"))
+        store?.conversion?.let { c ->
+            return if (c.state == ConvState.FAIL) Verdict(Fit.DESKTOP, listOfNotNull(c.reason ?: "转换失败"))
+            else Verdict(Fit.PHONE, listOf("已转换"))
+        }
+        val text = desktopReasons(p)
+        if (m == null) return if (text.isNotEmpty()) Verdict(Fit.DESKTOP, text) else Verdict(Fit.UNVERIFIED, listOf("清单未读取"))
+        val r = buildList {
+            if (m.dshHost) add("依赖 DSH 宿主" + (m.hostDetail?.let { "（$it）" } ?: ""))
+            addAll(m.desktop)
+            if (p.categoryKey == "client" || p.categoryKey == "fun-dressup") add("改造 DSH 桌面/网页界面")
+        }
+        if (r.isNotEmpty()) return Verdict(Fit.DESKTOP, r.distinct())
+        if (!m.hasPackageJson && !m.hasRequirements) return Verdict(Fit.UNVERIFIED, listOf("仓库没有 package.json / requirements.txt"))
+        return Verdict(Fit.PHONE, emptyList())
+    }
 }
 
 object SkillHubApi {
@@ -334,6 +362,13 @@ object PluginInstaller {
     private const val TAG = "MibotPlugins"
     private const val MAX_BYTES = 120L * 1024 * 1024
 
+    /** [fork/mibot-v5b2] Live download progress per plugin (list shows a thin bar + 「下载中 32%」). */
+    data class Dl(val bytes: Long, val total: Long) {
+        val fraction: Float? get() = if (total > 0) (bytes.toFloat() / total).coerceIn(0f, 1f) else null
+    }
+    private val _downloads = MutableStateFlow<Map<String, Dl>>(emptyMap())
+    val downloads: StateFlow<Map<String, Dl>> get() = _downloads
+
     /** Candidate download URLs for a ref: GitHub codeload first, then public mirrors. */
     fun zipUrls(p: MarketPlugin, ref: String): List<String> {
         val gh = "https://github.com/${p.owner}/${p.name}/archive/$ref.zip"
@@ -359,7 +394,8 @@ object PluginInstaller {
         loop@ for (u in zipUrls(p, ref) + if (ref != p.defaultBranch) zipUrls(p, p.defaultBranch) else emptyList()) {
             for (attempt in 1..2) {
                 progress("下载中（${host(u)}${if (attempt > 1) " · 重试" else ""}）")
-                val r = runCatching { download(u, tmp) }
+                val r = runCatching { download(u, tmp) { b, t -> _downloads.value = _downloads.value + (p.fullName to Dl(b, t)) } }
+                _downloads.value = _downloads.value - p.fullName
                 if (r.isSuccess) { ok = true; break@loop }
                 lastErr = r.exceptionOrNull()?.message ?: "unknown"
                 Log.w(TAG, "download $u: $lastErr")
@@ -394,7 +430,7 @@ object PluginInstaller {
 
     private fun host(u: String) = runCatching { URL(u).host }.getOrDefault(u)
 
-    private fun download(u: String, out: File) {
+    private fun download(u: String, out: File, onBytes: (Long, Long) -> Unit = { _, _ -> }) {
         val c = (URL(u).openConnection() as HttpURLConnection).apply {
             connectTimeout = 15_000; readTimeout = 60_000; instanceFollowRedirects = true
             setRequestProperty("User-Agent", "Mibot-Android")
@@ -403,6 +439,9 @@ object PluginInstaller {
             val code = c.responseCode
             if (code !in 200..299) throw java.io.IOException("HTTP $code")
             var total = 0L
+            val len = c.contentLengthLong
+            var lastTick = 0L
+            onBytes(0, len)
             c.inputStream.use { input ->
                 out.outputStream().use { o ->
                     val buf = ByteArray(64 * 1024)
@@ -411,6 +450,8 @@ object PluginInstaller {
                         total += n
                         if (total > MAX_BYTES) throw java.io.IOException("too large (>120 MB)")
                         o.write(buf, 0, n)
+                        val now = System.currentTimeMillis()
+                        if (now - lastTick > 150) { lastTick = now; onBytes(total, len) }
                     }
                 }
             }

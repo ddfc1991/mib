@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountTree
@@ -116,7 +117,9 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
         "${inst.label}（${sameProvider}${t(" 账号", " acct")}）· ${entry.model.displayName}" + (group?.name?.let { " · $it" } ?: "")
     }
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottom + 24.dp)) {
+    // [fork/mibot-v5b2] The list viewport stops at the top of the floating tab bar, so no row
+    // (e.g. AI 邮箱 on the first screen) ever sits under the bar or in the gesture strip below it.
+    LazyColumn(Modifier.fillMaxSize().padding(bottom = bottom), contentPadding = PaddingValues(bottom = 16.dp)) {
         item { MibotPageTitle(t("设置", "Settings")) }
         item {
             Spacer(Modifier.height(4.dp))
