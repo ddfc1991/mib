@@ -126,30 +126,44 @@ object PluginCompat {
     fun phoneUsable(p: MarketPlugin, store: InstalledPlugin?): Boolean =
         verdict(p, store, PluginManifests.get(p.fullName)).kind == Fit.PHONE
 
-    enum class Fit { PHONE, DESKTOP, UNVERIFIED }
+    /** [fork/mibot-v5b4] PENDING = DSH plugin waiting for host services (待支持); UNSUPPORTED = block list (不支持). */
+    enum class Fit { PHONE, DESKTOP, UNVERIFIED, PENDING, UNSUPPORTED }
     data class Verdict(val kind: Fit, val reasons: List<String>)
+
+    /** List sections: PENDING / UNSUPPORTED sit with the desktop ones. */
+    fun notPhone(f: Fit) = f == Fit.DESKTOP || f == Fit.PENDING || f == Fit.UNSUPPORTED
 
     /**
      * [fork/mibot-v5b2] Tightened 「手机能用」: needs positive evidence.
-     * PHONE = a Mibot native adapter, a successful conversion, or cached manifests with no
-     * DSH-host dependency and no desktop blocker. Anything written against the DeepSeek
-     * Harness host (dsh manifest / @deepseek-ai/… peer packages) is NOT phone-usable — Mibot has no
-     * DSH host. No manifest data yet → UNVERIFIED (unless the text already shows a desktop blocker).
+     * [fork/mibot-v5b4] DSH plugins are judged by the DSH host (stage 1): skill-only plugins and plugins
+     * the host loaded are phone-usable; a plugin whose required services the host lacks is 「待支持：<services>」;
+     * the block list (dsh-purge forks, dsh-market, host patchers) is 「不支持」.
      */
     fun verdict(p: MarketPlugin, store: InstalledPlugin?, m: ManifestFacts?): Verdict {
+        (m?.blocked ?: DshPolicy.blockReason(p.fullName, null, null))?.let { return Verdict(Fit.UNSUPPORTED, listOf(it)) }
         if (PluginAdapters.hasAdapter(p.fullName)) return Verdict(Fit.PHONE, listOf("Mibot 原生适配"))
+        store?.host?.let { h ->
+            when (h.state) {
+                "SKILLS" -> return Verdict(Fit.PHONE, listOf("已导入为 Mibot 技能"))
+                "RUNNING", "STOPPED" -> return Verdict(Fit.PHONE, listOf("DSH 宿主已加载"))
+                "PENDING" -> return Verdict(Fit.PENDING, listOf("待支持：" + h.missing.ifEmpty { listOf("宿主服务") }.joinToString(", ")))
+                "BLOCKED" -> return Verdict(Fit.UNSUPPORTED, listOfNotNull(h.error ?: "不支持"))
+                else -> Unit // FAILED: fall through to the static verdict; the detail page shows the log
+            }
+        }
         store?.conversion?.let { c ->
             return if (c.state == ConvState.FAIL) Verdict(Fit.DESKTOP, listOfNotNull(c.reason ?: "转换失败"))
             else Verdict(Fit.PHONE, listOf("已转换"))
         }
         val text = desktopReasons(p)
         if (m == null) return if (text.isNotEmpty()) Verdict(Fit.DESKTOP, text) else Verdict(Fit.UNVERIFIED, listOf("清单未读取"))
+        if (m.skillOnly) return Verdict(Fit.PHONE, listOf("技能插件：可导入为 Mibot 技能"))
         val r = buildList {
-            if (m.dshHost) add("依赖 DSH 宿主" + (m.hostDetail?.let { "（$it）" } ?: ""))
             addAll(m.desktop)
             if (p.categoryKey == "client" || p.categoryKey == "fun-dressup") add("改造 DSH 桌面/网页界面")
         }
         if (r.isNotEmpty()) return Verdict(Fit.DESKTOP, r.distinct())
+        if (m.dshHost) return Verdict(Fit.PENDING, listOf("待支持：DSH 宿主服务（试装后点「启动」可列出具体缺少的服务）"))
         if (!m.hasPackageJson && !m.hasRequirements) return Verdict(Fit.UNVERIFIED, listOf("仓库没有 package.json / requirements.txt"))
         return Verdict(Fit.PHONE, emptyList())
     }
@@ -251,6 +265,8 @@ data class InstalledPlugin(
     val perms: Map<String, Boolean> = emptyMap(),
     val conversion: Conversion? = null,
     val note: String? = null,
+    /** [fork/mibot-v5b4] Last DSH host load result (see DshHost.kt). */
+    val host: HostResult? = null,
 )
 
 object PluginStore {
@@ -319,6 +335,7 @@ object PluginStore {
                 put("dir", p.dir); put("size", p.sizeBytes); put("status", p.status.name)
                 put("perms", JSONObject(p.perms.mapValues { it.value }))
                 p.note?.let { put("note", it) }
+                p.host?.let { put("host", it.toJson()) }
                 p.conversion?.let { c ->
                     put("conv", JSONObject().put("state", c.state.name).put("missing", JSONArray(c.missing))
                         .put("reason", c.reason ?: "").put("log", c.log.takeLast(12_000)).put("at", c.at))
@@ -350,6 +367,7 @@ object PluginStore {
                     // provider stays registered). Everything else is installed-not-running.
                     status = if (j.optString("note").startsWith("运行中")) PluginStatus.RUNNING else PluginStatus.IDLE,
                     perms = perms, conversion = conv, note = j.optString("note").ifBlank { null },
+                    host = HostResult.from(j.optJSONObject("host")),
                 )
             }.getOrNull()
         }.toMap()
@@ -490,7 +508,7 @@ object PluginInstaller {
  * models are registered in the gateway and probed with a real request).
  */
 object PluginRunner {
-    const val IDLE_NOTE = "Mibot 没有 DSH 宿主，不执行插件代码；这个插件目前只是下载到了本机。"
+    const val IDLE_NOTE = "未启动。DSH 插件点「启动」由 Mibot 的 DSH 宿主（沙箱里的 Node 22）加载。"
 
     suspend fun start(ctx: Context, fullName: String) {
         val p = PluginStore.get(ctx, fullName) ?: return

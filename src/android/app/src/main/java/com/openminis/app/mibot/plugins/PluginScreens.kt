@@ -191,13 +191,15 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     }
     // Real manifests decide 「手机能用」 (cached per pushedAt; fetched once).
     LaunchedEffect(items.size) { if (items.isNotEmpty()) PluginManifests.ensure(ctx, items.toList()) }
+    LaunchedEffect(Unit) { runCatching { DshMobileCatalog.ensure(ctx) } }
+    val mobileCatalog by DshMobileCatalog.entries.collectAsState()
 
     val filtered = items.filter { p ->
         (!oneClickOnly || p.oneClick) && (tab == PluginCategories.ALL || PluginCategories.of(p) == tab)
     }
     val fit = filtered.associate { it.fullName to PluginCompat.verdict(it, installed[it.fullName], manifests[it.fullName]).kind }
     val phone = filtered.filter { fit[it.fullName] == PluginCompat.Fit.PHONE }
-    val desktop = filtered.filter { fit[it.fullName] == PluginCompat.Fit.DESKTOP }
+    val desktop = filtered.filter { fit[it.fullName]?.let(PluginCompat::notPhone) == true }
     val unverified = filtered.filter { fit[it.fullName] == PluginCompat.Fit.UNVERIFIED }
     // search, filter bar, status line, phone header, phone rows (or empty line) → desktop header.
     desktopIndex[0] = 4 + maxOf(phone.size, 1)
@@ -236,7 +238,9 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                 p, installed[p.fullName], busy[p.fullName], downloads[p.fullName], showOriginal[p.fullName] == true,
                 onToggleOriginal = { showOriginal[p.fullName] = showOriginal[p.fullName] != true },
                 onOpen = { onOpen(p.fullName) }, onInstall = { install(p) },
-                onConvert = if (convertible) ({ convert(p) }) else null,
+                onConvert = if (convertible && fit[p.fullName] != PluginCompat.Fit.UNSUPPORTED && fit[p.fullName] != PluginCompat.Fit.PENDING) ({ convert(p) }) else null,
+                fitTag = when (fit[p.fullName]) { PluginCompat.Fit.PENDING -> "待支持"; PluginCompat.Fit.UNSUPPORTED -> "不支持"; else -> null },
+                mobile = p.fullName.lowercase() in mobileCatalog,
             )
             if (i < list.lastIndex) Hairline(start = TextInset)
         }
@@ -266,7 +270,7 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                 item(key = "h-phone") { SectionHeader("手机能用", phone.size, "在 Mibot 沙箱或原生适配中可用") }
                 if (phone.isEmpty()) item(key = "e-phone") { EmptyLine("当前筛选下没有确认手机能用的插件") }
                 else item(key = "r-phone") { Column { Rows(phone, convertible = false) } }
-                item(key = "h-desktop") { SectionHeader("需电脑 / DSH 宿主", desktop.size, "依赖 DSH 宿主或桌面环境") }
+                item(key = "h-desktop") { SectionHeader("待支持 / 需电脑", desktop.size, "DSH 宿主尚缺服务、桌面专用或不支持") }
                 if (desktop.isEmpty()) item(key = "e-desktop") { EmptyLine("无") }
                 else item(key = "r-desktop") { Column { Rows(desktop, convertible = true) } }
                 if (unverified.isNotEmpty()) {
@@ -283,7 +287,7 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                             onClick = { scope.launch { load(page + 1) } })
                     }
                 }
-                MibotFootnote("数据来自 SkillHub DSH Plugin 广场，插件为 GitHub 开源项目（许可证见详情）。「手机能用」依据插件的 package.json / requirements.txt：依赖 DSH 宿主的插件不算手机能用。安装只下载代码到本机插件目录。")
+                MibotFootnote("数据来自 SkillHub DSH Plugin 广场，插件为 GitHub 开源项目（许可证见详情）。「手机能用」依据插件的 package.json / requirements.txt / cordis.patch.yml 与 Mibot DSH 宿主的实际加载结果；「移动目录」= 收录于 dsh-mobile-plugin-catalog（CC0）。安装只下载代码到本机插件目录。")
             }
         }
     }
@@ -493,6 +497,8 @@ private fun MarketRow(
     onOpen: () -> Unit,
     onInstall: () -> Unit,
     onConvert: (() -> Unit)?,
+    fitTag: String? = null,
+    mobile: Boolean = false,
 ) {
     val zh = rememberZh(p.description)
     val desc = if (showOriginal || zh == null) p.description else zh
@@ -517,6 +523,8 @@ private fun MarketRow(
                         modifier = Modifier.heightIn(min = 34.dp))
                     val tags = buildList {
                         if (showOriginal) add("原文")
+                        fitTag?.let { add(it) }
+                        if (mobile) add("移动目录")
                         inst?.conversion?.let { c -> add(when (c.state) { ConvState.OK -> "已转换"; ConvState.PARTIAL -> "部分可用"; ConvState.FAIL -> "无法转换" }) }
                     }
                     Text(
@@ -667,8 +675,11 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
                     inst?.conversion?.state == ConvState.PARTIAL -> StatusChip("已转换 · 部分可用", ChipKind.WARN)
                     phone -> StatusChip("手机能用", ChipKind.OK)
                     v.kind == PluginCompat.Fit.UNVERIFIED && extraReasons.isEmpty() -> StatusChip("未核实", ChipKind.NEUTRAL)
-                    else -> StatusChip("需电脑 / DSH 宿主", ChipKind.WARN)
+                    v.kind == PluginCompat.Fit.UNSUPPORTED -> StatusChip("不支持", ChipKind.ERR)
+                    v.kind == PluginCompat.Fit.PENDING -> StatusChip("待支持", ChipKind.WARN)
+                    else -> StatusChip("需电脑", ChipKind.WARN)
                 }
+                if (DshMobileCatalog.contains(p.fullName)) StatusChip("移动目录收录", ChipKind.NEUTRAL)
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -687,7 +698,8 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
                     runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(p.repoUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 })
             }
-            if (!phone || inst?.conversion != null) {
+            val dshPlugin = manifests[p.fullName]?.dshHost == true
+            if ((!phone || inst?.conversion != null) && !dshPlugin && v.kind != PluginCompat.Fit.UNSUPPORTED) {
                 Spacer(Modifier.height(10.dp))
                 MibotButton(
                     if (busy != null) "处理中…" else if (inst?.conversion != null) "重新尝试转换（实验）" else "尝试转换为手机版（实验）",
@@ -709,7 +721,12 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
         }
 
         if (reasons.isNotEmpty() && inst?.conversion == null) {
-            MibotSectionHeader(if (v.kind == PluginCompat.Fit.UNVERIFIED && extraReasons.isEmpty()) "为什么未核实" else "为什么不算手机能用")
+            MibotSectionHeader(when {
+                v.kind == PluginCompat.Fit.UNSUPPORTED -> "不支持的原因"
+                v.kind == PluginCompat.Fit.PENDING -> "待支持"
+                v.kind == PluginCompat.Fit.UNVERIFIED && extraReasons.isEmpty() -> "为什么未核实"
+                else -> "为什么不算手机能用"
+            })
             MibotCard(padding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
                 reasons.forEach { Text("· $it", fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
@@ -759,6 +776,10 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
             MibotFootnote(PluginAdapters.ATTRIBUTION)
         }
 
+        if (manifests[p.fullName]?.dshHost == true || (inst != null && remember(inst.installedAt) { DshHostManager.isDshPlugin(inst) })) {
+            DshHostSection(p, inst, v)
+        }
+
         if (inst != null) {
             val running = inst.status == PluginStatus.RUNNING
             MibotSectionHeader("插件设置")
@@ -776,11 +797,14 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
                 )
                 Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     when {
-                        running -> MibotButton("停止", tonal = true, modifier = Modifier.weight(1f), onClick = { PluginRunner.stop(ctx, fullName) })
+                        running && !PluginAdapters.hasAdapter(fullName) -> Unit // DSH host plugins: start/stop live in the 「DSH 宿主」 card
+                    running -> MibotButton("停止", tonal = true, modifier = Modifier.weight(1f), onClick = { PluginRunner.stop(ctx, fullName) })
                         inst.status == PluginStatus.PREPARING -> MibotButton("启用中…", tonal = true, enabled = false, modifier = Modifier.weight(1f), onClick = {})
                         PluginAdapters.hasAdapter(fullName) -> MibotButton("启用原生适配", tonal = true, modifier = Modifier.weight(1f), onClick = { scope.launch { PluginRunner.start(ctx, fullName) } })
                     }
-                    MibotButton("卸载", tonal = true, modifier = Modifier.weight(1f), onClick = { PluginStore.remove(ctx, fullName) })
+                    MibotButton("卸载", tonal = true, modifier = Modifier.weight(1f), onClick = {
+                        scope.launch { DshHostManager.forget(ctx, fullName); PluginStore.remove(ctx, fullName) }
+                    })
                 }
                 MibotDivider()
                 Text("权限（默认全部关闭）", fontSize = MibotType.Section, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -830,4 +854,94 @@ fun PluginDetailScreen(fullName: String, onBack: () -> Unit) {
             })
         }
     }
+}
+
+// ------------------------------------------------------------------ DSH host (stage 1)
+
+/** [fork/mibot-v5b4] Real host status: 未启动 / 准备中 / 运行中 / 待支持 / 失败 + 日志 / 不支持; start/stop; log viewer. */
+@Composable
+private fun DshHostSection(p: MarketPlugin, inst: InstalledPlugin?, v: PluginCompat.Verdict) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val lives by DshHostManager.live.collectAsState()
+    val logsMap by DshHostManager.logs.collectAsState()
+    val live = lives[p.fullName]
+    val h = inst?.host
+    var showLog by remember { mutableStateOf(false) }
+    var cmdOut by remember { mutableStateOf<String?>(null) }
+    val blocked = v.kind == PluginCompat.Fit.UNSUPPORTED
+    val (label, kind) = when {
+        blocked -> "不支持" to ChipKind.ERR
+        live?.phase == DshHostManager.Phase.PREPARING -> "准备中" to ChipKind.WARN
+        live?.phase == DshHostManager.Phase.RUNNING || (live == null && h?.state == "SKILLS") -> "运行中" to ChipKind.OK
+        live?.phase == DshHostManager.Phase.PENDING || (live == null && h?.state == "PENDING") -> "待支持" to ChipKind.WARN
+        live?.phase == DshHostManager.Phase.FAILED || (live == null && h?.state == "FAILED") -> "失败" to ChipKind.ERR
+        else -> "未启动" to ChipKind.NEUTRAL
+    }
+    MibotSectionHeader("DSH 宿主（实验）")
+    MibotCard(padding = PaddingValues(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusChip(label, kind)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                when {
+                    blocked -> v.reasons.firstOrNull() ?: "在 Mibot 中不支持"
+                    live?.phase == DshHostManager.Phase.PREPARING -> live?.progress ?: "准备中…"
+                    label == "运行中" && h?.skills?.isNotEmpty() == true -> "已导入 ${h?.skills?.size} 个技能：${h?.skills?.joinToString()}"
+                    label == "运行中" -> "插件已在 Node 宿主中加载（Cordis ACTIVE）"
+                    label == "待支持" -> "待支持：" + (h?.missing?.ifEmpty { null }?.joinToString(", ") ?: "宿主服务")
+                    label == "失败" -> h?.error?.lines()?.firstOrNull()?.take(160) ?: "加载失败"
+                    inst == null -> "试装后可启动"
+                    else -> "未启动 · 点「启动」在沙箱 Node 22 中加载"
+                },
+                fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (h != null && h.requested.isNotEmpty()) Text("申请的宿主服务：" + h.requested.joinToString(", "), fontSize = MibotType.Caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+        if (h?.node != null) Text("Node ${h?.node} · 已提供：logger, locale, config, commands", fontSize = MibotType.Caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+        if (!blocked && inst != null) {
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                val preparing = live?.phase == DshHostManager.Phase.PREPARING
+                val active = label == "运行中"
+                if (active) MibotButton("停止", tonal = true, modifier = Modifier.weight(1f), onClick = { scope.launch { DshHostManager.stop(ctx, p.fullName) } })
+                MibotButton(if (preparing) "启动中…" else if (active) "重新启动" else if (h != null) "重新加载" else "启动",
+                    enabled = !preparing, modifier = Modifier.weight(1f), onClick = {
+                        scope.launch {
+                            if (active) DshHostManager.stop(ctx, p.fullName)
+                            DshHostManager.start(ctx, p.fullName)
+                        }
+                    })
+            }
+        }
+        live?.commands?.takeIf { it.isNotEmpty() && label == "运行中" }?.let { cmds ->
+            Text("命令", fontSize = MibotType.Secondary, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 10.dp))
+            cmds.forEach { c ->
+                Text("/$c  ▸ 运行", fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.padding(top = 4.dp).clickable {
+                    scope.launch { cmdOut = runCatching { DshHostManager.runCommand(p.fullName, c) }.getOrElse { "失败：${it.message}" } }
+                })
+            }
+            cmdOut?.let { Text(it.take(1200), fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp)) }
+        }
+        if (inst != null) {
+            val lines = logsMap[p.fullName] ?: remember(inst.installedAt, h?.at) { DshHostManager.logLines(ctx, p.fullName) }
+            Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (showLog) "收起日志" else "查看日志（${lines.size}）", fontSize = MibotType.Secondary, color = MibotTokens.accent(),
+                    modifier = Modifier.clickable { showLog = !showLog })
+                if (showLog && lines.isNotEmpty()) {
+                    Spacer(Modifier.width(16.dp))
+                    Text("清空", fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { DshHostManager.clearLog(ctx, p.fullName) })
+                }
+            }
+            if (showLog) Text(
+                if (lines.isEmpty()) "（暂无日志）" else lines.takeLast(200).joinToString("\n"),
+                fontSize = MibotType.Caption, lineHeight = MibotType.SecondaryLine, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+    }
+    MibotFootnote("实验：Mibot 用沙箱里的 Node 22 + 真实 Cordis 内核加载 DSH 插件，每个插件一个进程。第一阶段提供 logger / locale / config / commands；" +
+        "插件需要的其他宿主服务会列为「待支持」。技能插件会导入为 Mibot 技能，停止时停用、卸载时删除。安装依赖时不执行 npm 脚本。")
 }

@@ -32,10 +32,15 @@ data class ManifestFacts(
     /** Desktop-only blockers found in the manifests (Electron, automation, OS-pinned, desktop Python libs). */
     val desktop: List<String>,
     val checkedAt: Long,
+    /** [fork/mibot-v5b4] cordis.patch.yml only mounts dsh-skill-filesystem → importable as Mibot skills. */
+    val skillOnly: Boolean = false,
+    /** [fork/mibot-v5b4] DshPolicy block reason (不支持), if any. */
+    val blocked: String? = null,
 )
 
 object PluginManifests {
     private const val TAG = "MibotPlugins"
+    private const val SCHEMA = 2
     private val state = MutableStateFlow<Map<String, ManifestFacts>>(emptyMap())
     val facts: StateFlow<Map<String, ManifestFacts>> get() = state
     @Volatile private var loaded = false
@@ -54,11 +59,13 @@ object PluginManifests {
                 state.value = o.keys().asSequence().mapNotNull { k ->
                     runCatching {
                         val j = o.getJSONObject(k)
+                        if (j.optInt("v") < SCHEMA) return@runCatching null // re-read with the patch file
                         k to ManifestFacts(
                             pushedAt = j.optLong("pushedAt"), hasPackageJson = j.optBoolean("pkg"), hasRequirements = j.optBoolean("req"),
                             dshHost = j.optBoolean("dsh"), hostDetail = j.optString("dshDetail").ifBlank { null },
                             desktop = j.optJSONArray("desktop")?.let { a -> List(a.length()) { a.optString(it) } } ?: emptyList(),
                             checkedAt = j.optLong("at"),
+                            skillOnly = j.optBoolean("skillOnly"), blocked = j.optString("blocked").ifBlank { null },
                         )
                     }.getOrNull()
                 }.toMap()
@@ -71,7 +78,8 @@ object PluginManifests {
         val o = JSONObject()
         state.value.forEach { (k, m) ->
             o.put(k, JSONObject().put("pushedAt", m.pushedAt).put("pkg", m.hasPackageJson).put("req", m.hasRequirements)
-                .put("dsh", m.dshHost).put("dshDetail", m.hostDetail ?: "").put("desktop", JSONArray(m.desktop)).put("at", m.checkedAt))
+                .put("dsh", m.dshHost).put("dshDetail", m.hostDetail ?: "").put("desktop", JSONArray(m.desktop)).put("at", m.checkedAt)
+                .put("v", SCHEMA).put("skillOnly", m.skillOnly).put("blocked", m.blocked ?: ""))
         }
         runCatching { file(ctx).writeText(o.toString()) }
     }
@@ -114,7 +122,10 @@ object PluginManifests {
         }
         // Both missing from the network is ambiguous (no manifest vs. unreachable): don't cache.
         if (local == null && pkg == null && req == null) return null
-        return analyze(p.pushedAt, pkg, req)
+        val patchRel = pkg?.let { runCatching { JSONObject(it).optJSONObject("dsh")?.optJSONObject("bundle")?.optString("patch") }.getOrNull() }
+            ?.ifBlank { null }?.removePrefix("./")?.takeIf { !it.contains("..") }
+        val patch = patchRel?.let { rel -> if (local != null) File(local, rel).takeIf { it.isFile }?.readText() else SkillHubApi.rawFile(p, rel) }
+        return analyze(p.pushedAt, pkg, req, patch, p.fullName)
     }
 
     private val ELECTRON = setOf("electron", "electron-builder", "electron-store", "@electron/remote", "electron-updater")
@@ -122,7 +133,7 @@ object PluginManifests {
     private val PY_DESKTOP = setOf("pyautogui", "pynput", "keyboard", "mouse", "pywinauto", "pywin32", "pypiwin32", "pyobjc", "pygetwindow", "wxpython", "pyqt5", "pyqt6", "pyside6")
 
     /** Pure function (unit-testable): manifest texts → facts. */
-    fun analyze(pushedAt: Long, pkgText: String?, reqText: String?): ManifestFacts {
+    fun analyze(pushedAt: Long, pkgText: String?, reqText: String?, patchText: String? = null, fullName: String = ""): ManifestFacts {
         val desktop = mutableListOf<String>()
         var dsh = false
         var dshDetail: String? = null
@@ -148,6 +159,8 @@ object PluginManifests {
                 .map { it.split('=', '<', '>', '[', ';', '~', '!', ' ').first().lowercase() }
             names.filter { it in PY_DESKTOP }.takeIf { it.isNotEmpty() }?.let { desktop += "桌面专用 Python 库（${it.joinToString()}）" }
         }
-        return ManifestFacts(pushedAt, pkgText != null, reqText != null, dsh, dshDetail, desktop, System.currentTimeMillis())
+        val info = patchText?.let { DshPatch.analyze(it) }
+        return ManifestFacts(pushedAt, pkgText != null, reqText != null, dsh, dshDetail, desktop, System.currentTimeMillis(),
+            skillOnly = info?.skillOnly == true, blocked = DshPolicy.blockReason(fullName, pkgText, patchText))
     }
 }

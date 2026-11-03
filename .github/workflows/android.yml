@@ -98,6 +98,17 @@ jobs:
       - name: Locale check (zh / zh-rTW new keys)
         run: python3 .github/ci/check_new_locale_keys.py
 
+      # [fork/mibot-v5b4] The DSH host kit (assets/mibot/dsh-host) on real Node 22:
+      # loads nuwa-skill / answer-me-with-html (skills), modlens (PENDING: missing
+      # services) and a fixture plugin (commands.run) over the stdio JSON-RPC.
+      - name: Set up Node 22 (DSH host self-test)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: DSH host kit self-test
+        run: bash .github/ci/dsh_host_selftest.sh
+
       - name: Build-time customization (empty values)
         run: cp src/android/app/provider-customization.properties.example src/android/app/provider-customization.properties
 

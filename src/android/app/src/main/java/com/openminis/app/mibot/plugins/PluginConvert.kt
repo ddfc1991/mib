@@ -35,7 +35,7 @@ object PluginConverter {
         NATIVE_MODULE("原生 Node 模块（需为 arm64 重编译）"),
         OS_PATH("Windows / macOS 路径"),
         AUTOMATION("桌面自动化"),
-        DSH_HOST("依赖 DSH 宿主（桌面/网页客户端）"),
+        DSH_HOST("DSH 插件（由 Mibot DSH 宿主加载）"),
     }
 
     data class Blocker(val kind: BlockerKind, val detail: String)
@@ -220,7 +220,7 @@ object PluginConverter {
         a.blockers.forEach { b ->
             when (b.kind) {
                 BlockerKind.NATIVE_BINARY -> missing += "原生程序不可用：${b.detail}"
-                BlockerKind.DSH_HOST -> missing += "DSH 宿主 API / 界面挂载（Mibot 尚未提供）"
+                BlockerKind.DSH_HOST -> missing += "DSH 插件：请在详情页「DSH 宿主」卡片里启动（转换不加载 DSH 插件）"
                 BlockerKind.ELECTRON -> missing += "桌面窗口 → 插件面板（WebView，实验）"
                 BlockerKind.AUTOMATION -> missing += "桌面自动化 → 虚拟屏/无障碍桥（请求只入队，执行端未接入）"
                 BlockerKind.OS_PATH -> missing += "Windows/macOS 路径已重定向到沙箱目录，硬编码路径可能失效"
