@@ -107,6 +107,11 @@ object VdController {
                 val s = State(Mode.HELPER, d.displayId, w, h)
                 _state.value = s
                 log("vd_create: display ${d.displayId} ${w}x$h@$dpi (${phone.hub.source})")
+                // S2: which display the ROM actually gave us (trusted or untrusted fallback, keep-awake, fullscreen).
+                runCatching { shell.displayInfo(d.displayId) }.getOrNull()?.takeIf { !it.isEmpty }?.let { i ->
+                    log("vd_create: trusted=${i.getBoolean("trusted")} ownFocus=${i.getBoolean("ownFocus")} awake=${i.getBoolean("awake")} " +
+                        "fullscreen=${i.getBoolean("windowingModeSet")} group=${i.getInt("group", -1)} flags=0x${Integer.toHexString(i.getInt("flags"))}")
+                }
                 VdForegroundService.start(app)
                 s
             }.onFailure { log("vd_create failed: ${it.message}") }

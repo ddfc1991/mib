@@ -160,6 +160,28 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
     private fun ownDisplay(displayId: Int): Boolean =
         displayId != Display.DEFAULT_DISPLAY && synchronized(displays) { displayId in displays }
 
+    override fun displayInfo(displayId: Int): Bundle {
+        val out = Bundle()
+        if (!ownDisplay(displayId)) return out
+        val st = synchronized(displays) { displayStates[displayId] } ?: return out
+        out.putBoolean("trusted", st.trusted)
+        out.putInt("flags", st.flags)
+        out.putBoolean("ownFocus", st.flags and FLAG_OWN_FOCUS != 0)
+        out.putInt("group", displayGroup(displayId) ?: -1)
+        out.putBoolean("awake", awake.isRunning(displayId))
+        out.putInt("rotation", displayRotation(displayId) ?: -1)
+        out.putBoolean("windowingModeSet", st.windowingModeSet)
+        return out
+    }
+
+    /** Hidden DisplayInfo.rotation; null when unreadable. */
+    @SuppressLint("PrivateApi")
+    private fun displayRotation(displayId: Int): Int? = runCatching {
+        val global = Class.forName("android.hardware.display.DisplayManagerGlobal").getMethod("getInstance").invoke(null)!!
+        val info = global.javaClass.getMethod("getDisplayInfo", Int::class.java).invoke(global, displayId)!!
+        info.javaClass.getField("rotation").getInt(info)
+    }.getOrNull()
+
     override fun releaseDisplay(displayId: Int) {
         awake.stop(displayId)
         synchronized(displays) { displayStates.remove(displayId); displays.remove(displayId) }?.release()

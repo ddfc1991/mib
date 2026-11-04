@@ -29,5 +29,9 @@ interface IMibotShell {
     void releaseAll() = 15;
     // Types ASCII text with key events on an own display
     boolean injectText(int displayId, String text) = 16;
+    // Diagnostics for an own display (null/empty for any other display): trusted (false = untrusted
+    // retry happened), flags, ownFocus, group (-1 unreadable), awake (keep-awake running),
+    // rotation (-1 unreadable), windowingModeSet (fullscreen forced). Codes are append-only.
+    Bundle displayInfo(int displayId) = 17;
     void destroy() = 16777114;
 }
