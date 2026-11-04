@@ -267,6 +267,12 @@ data class InstalledPlugin(
     val note: String? = null,
     /** [fork/mibot-v5b4] Last DSH host load result (see DshHost.kt). */
     val host: HostResult? = null,
+    /**
+     * [fork/mibot-dsh-tools] D3: per-tool agent permission, host tool name (or
+     * [DshToolPolicy.COMMAND_KEY]) → allow | ask | deny | always. Empty = defaults by
+     * risk (see DshToolPolicy). Lives in installed.json with the rest of the record.
+     */
+    val toolPolicy: Map<String, String> = emptyMap(),
 )
 
 object PluginStore {
@@ -336,6 +342,7 @@ object PluginStore {
                 put("perms", JSONObject(p.perms.mapValues { it.value }))
                 p.note?.let { put("note", it) }
                 p.host?.let { put("host", it.toJson()) }
+                if (p.toolPolicy.isNotEmpty()) put("toolPolicy", JSONObject(p.toolPolicy))
                 p.conversion?.let { c ->
                     put("conv", JSONObject().put("state", c.state.name).put("missing", JSONArray(c.missing))
                         .put("reason", c.reason ?: "").put("log", c.log.takeLast(12_000)).put("at", c.at))
@@ -368,6 +375,9 @@ object PluginStore {
                     status = if (j.optString("note").startsWith("运行中")) PluginStatus.RUNNING else PluginStatus.IDLE,
                     perms = perms, conversion = conv, note = j.optString("note").ifBlank { null },
                     host = HostResult.from(j.optJSONObject("host")),
+                    toolPolicy = j.optJSONObject("toolPolicy")?.let { tp ->
+                        tp.keys().asSequence().associateWith { tp.optString(it) }.filterValues { DshToolPolicy.Setting.parse(it) != null }
+                    } ?: emptyMap(),
                 )
             }.getOrNull()
         }.toMap()

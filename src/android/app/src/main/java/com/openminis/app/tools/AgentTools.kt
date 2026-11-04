@@ -72,6 +72,7 @@ object AgentTools {
             add(com.openminis.app.mibot.agent.MibotTools.providerDefinition())
             // [fork/mibot-v3] Background phone control on a hidden virtual display.
             addAll(com.openminis.app.mibot.phone.VdTools.definitions())
+            addAll(com.openminis.app.mibot.plugins.DshAgentTools.definitions()) // [fork/mibot-dsh-tools] D3
         }
         if (userAskExposed && !isHelper) add(com.openminis.app.agent.userask.UserAskPromptText.definition())
     }

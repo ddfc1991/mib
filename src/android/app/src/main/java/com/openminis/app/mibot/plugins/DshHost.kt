@@ -431,9 +431,9 @@ object DshHostManager {
         clearLog(ctx, fullName)
     }
 
-    suspend fun runCommand(fullName: String, name: String): String {
+    suspend fun runCommand(fullName: String, name: String, args: JSONObject = JSONObject()): String {
         val b = bridges[fullName] ?: throw IllegalStateException("插件未运行")
-        val r = b.request("commands.run", JSONObject().put("name", name).put("args", JSONObject()), 60_000)
+        val r = b.request("commands.run", JSONObject().put("name", name).put("args", args), 60_000)
         return r?.toString() ?: "（无返回）"
     }
 

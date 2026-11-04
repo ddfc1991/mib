@@ -38,8 +38,11 @@ cat > "$F/cordis.patch.yml" <<'J'
         greeting: !!js "'hi from ' + process.getBuiltinModule('node:path').basename(new URL(baseUrl).pathname)"
     - id: mibot-fixture-other
       name: mibot-fixture/other
+    - id: mibot-fixture-dsh-tools
+      name: '@deepseek-ai/dsh-tools'
 J
 cat > "$F/index.js" <<'J'
+import { defineTool, MIBOT_STAND_IN } from '@deepseek-ai/dsh-tools'
 export const name = 'mibot-fixture'
 export const inject = ['locale', 'commands', 'config', 'tools']
 export function apply(ctx, config) {
@@ -48,7 +51,8 @@ export function apply(ctx, config) {
   ctx.logger.info('fixture up: %s', config.greeting)
   ctx.commands.register({ name: 'hello', description: 'say hello', execute: (args) => t('hello', { who: args.who ?? '?' }) + ' · ' + config.greeting })
   ctx.config.set('lastStart', 1)
-  ctx.tools.register({
+  ctx.logger.info('dsh-tools stand-in: %s', MIBOT_STAND_IN)
+  ctx.tools.register(defineTool({
     name: 'fixture_echo', description: 'Echo text back',
     annotations: { readOnlyHint: true },
     parameters: { type: 'object', properties: { text: { type: 'string', description: 'text' }, big: { type: 'boolean' }, slow: { type: 'boolean' } }, required: ['text'] },
@@ -57,7 +61,7 @@ export function apply(ctx, config) {
       if (args.big) return 'x'.repeat(200 * 1024)
       return { echoed: args.text, callId: exec.callId }
     },
-  })
+  }))
   ctx.tools.guard((exec) => exec.args.text === 'forbidden' ? 'no forbidden words' : undefined)
   ctx.on('tools/pre-execute', (exec, next) => { ctx.logger.info('pre-execute %s', exec.name); return next() })
 }
@@ -93,6 +97,8 @@ n = st("nuwa"); assert n["state"] == "SKILLS" and any(e.endswith("/huashu-nuwa")
 a = st("amwh"); assert a["state"] == "SKILLS" and any(e.endswith("skills/answer-me-with-html") for s in a["skills"] for e in s["entries"]), a
 m = st("modlens"); assert m["state"] == "PENDING" and set(m["missing"]) >= {"llm", "attachments", "agents"} and "tools" not in m["missing"], m
 f = st("fixture"); assert f["state"] == "ACTIVE" and f["commands"] == ["hello"], f
+assert f["kit"] == 3 and "tools" not in f["missing"] and not f["missingPackages"], f
+assert any(r["name"] == "@deepseek-ai/dsh-tools" and r["kind"] == "kit" and r["state"] == "ACTIVE" for r in f["rows"]), f["rows"]
 out = [json.loads(l) for l in open(f"{W}/p/fixture/out.ndjson") if l.strip().startswith("{")]
 r = {x["id"]: x for x in out if "id" in x and "method" not in x}
 assert r[3]["result"] == "你好 Mibot · hi from fixture", r[3]
@@ -111,6 +117,7 @@ ch = [x for x in out if x.get("method") == "tools/change"]
 assert ch and {t["name"] for t in ch[-1]["params"]["tools"]} == {"fixture_echo", "other_tool"}, ch
 assert any(x.get("method") == "log" and "dup register: tool fixture_echo is already registered" in x["params"]["text"] for x in out)
 assert any(x.get("method") == "log" and "pre-execute fixture_echo" in x["params"]["text"] for x in out)
+assert any(x.get("method") == "log" and "dsh-tools stand-in: true" in x["params"]["text"] for x in out)
 assert sorted(f["tools"]) == ["fixture_echo", "other_tool"], f
-print("DSH host self-test OK: nuwa+amwh skills, modlens PENDING", sorted(m["missing"]), ", fixture ACTIVE + commands.run + tools list/execute/guard/cap/timeout")
+print("DSH host self-test OK: nuwa+amwh skills, modlens PENDING", sorted(m["missing"]), ", fixture ACTIVE (kit 3, dsh-tools stand-in) + commands.run + tools list/execute/guard/cap/timeout")
 PY

@@ -28,7 +28,7 @@ import { createRequire } from 'node:module'
 import { Context, Logger, Service } from '@deepseek-ai/cordis'
 import YAML from 'yaml'
 
-const KIT_VERSION = 2
+const KIT_VERSION = 3
 const STATE = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING']
 
 // ------------------------------------------------------------------ RPC
@@ -511,9 +511,11 @@ async function loadRow(entry, rowInject) {
 
   const own = entry.name === spec.pkg || String(entry.name).startsWith(spec.pkg + '/')
   if (!own && String(entry.name).startsWith('@deepseek-ai/')) {
-    // A DSH-internal plugin (dsh-tools, dsh-llm…) mounted by this patch: not in the kit.
-    row.kind = 'dsh-internal'
+    // A DSH-internal plugin (dsh-tools, dsh-llm…) mounted by this patch: fine when the
+    // host already provides its service (kit 3: `tools`), else not in the kit.
     const svc = String(entry.name).replace('@deepseek-ai/', '').replace(/^dsh-/, '')
+    if (provided.has(svc)) { row.kind = 'kit'; row.state = 'ACTIVE'; return }
+    row.kind = 'dsh-internal'
     row.missing = [svc]; status.missing.push(svc)
     return
   }
@@ -596,7 +598,7 @@ async function main() {
   const states = status.rows.map((r) => r.state)
   status.state = states.includes('FAILED') ? 'FAILED'
     : (status.missing.length || status.missingPackages.length || states.includes('PENDING')) ? 'PENDING'
-    : status.rows.length && status.rows.every((r) => r.kind === 'skills') ? 'SKILLS'
+    : status.rows.some((r) => r.kind === 'skills') && status.rows.every((r) => r.kind === 'skills' || r.kind === 'kit') ? 'SKILLS'
     : status.rows.length ? 'ACTIVE' : 'FAILED'
   if (!status.rows.length) status.error = 'cordis.patch.yml 没有可加载的行'
   status.error ??= status.rows.find((r) => r.error)?.error ?? null
