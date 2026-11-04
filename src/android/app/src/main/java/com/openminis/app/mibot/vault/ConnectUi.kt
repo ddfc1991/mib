@@ -43,15 +43,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -59,8 +66,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.delay
 import com.openminis.app.mibot.design.BrandLogo
 import com.openminis.app.mibot.design.ChipKind
+import com.openminis.app.mibot.design.GlassField
 import com.openminis.app.mibot.design.MibotButton
 import com.openminis.app.mibot.design.MibotDivider
 import com.openminis.app.mibot.design.MibotTokens
@@ -194,14 +203,22 @@ private fun connectClient(c: Context, popup: Boolean): WebViewClient = object : 
 }
 
 /**
- * [fork/mibot-v5b2] The connect WebView, shared by every recipe run. While the
- * engine works it is laid out full-size but reports a 0×0 footprint and is
- * fully transparent (no touches, nothing drawn); when a human is needed it
- * becomes a bottom sheet ("需要你验证") and goes away again on its own.
- * Fixes from v5-B1: JS + DOM storage + third-party cookies + mixed-content
- * compat + mobile UA; load errors are shown with 重试 / 用浏览器打开; a top
- * progress bar; the header shows the host actually loaded (the old sheet
- * kept the previous provider's URL — 「连接 腾讯混元」 showed platform.openai.com).
+ * [fork/mibot-v5b2] The connect WebView, shared by every recipe run.
+ *
+ * [fork/mibot-autokey-v2] Visible step-by-step sheet (no hidden alpha-0
+ * 0×0 layer any more, which starved the page of frames):
+ *  - WORKING: a half-height sheet with the live page, the 5-step checklist,
+ *    the current step and its countdown, and 「我接手」「我已复制 Key」「取消」.
+ *    Touches on the page are blocked while Mibot acts. Collapsible to a small
+ *    chip that keeps a scaled, still-drawn live preview of the page.
+ *  - VERIFY / ASSIST: the 90% sheet when a human is needed (or after 我接手),
+ *    with a paste field for the key in KEY runs.
+ * Fixes from v5-B1 kept: JS + DOM storage + third-party cookies + mixed-content
+ * compat + mobile UA; load errors with 重试 / 用浏览器打开; a top progress bar;
+ * the header shows the host actually loaded. On app resume (e.g. back from a
+ * Custom Tab) the clipboard is read once for the key.
+ * Hosted at the app root (MainActivity), so the WebView outlives the screen
+ * that started the run.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -211,29 +228,71 @@ fun ConnectWebLayer() {
     val popupWeb by AutoKey.popup.collectAsState()
     if (!st.active) return
     val ctx = LocalContext.current
-    val visible = st.view != AutoKey.View.HIDDEN
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var resumes by remember { mutableIntStateOf(0) }
+    DisposableEffect(lifecycle) {
+        val obs = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) resumes++ }
+        lifecycle.addObserver(obs); onDispose { lifecycle.removeObserver(obs) }
+    }
+    // Clipboard reads need window focus, which lands a moment after ON_RESUME.
+    LaunchedEffect(resumes) { if (resumes > 0) { delay(450); AutoKey.onAppResume(ctx); delay(1200); AutoKey.onAppResume(ctx) } }
+    var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { nowMs = System.currentTimeMillis(); delay(1000) } }
+
+    val full = st.view != AutoKey.View.WORKING
+    val chip = !full && st.collapsed
+    val isKey = st.mode == AutoKey.Mode.KEY
     val s = st.service
+    val conf = LocalConfiguration.current
+    val dens = LocalDensity.current
+    val fullW = with(dens) { conf.screenWidthDp.dp.roundToPx() }
+    val fullH = with(dens) { (conf.screenHeightDp.dp * 0.5f).roundToPx() }
+    val left = ((st.stepEndsAt - nowMs) / 1000).toInt()
+    val stepLine = if (st.stepLabel.isBlank()) "" else "第 ${st.stepIndex + 1}/${AkStep.CHECKLIST.size} 步 · ${st.stepLabel} · " + if (left > 0) "剩 ${left} 秒" else "比预期慢，继续等待"
+    var paste by remember(st.service?.id) { mutableStateOf("") }
+
     Box(Modifier.fillMaxSize()) {
-        if (visible) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {})
-        Column(
-            if (visible) Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.9f)
+        if (full) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {})
+        val shell = when {
+            chip -> Modifier.align(Alignment.BottomEnd).windowInsetsPadding(WindowInsets.navigationBars).padding(end = 12.dp, bottom = 84.dp).width(208.dp)
+                .clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 1f)).border(1.dp, MibotTokens.accent().copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+            full -> Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.9f)
                 .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 1f))
-            else Modifier.hiddenFullSize().graphicsLayer { alpha = 0f },
-        ) {
-            if (visible) {
+            else -> Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.5f)
+                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 1f))
+                .border(1.dp, MibotTokens.hairline(), RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+        }
+        Column(shell) {
+            if (chip) {
+                Row(Modifier.fillMaxWidth().clickable { AutoKey.userCollapse(false) }.padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BrandLogo(s?.logo, s?.name ?: "", s?.color, size = 20.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Mibot 正在操作 · ${s?.name.orEmpty()}", fontSize = MibotType.Caption, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(if (st.stepLabel.isBlank()) "…" else "${st.stepLabel} · " + if (left > 0) "${left}s" else "等待中", fontSize = MibotType.Caption,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text("展开", fontSize = MibotType.Caption, color = MibotTokens.accent())
+                }
+            } else {
                 Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         BrandLogo(s?.logo, s?.name ?: "", s?.color, size = 26.dp)
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(st.title, fontSize = MibotType.TitleSmall, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(if (full) st.title else "Mibot 正在操作 · ${s?.name.orEmpty()}", fontSize = MibotType.TitleSmall, fontWeight = MibotType.Semi,
+                                color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             val shown = st.url.ifBlank { st.loadUrl }
                             Text(Uri.parse(shown).host.orEmpty() + Uri.parse(shown).path.orEmpty().take(40), fontSize = MibotType.Caption,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        StatusChip(if (st.mode == AutoKey.Mode.LOGIN) "登录" else "需要你", if (st.highlight) ChipKind.WARN else ChipKind.ACCENT)
+                        if (full) StatusChip(if (st.mode == AutoKey.Mode.LOGIN) "登录" else if (st.tookOver) "你在操作" else "需要你", if (st.highlight) ChipKind.WARN else ChipKind.ACCENT)
+                        else Text("收起", fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { AutoKey.userCollapse(true) }.padding(6.dp))
                     }
-                    if (st.hint.isNotBlank()) {
+                    if (isKey) StepChecklist(st.stepIndex, done = false)
+                    if (!full && stepLine.isNotBlank()) Text(stepLine, fontSize = MibotType.Secondary, fontWeight = MibotType.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 4.dp))
+                    if (!full && st.detail.isNotBlank()) Text(st.detail, fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (full && st.hint.isNotBlank()) {
                         Text(st.hint, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine,
                             color = if (st.highlight) MibotTokens.warnColor() else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 6.dp).then(if (st.highlight) Modifier.clip(RoundedCornerShape(8.dp)).background(MibotTokens.warnColor().copy(alpha = 0.12f))
@@ -243,7 +302,8 @@ fun ConnectWebLayer() {
                 if (st.progress in 1..99) LinearProgressIndicator(progress = { st.progress / 100f }, modifier = Modifier.fillMaxWidth().height(2.dp), color = MibotTokens.accent())
                 else MibotDivider(inset = 0.dp)
             }
-            Box(Modifier.weight(1f).fillMaxWidth()) {
+            // The page box stays at the same place in the tree in every mode, so the WebView is never rebuilt by a mode switch.
+            Box(if (chip) Modifier.fillMaxWidth().scaledLive(fullW, fullH, maxH = 120.dp) else Modifier.weight(1f).fillMaxWidth()) {
                 // key(webGen): a renderer crash bumps webGen, the old WebView is released and a fresh one built.
                 key(gen) {
                     AndroidView(factory = { c ->
@@ -265,7 +325,9 @@ fun ConnectWebLayer() {
                         }
                     }
                 }
-                if (visible && st.error != null) {
+                // While Mibot acts the page is view-only (a stray tap would fight the engine); the chip's preview expands on tap.
+                if (!full) Box(Modifier.matchParentSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { if (chip) AutoKey.userCollapse(false) })
+                if (full && st.error != null) {
                     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface.copy(alpha = 1f)).padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("页面没有打开", fontSize = MibotType.Title, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface)
                         Text(st.error ?: "", fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp, bottom = 16.dp))
@@ -276,24 +338,63 @@ fun ConnectWebLayer() {
                     }
                 }
             }
-            if (visible) {
-                Row(Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MibotButton("取消", { AutoKey.userCancel() }, tonal = true, modifier = Modifier.weight(1f))
-                    if (st.handoff) MibotButton("用浏览器完成", { AutoKey.userHandoff(ctx) }, modifier = Modifier.weight(1f))
-                    else if (st.canSaveLogin) MibotButton("我已登录，保存", { AutoKey.userSaveLogin() }, modifier = Modifier.weight(1f))
-                    else MibotButton("用浏览器打开", { openInBrowser(ctx, st.url.ifBlank { st.loadUrl }) }, tonal = true, modifier = Modifier.weight(1f))
+            if (!chip) {
+                Column(Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (isKey && st.pasteOpen) {
+                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            GlassField(paste, { paste = it }, "粘贴 Key", modifier = Modifier.weight(1f), placeholder = "把复制的 Key 粘贴到这里", secret = true)
+                            MibotButton("保存", { AutoKey.userPaste(paste) }, enabled = paste.isNotBlank())
+                        }
+                        st.pasteMsg?.let { Text(it, fontSize = MibotType.Caption, color = MibotTokens.warnColor()) }
+                    }
+                    if (isKey) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (st.tookOver) MibotButton("继续自动", { AutoKey.userResume() }, tonal = true, modifier = Modifier.weight(1f))
+                        else if (!st.handedOff) MibotButton("我接手", { AutoKey.userTakeOver() }, tonal = true, modifier = Modifier.weight(1f))
+                        MibotButton("我已复制 Key", { AutoKey.userCopiedKey(ctx) }, tonal = !full, modifier = Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MibotButton("取消", { AutoKey.userCancel() }, tonal = true, modifier = Modifier.weight(1f))
+                        if (full) {
+                            if (st.handedOff) {
+                                MibotButton("稍后再说", { AutoKey.userLater() }, tonal = true, modifier = Modifier.weight(1f))
+                                MibotButton("再次打开浏览器", { AutoKey.userHandoff(ctx) }, tonal = true, modifier = Modifier.weight(1f))
+                            } else if (st.handoff) MibotButton("用浏览器完成", { AutoKey.userHandoff(ctx) }, modifier = Modifier.weight(1f))
+                            else if (st.canSaveLogin) MibotButton("我已登录，保存", { AutoKey.userSaveLogin() }, modifier = Modifier.weight(1f))
+                            else MibotButton("用浏览器打开", { openInBrowser(ctx, st.url.ifBlank { st.loadUrl }) }, tonal = true, modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-/** Measures at the parent's full size (so pages lay out normally) but takes 0×0 (no touches). */
-private fun Modifier.hiddenFullSize(): Modifier = this.layout { m, c ->
-    val w = if (c.hasBoundedWidth) c.maxWidth else 1080
-    val h = if (c.hasBoundedHeight) c.maxHeight else 1920
-    val p = m.measure(Constraints.fixed(w, h))
-    layout(0, 0) { p.place(0, 0) }
+/** 打开页面 · 登录 · 打开 Key 页 · 新建 Key · 读取 Key, with the current one highlighted. */
+@Composable
+private fun StepChecklist(current: Int, done: Boolean) {
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        AkStep.CHECKLIST.forEachIndexed { i, label ->
+            val past = done || i < current
+            val now = !done && i == current
+            Text((if (past) "✓ " else if (now) "● " else "○ ") + label, fontSize = MibotType.Caption, maxLines = 1, overflow = TextOverflow.Clip,
+                fontWeight = if (now) MibotType.Semi else null,
+                color = when { now -> MibotTokens.accent(); past -> MaterialTheme.colorScheme.onSurface; else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) },
+                modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+/**
+ * Lays the page out at [fullW]×[fullH] (so the site keeps its normal mobile
+ * layout) and shows it scaled down to the available width: a live, still
+ * drawn preview (rAF / transitions / captcha widgets keep running).
+ */
+private fun Modifier.scaledLive(fullW: Int, fullH: Int, maxH: androidx.compose.ui.unit.Dp): Modifier = this.layout { m, c ->
+    val p = m.measure(Constraints.fixed(fullW.coerceAtLeast(1), fullH.coerceAtLeast(1)))
+    val outW = if (c.hasBoundedWidth) c.maxWidth else fullW
+    val sc = outW.toFloat() / fullW.coerceAtLeast(1)
+    val outH = (fullH * sc).toInt().coerceAtMost(maxH.roundToPx())
+    layout(outW, outH) { p.placeWithLayer(0, 0) { scaleX = sc; scaleY = sc; transformOrigin = TransformOrigin(0f, 0f) } }
 }
 
 /**
@@ -338,7 +439,7 @@ fun ConnectChoiceSheet(s: VaultService, onDismiss: () -> Unit) {
             if (s.auth == "oauth_openrouter") {
                 Option("授权登录（OAuth）", "在浏览器里点「授权」，OpenRouter 直接把 Key 交给 Mibot · openrouter.ai", true) { VaultConnect.enqueue(ctx, listOf(s to null), VaultConnect.Mode.AUTO); onDismiss() }
             } else if (s.needsKey && recipe != null) {
-                Option("自动获取 API Key", "后台打开 $webHost，登录后自动新建「Mibot」Key 并保存、探测；只有验证码 / 短信 / 扫码时才弹出来", true) {
+                Option("自动获取 API Key", "打开 $webHost 并逐步显示进度（可收起成小窗），登录后自动新建「Mibot」Key 并保存、探测；验证码 / 短信 / 扫码时请你来；随时可「我接手」或粘贴 Key", true) {
                     VaultConnect.enqueue(ctx, listOf(s to null), VaultConnect.Mode.AUTO); onDismiss()
                 }
             }

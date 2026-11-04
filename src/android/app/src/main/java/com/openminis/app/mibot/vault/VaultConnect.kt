@@ -262,7 +262,7 @@ object VaultConnect {
             if (kind == "api_key") {
                 val pr = AutoKey.probe(s, secret)
                 if (pr.ok == false) VaultStore.updateStatus(app, entry.id) { it.copy(error = "HTTP 401 · " + pr.detail, updatedAt = System.currentTimeMillis()) }
-                val viaZh = when (via) { "clipboard" -> "复制按钮"; "network" -> "页面接口"; "oauth" -> "OAuth"; else -> "页面" }
+                val viaZh = when (via) { "clipboard" -> "复制按钮"; "clipboard-native" -> "剪贴板"; "paste" -> "粘贴"; "network" -> "页面接口"; "oauth" -> "OAuth"; else -> "页面" }
                 when (pr.ok) {
                     true -> update(s.id) { it.copy(phase = Phase.CONNECTED, autoKey = true, entryId = entry.id, detail = tc(app, "已自动获取 Key · 来自$viaZh · ${pr.detail}", "Key fetched automatically · ${pr.detail}")) }
                     false -> update(s.id) { it.copy(phase = Phase.FAILED, entryId = entry.id, detail = tc(app, "读到的 Key 没通过探测：${pr.detail}", "Captured key failed the probe: ${pr.detail}")) }

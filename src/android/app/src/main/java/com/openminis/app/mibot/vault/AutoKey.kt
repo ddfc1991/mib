@@ -1,5 +1,6 @@
 package com.openminis.app.mibot.vault
 
+import android.content.ClipboardManager
 import android.content.Context
 import android.webkit.CookieManager
 import android.webkit.WebView
@@ -65,11 +66,17 @@ object KeyRecipes {
 }
 
 /**
- * The automation engine: runs a recipe in the shared connect WebView. The
- * WebView stays HIDDEN while it signs in, opens the key page, clicks "create
- * key" (name "Mibot") and reads the key (DOM, network response or the copy
- * button). It only pops up when a human is needed (captcha / SMS / QR / a
- * login it has no saved password for) and hides again once that is done.
+ * The automation engine: runs a recipe in the shared connect WebView. While
+ * it signs in, opens the key page, clicks "create key" (name "Mibot") and
+ * reads the key (DOM, network response or the copy button) the page is shown
+ * in a half-height WORKING sheet with the current step and its countdown
+ * (collapsible to a small live chip, never an undrawn alpha-0 layer). It
+ * expands to the full sheet when a human is needed (captcha / SMS / QR / a
+ * login it has no saved password for) and shrinks back once that is done.
+ * The user can take over (「我接手」), hand back, or give the key directly:
+ * 「我已复制 Key」 reads the clipboard, a paste field takes it, and while a run
+ * is active the native clipboard is watched and re-read on app resume (after
+ * a Custom Tab handoff); every such value is checked with [KeyMatcher].
  * Email codes are fetched from a temp mailbox, SMS codes from the user's own
  * SMS notifications. It never solves captchas, never claims success without a
  * real captured key.
@@ -84,14 +91,14 @@ object KeyRecipes {
  * embedded sign-in: honest Custom Tab handoff).
  */
 object AutoKey {
-    enum class View { HIDDEN, VERIFY, ASSIST }
+    enum class View { WORKING, VERIFY, ASSIST }
     enum class Mode { KEY, LOGIN }
 
     data class Host(
         val active: Boolean = false,
         val service: VaultService? = null,
         val mode: Mode = Mode.KEY,
-        val view: View = View.HIDDEN,
+        val view: View = View.WORKING,
         val title: String = "",
         val hint: String = "",
         val highlight: Boolean = false,
@@ -103,6 +110,20 @@ object AutoKey {
         /** Google sign-in: offer the Custom Tab handoff for [handoffUrl]. */
         val handoff: Boolean = false,
         val handoffUrl: String = "",
+        /** The user already went to the system browser; waiting for the copied key. */
+        val handedOff: Boolean = false,
+        /** Current step (checklist index into [AkStep.CHECKLIST], label, deadline of its budget). */
+        val stepIndex: Int = 0,
+        val stepLabel: String = "",
+        val stepEndsAt: Long = 0L,
+        /** Latest progress line (same text as the task row). */
+        val detail: String = "",
+        /** WORKING sheet collapsed to the small chip (user choice). */
+        val collapsed: Boolean = false,
+        /** 「我接手」: the engine stops acting until the user hands back. */
+        val tookOver: Boolean = false,
+        val pasteOpen: Boolean = false,
+        val pasteMsg: String? = null,
     )
 
     private val _host = MutableStateFlow(Host())
@@ -119,6 +140,13 @@ object AutoKey {
     @Volatile private var handoffRequested = false
     /** Keys pushed by the document-start capture layer (any frame) via WebMessageListener. */
     private val pushed = java.util.concurrent.ConcurrentLinkedQueue<String>()
+    /** Values from the native clipboard / the paste field: (text, via). Already checked with [matcher]. */
+    private val direct = java.util.concurrent.ConcurrentLinkedQueue<Pair<String, String>>()
+    /** The running recipe's matcher (KEY runs only). */
+    @Volatile private var matcher: KeyMatcher? = null
+    /** Clipboard text when the run started: automatic reads ignore it (an old copy is not this run's key). */
+    @Volatile private var clipAtStart: String? = null
+    @Volatile private var laterRequested = false
 
     sealed class Result {
         data class Key(val key: String, val via: String) : Result()
@@ -132,13 +160,79 @@ object AutoKey {
     const val RUN_CEILING_MS = 15 * 60_000L
 
     fun userCancel() { cancelled = true }
+
+    /** WORKING sheet ⇄ small chip. */
+    fun userCollapse(on: Boolean) { _host.value = _host.value.copy(collapsed = on) }
+
+    /** 「我接手」: stop acting on the page; keys the user makes are still captured. */
+    fun userTakeOver() {
+        val h = _host.value
+        if (!h.active) return
+        _host.value = h.copy(tookOver = true, view = View.ASSIST, collapsed = false, highlight = false, pasteOpen = h.mode == Mode.KEY,
+            title = "你来操作 · ${h.service?.name.orEmpty()}",
+            hint = if (h.mode == Mode.KEY) "Mibot 已停止自动点击。请在页面上新建并复制 Key（或粘贴到下面），出现后会自动读取并保存。点「继续自动」交还给 Mibot。"
+            else "Mibot 已停止自动操作，请在页面上完成登录。")
+    }
+
+    /** Hand the page back to the engine. */
+    fun userResume() {
+        val h = _host.value
+        if (!h.active || !h.tookOver) return
+        _host.value = h.copy(tookOver = false, view = View.WORKING, highlight = false, title = "连接 ${h.service?.name.orEmpty()}", hint = "", pasteOpen = false, pasteMsg = null)
+    }
+
+    /** Leave a browser handoff for later (the row says where to finish). */
+    fun userLater() { laterRequested = true }
+
+    fun userOpenPaste() { _host.value = _host.value.copy(pasteOpen = true) }
+
+    /** 「我已复制 Key」: one explicit clipboard read. */
+    fun userCopiedKey(ctx: Context) {
+        val txt = readClip(ctx)
+        if (txt.isNullOrBlank()) { _host.value = _host.value.copy(pasteOpen = true, pasteMsg = "读不到剪贴板（或是空的），请把 Key 粘贴到下面"); return }
+        if (!submit(txt, "clipboard", explicit = true)) _host.value = _host.value.copy(pasteOpen = true,
+            pasteMsg = "剪贴板里不是 ${_host.value.service?.name.orEmpty()} 的 Key，请重新复制，或粘贴到下面")
+    }
+
+    /** Paste field. A value that does not match the recipe regex but looks like a token is still taken (the probe decides). */
+    fun userPaste(text: String) {
+        if (!submit(text, "paste", explicit = true)) _host.value = _host.value.copy(pasteOpen = true, pasteMsg = "这不像是 ${_host.value.service?.name.orEmpty()} 的 Key")
+    }
+
+    /** App came back to the foreground (e.g. from the Custom Tab): read the clipboard once. */
+    fun onAppResume(ctx: Context) {
+        val h = _host.value
+        if (!h.active || h.mode != Mode.KEY) return
+        readClip(ctx)?.let { submit(it, "clipboard-native", explicit = false) }
+    }
+
+    private fun readClip(ctx: Context): String? = runCatching {
+        val cm = ctx.getSystemService(ClipboardManager::class.java) ?: return null
+        val clip = cm.primaryClip ?: return null
+        if (clip.itemCount < 1) return null
+        clip.getItemAt(0).coerceToText(ctx)?.toString()
+    }.getOrNull()
+
+    /** Checks [text] against the running recipe and queues it; true when taken. */
+    private fun submit(text: String, via: String, explicit: Boolean): Boolean {
+        val m = matcher ?: return false
+        val t = text.trim()
+        if (t.isEmpty() || t.length > 20_000) return false
+        if (!explicit && t == clipAtStart) return false
+        val ok = m.findAll(t).isNotEmpty()
+        val loose = !ok && via == "paste" && KeyMatcher.looksLikeToken(t)
+        if (!ok && !loose) return false
+        direct.add(t to (if (loose) "paste-loose" else via))
+        if (explicit) _host.value = _host.value.copy(pasteMsg = "已读取 Key，正在保存…")
+        return true
+    }
     fun userSaveLogin() { saveLoginRequested = true }
     fun onProgress(p: Int) { _host.value = _host.value.copy(progress = p) }
     fun onUrl(u: String) { _host.value = _host.value.copy(url = u) }
     fun onPageError(desc: String?) {
         val h = _host.value
-        _host.value = if (desc == null) h.copy(error = null) else h.copy(error = desc, view = if (h.view == View.HIDDEN) View.ASSIST else h.view,
-            title = if (h.view == View.HIDDEN) "页面没有打开" else h.title)
+        _host.value = if (desc == null) h.copy(error = null) else h.copy(error = desc, view = if (h.view == View.WORKING) View.ASSIST else h.view,
+            title = if (h.view == View.WORKING) "页面没有打开" else h.title)
     }
 
     /** The renderer of [v] died (or was killed): drop it; ConnectWebLayer rebuilds a fresh WebView. */
@@ -153,7 +247,7 @@ object AutoKey {
     fun onPopup(child: WebView) {
         _popup.value = child
         val h = _host.value
-        if (h.active && h.view == View.HIDDEN) show(View.VERIFY, "登录窗口 · ${h.service?.name.orEmpty()}", "网站打开了一个登录 / 授权窗口，请在里面完成；完成后窗口会自己关闭并继续")
+        if (h.active && h.view == View.WORKING) show(View.VERIFY, "登录窗口 · ${h.service?.name.orEmpty()}", "网站打开了一个登录 / 授权窗口，请在里面完成；完成后窗口会自己关闭并继续")
     }
 
     fun onPopupClosed(child: WebView?) { if (child == null || _popup.value === child) _popup.value = null }
@@ -167,7 +261,7 @@ object AutoKey {
         val svc = h.service?.name.orEmpty()
         _host.value = h.copy(view = View.ASSIST, handoff = true, highlight = true, title = "Google 登录需要在浏览器完成 · $svc",
             hint = if (h.mode == Mode.KEY) "Google 不允许在 App 内置浏览器里登录（这是 Google 的安全规定，Mibot 不会伪装绕过）。可以换用页面上的邮箱 / 其他登录方式；" +
-                "或点「用浏览器完成」在浏览器里登录并新建、复制 Key。浏览器的登录状态不会回到 Mibot，复制的 Key 需要你回来后在台账里添加。"
+                "或点「用浏览器完成」在浏览器里登录并新建、复制 Key。浏览器的登录状态不会回到 Mibot；回到 Mibot 时会读取剪贴板，也可以点「我已复制 Key」或粘贴。"
             else "Google 不允许在 App 内置浏览器里登录。可以换用页面上的其他登录方式，或点「用浏览器完成」在浏览器里登录（登录状态不会回到 Mibot）。",
             handoffUrl = h.handoffUrl.ifBlank { h.loadUrl })
     }
@@ -177,14 +271,33 @@ object AutoKey {
         val h = _host.value
         openInBrowser(ctx, h.handoffUrl.ifBlank { h.url.ifBlank { h.loadUrl } })
         handoffRequested = true
+        if (h.mode == Mode.KEY) _host.value = h.copy(handedOff = true, view = View.ASSIST, pasteOpen = true, highlight = false,
+            title = "在浏览器里完成 · ${h.service?.name.orEmpty()}",
+            hint = "在浏览器里登录、新建并复制 Key，然后回到 Mibot：会自动读取剪贴板；也可以点「我已复制 Key」或把 Key 粘贴到下面。")
     }
 
     /** A capture-layer message ({k, via, ...}) from any frame. */
     fun onPushed(data: String?) { if (!data.isNullOrBlank() && pushed.size < 200) pushed.add(data) }
 
     private fun show(view: View, title: String, hint: String, highlight: Boolean = false) {
-        _host.value = _host.value.copy(view = view, title = title, hint = hint, highlight = highlight, handoff = if (view == View.HIDDEN) false else _host.value.handoff)
+        val h = _host.value
+        if (h.tookOver && view == View.WORKING) return   // the user has the page; only they hand it back
+        _host.value = h.copy(view = view, title = title, hint = hint, highlight = highlight, handoff = if (view == View.WORKING) false else h.handoff,
+            pasteOpen = h.pasteOpen || (view == View.ASSIST && h.mode == Mode.KEY))
     }
+
+    private fun publishStep(step: AkStep, since: Long, budgets: Map<AkStep, Long>) {
+        val h = _host.value
+        val ends = since + (budgets[step] ?: step.budgetMs)
+        if (h.stepIndex != step.checklist || h.stepLabel != step.zh || h.stepEndsAt != ends) _host.value = h.copy(stepIndex = step.checklist, stepLabel = step.zh, stepEndsAt = ends)
+    }
+
+    private fun clipListener(app: Context): Pair<ClipboardManager, ClipboardManager.OnPrimaryClipChangedListener>? = runCatching {
+        val cm = app.getSystemService(ClipboardManager::class.java) ?: return null
+        val l = ClipboardManager.OnPrimaryClipChangedListener { readClip(app)?.let { submit(it, "clipboard-native", explicit = false) } }
+        cm.addPrimaryClipChangedListener(l)
+        cm to l
+    }.getOrNull()
 
     private suspend fun awaitWeb(ms: Long = 15_000): WebView? = web ?: withTimeoutOrNull(ms) { while (web == null) delay(150); web }
 
@@ -237,39 +350,51 @@ object AutoKey {
      * text for the task row.
      */
     suspend fun fetchKey(app: Context, s: VaultService, r: KeyRecipes.Recipe, onStep: (String) -> Unit): Result {
-        cancelled = false; handoffRequested = false; pushed.clear()
-        _host.value = Host(active = true, service = s, mode = Mode.KEY, view = View.HIDDEN, title = "连接 ${s.name}", hint = r.hint ?: "", url = r.start, handoffUrl = r.start)
+        cancelled = false; handoffRequested = false; laterRequested = false; pushed.clear(); direct.clear()
+        matcher = KeyMatcher(r.keyRegex)
+        clipAtStart = readClip(app)?.trim()
+        _host.value = Host(active = true, service = s, mode = Mode.KEY, view = View.WORKING, title = "连接 ${s.name}", hint = r.hint ?: "", url = r.start, handoffUrl = r.start,
+            stepLabel = AkStep.OPEN.zh, stepEndsAt = now() + AkStep.OPEN.budgetMs)
         var attachedTo: WebView? = null; var attached: Attached? = null
+        val clip = clipListener(app)
+        fun say(m: String) { if (_host.value.detail != m) { onStep(m); _host.value = _host.value.copy(detail = m) } }
+        val later = { Result.Handoff(tc(app, "去浏览器在 ${hostOf(r.start)} 新建并复制 Key，回到 Mibot 粘贴或在台账里添加", "Create and copy a key at ${hostOf(r.start)}, then paste it in Mibot")) }
         try {
             val t0 = now()
             if (r.json.optString("handoff") == "customtab") {
-                // Google-only consoles: the whole flow runs in the system browser.
+                // Google-only consoles: the whole flow runs in the system browser; the key comes back by clipboard / paste.
                 onGoogleLogin()
-                while (!handoffRequested) {
+                val cands = Candidates(matcher!!)
+                while (true) {
                     if (cancelled) return Result.Cancelled
+                    if (laterRequested) return later()
                     if (now() - t0 > RUN_CEILING_MS) return Result.Failed(tc(app, "超时（15 分钟）", "Timed out (15 min)"))
+                    if (handoffRequested) say(tc(app, "等你在浏览器复制 Key…", "Waiting for the key copied in the browser…"))
+                    drainDirect(cands)?.let { return Result.Key(it.key, it.via) }
                     delay(500)
                 }
-                return Result.Handoff(tc(app, "已在浏览器打开 ${hostOf(r.start)}：登录后新建并复制 Key，回到 Mibot 在台账里添加", "Opened ${hostOf(r.start)} in the browser: create and copy a key there, then add it in Mibot"))
             }
             val first = awaitWeb() ?: return Result.Failed(tc(app, "连接页面没有打开，请留在「自动发现并连接」页", "Keep the Discover & connect page open"))
             val cred = savedLogin(app, s)
             attached = attach(first, r.keyRegex); attachedTo = first
             load(first, r.start)
-            onStep(tc(app, "后台打开 ${hostOf(r.start)}…", "Opening ${hostOf(r.start)} in the background…"))
+            say(tc(app, "打开 ${hostOf(r.start)}…", "Opening ${hostOf(r.start)}…"))
             val budgets = AkStep.budgets(r.json)
             val clock = StepClock(budgets).also { it.enter(AkStep.OPEN, now()) }
             val flow = CreateFlow(budgets)
             val nulls = NullEvals()
-            val cands = Candidates(KeyMatcher(r.keyRegex))
+            val cands = Candidates(matcher!!)
             var lastWeb: WebView? = first
             var fills = 0; var navs = 0; var lastNav = 0L; var assistAt: Long? = null; var stuckShown = false
             var mailbox: Mailbox? = null; var mailSent = 0L; var smsSince = 0L; var mailTries = 0
             while (true) {
                 if (cancelled) return Result.Cancelled
-                if (handoffRequested) return Result.Handoff(tc(app, "已转到浏览器完成 Google 登录：新建并复制 Key 后，回到 Mibot 在台账里添加", "Moved to the browser for Google sign-in: copy the key there and add it in Mibot"))
+                if (laterRequested) return later()
                 if (now() - t0 > RUN_CEILING_MS) return Result.Failed(tc(app, "超时（15 分钟）", "Timed out (15 min)"))
                 delay(1000)
+                drainDirect(cands)?.let { return Result.Key(it.key, it.via) }
+                if (handoffRequested) { say(tc(app, "等你在浏览器复制 Key…", "Waiting for the key copied in the browser…")); continue }
+                if (_host.value.tookOver) assistAt = assistAt ?: now()
                 // Re-acquire every pass: the WebView may have been rebuilt (renderer crash) or destroyed (screen left).
                 val w = web ?: awaitWeb(4_000)
                 var st: JSONObject? = null
@@ -279,7 +404,7 @@ object AutoKey {
                         rebuilt = true
                         detach(attachedTo, attached)
                         attached = attach(w, r.keyRegex); attachedTo = w; lastWeb = w
-                        onStep(tc(app, "页面进程已重建，重新打开…", "Page process rebuilt, reopening…"))
+                        say(tc(app, "页面进程已重建，重新打开…", "Page process rebuilt, reopening…"))
                         load(w, r.start); clock.enter(AkStep.OPEN, now()); navs = 0
                     } else st = eval(w, AutoKeyJs.script(r.json, "detect"))
                 }
@@ -297,17 +422,19 @@ object AutoKey {
                 cands.pick(since, flow.gaveUp)?.let { return Result.Key(it.key, it.via) }
 
                 if (st != null) {
-                    if (stuckShown) { stuckShown = false; if (_host.value.view == View.ASSIST && _host.value.title.startsWith("页面没有响应")) show(View.HIDDEN, "连接 ${s.name}", "") }
+                    if (stuckShown) { stuckShown = false; if (_host.value.view == View.ASSIST && _host.value.title.startsWith("页面没有响应")) show(View.WORKING, "连接 ${s.name}", "") }
                     val obs = PageObs.parse(st)
                     val state = obs.state
                     val view = _host.value.view
-                    if (state != "google" && _host.value.handoff && _popup.value == null) show(View.HIDDEN, "连接 ${s.name}", "")
+                    if (state != "google" && _host.value.handoff && _popup.value == null) show(View.WORKING, "连接 ${s.name}", "")
                     StateSteps.stepFor(state, obs.onKeys, obs.rendered)?.let { clock.enter(it, now()) }
-                    when (state) {
+                    if (flow.createdAt != null || (state == "in" && obs.onKeys)) publishStep(flow.clock.step, flow.clock.since.takeIf { it > 0 } ?: now(), budgets)
+                    else publishStep(clock.step, clock.since, budgets)
+                    if (!_host.value.tookOver) when (state) {
                         "loading", "unknown" -> {}
                         "challenge" -> {
-                            onStep(tc(app, "等待页面安全检查…", "Waiting for the site's security check…"))
-                            if (view == View.HIDDEN && clock.elapsed(now()) > (budgets[AkStep.CHALLENGE] ?: 20_000L))
+                            say(tc(app, "等待页面安全检查…", "Waiting for the site's security check…"))
+                            if (view == View.WORKING && clock.elapsed(now()) > (budgets[AkStep.CHALLENGE] ?: 20_000L))
                                 show(View.VERIFY, "页面安全检查 · ${s.name}", "网站在做安全检查（Cloudflare 等）。如果出现「我是人类」勾选框请点一下；Mibot 不会刷新页面，通过后自动继续")
                         }
                         "google" -> onGoogleLogin()
@@ -317,10 +444,10 @@ object AutoKey {
                             val box = mailbox
                             if (box == null) show(View.VERIFY, "需要你输入邮箱验证码 · ${s.name}", "这个账号的邮箱不是 Mibot 的临时邮箱，请输入邮件里的验证码")
                             else {
-                                onStep(tc(app, "等待 ${box.address} 收到验证码…", "Waiting for the code in ${box.address}…"))
+                                say(tc(app, "等待 ${box.address} 收到验证码…", "Waiting for the code in ${box.address}…"))
                                 val f = MailCore.waitCode(app, box, s.domains.firstOrNull()?.substringBefore('/'), 120)
                                 val wv = web
-                                if (f?.code != null && wv != null) { eval(wv, AutoKeyJs.script(r.json, "code", f.code)); onStep(tc(app, "已自动填入邮件验证码", "Email code filled")); delay(2500) }
+                                if (f?.code != null && wv != null) { eval(wv, AutoKeyJs.script(r.json, "code", f.code)); say(tc(app, "已自动填入邮件验证码", "Email code filled")); delay(2500) }
                                 else if (f?.link != null && wv != null) { load(wv, f.link); delay(2500) }
                                 else show(View.VERIFY, "没收到邮件验证码 · ${s.name}", "2 分钟内 ${box.address} 没有收到验证码，请检查页面", true)
                             }
@@ -328,51 +455,51 @@ object AutoKey {
                         "sms_code" -> {
                             if (smsSince == 0L) smsSince = now()
                             val code = com.openminis.app.mibot.settings.SmsCodes.latest(smsSince, s.name)
-                            if (code != null && w != null) { eval(w, AutoKeyJs.script(r.json, "code", code.code)); onStep(tc(app, "已从你的短信通知填入验证码", "SMS code filled from your notifications")); smsSince = now(); delay(2500) }
+                            if (code != null && w != null) { eval(w, AutoKeyJs.script(r.json, "code", code.code)); say(tc(app, "已从你的短信通知填入验证码", "SMS code filled from your notifications")); smsSince = now(); delay(2500) }
                             else if (now() - smsSince > 60_000 || !com.openminis.app.offload.MinisNotificationListenerService.isEnabled(app)) {
-                                if (view == View.HIDDEN) show(View.VERIFY, "需要你输入短信验证码 · ${s.name}", "没有在 60 秒内读到短信验证码（需要「通知使用权」），请手动输入")
-                            } else onStep(tc(app, "等待短信验证码…", "Waiting for the SMS code…"))
+                                if (view == View.WORKING) show(View.VERIFY, "需要你输入短信验证码 · ${s.name}", "没有在 60 秒内读到短信验证码（需要「通知使用权」），请手动输入")
+                            } else say(tc(app, "等待短信验证码…", "Waiting for the SMS code…"))
                         }
                         "login" -> {
                             if (view == View.VERIFY || view == View.ASSIST) {
                                 // The user is on it.
                             } else if (cred != null && fills < 2 && w != null) {
                                 eval(w, AutoKeyJs.script(r.json, "fill", cred.first, cred.second)); fills++
-                                onStep(tc(app, "自动填入已保存的账号…", "Filling the saved login…")); delay(2500)
+                                say(tc(app, "自动填入已保存的账号…", "Filling the saved login…")); delay(2500)
                             } else if (st.optBoolean("emailEntry") && mailTries < 2 && TempMailPolicy.allowed(app) && w != null) {
                                 val box = mailbox ?: runCatching { MailCore.create(app, null, s.id, exclude = TempMailPolicy.rejected(s.id)) }.getOrNull()
                                 if (box == null) show(View.VERIFY, "需要你登录 · ${s.name}", "没有可用的临时邮箱平台，请手动登录")
                                 else {
                                     mailbox = box; mailTries++
-                                    onStep(tc(app, "用临时邮箱 ${box.address} 登录/注册…", "Using temp mailbox ${box.address}…"))
+                                    say(tc(app, "用临时邮箱 ${box.address} 登录/注册…", "Using temp mailbox ${box.address}…"))
                                     eval(w, AutoKeyJs.script(r.json, "email", box.address)); mailSent = now(); delay(3500)
                                 }
                             } else show(View.VERIFY, "需要你登录 · ${s.name}", if (cred == null) "Mibot 没有这个服务的已保存密码，请登录；登录后自动继续" else "自动登录没有通过，请完成登录")
                         }
                         "in" -> {
-                            if (view == View.VERIFY && _popup.value == null) { show(View.HIDDEN, "连接 ${s.name}", ""); onStep(tc(app, "验证通过，继续获取 Key…", "Verified — continuing…")) }
+                            if (view == View.VERIFY && _popup.value == null) { show(View.WORKING, "连接 ${s.name}", ""); say(tc(app, "验证通过，继续获取 Key…", "Verified — continuing…")) }
                             mailbox?.let { MailCore.link(app, it, s.id) }
                             if (!obs.onKeys) {
                                 when {
                                     now() - lastNav < 4_000 -> {}
-                                    navs < 2 -> { onStep(tc(app, "打开 API Key 页面…", "Opening the API key page…")); w?.let { load(it, r.start) }; navs++; lastNav = now() }
+                                    navs < 2 -> { say(tc(app, "打开 API Key 页面…", "Opening the API key page…")); w?.let { load(it, r.start) }; navs++; lastNav = now() }
                                     navs < 5 -> { w?.let { eval(it, AutoKeyJs.script(r.json, "nav")) }; navs++; lastNav = now() }
                                     view != View.ASSIST -> { assistAt = assistAt ?: now(); show(View.ASSIST, "需要你操作 · ${s.name}", "没找到 API Key 页面（页面可能改版）。请打开「API Keys」并新建一个，出现后会自动保存。", true) }
                                 }
                             } else if (view != View.ASSIST && w != null) {
                                 val d = flow.next(obs, false, now())
                                 when (d.act) {
-                                    CreateFlow.Act.CLICK_CREATE -> { eval(w, AutoKeyJs.script(r.json, "click_create")); onStep(tc(app, "新建 Key「Mibot」…", "Creating key \"Mibot\"…")) }
-                                    CreateFlow.Act.FILL_NAME -> { eval(w, AutoKeyJs.script(r.json, "name")); onStep(tc(app, "填写名称…", "Naming the key…")) }
-                                    CreateFlow.Act.CONFIRM -> { eval(w, AutoKeyJs.script(r.json, "confirm")); onStep(tc(app, "确认创建…", "Confirming…")) }
-                                    CreateFlow.Act.REVEAL -> { eval(w, AutoKeyJs.script(r.json, "reveal")); onStep(tc(app, "读取 Key…", "Reading the key…")) }
+                                    CreateFlow.Act.CLICK_CREATE -> { eval(w, AutoKeyJs.script(r.json, "click_create")); say(tc(app, "新建 Key「Mibot」…", "Creating key \"Mibot\"…")) }
+                                    CreateFlow.Act.FILL_NAME -> { eval(w, AutoKeyJs.script(r.json, "name")); say(tc(app, "填写名称…", "Naming the key…")) }
+                                    CreateFlow.Act.CONFIRM -> { eval(w, AutoKeyJs.script(r.json, "confirm")); say(tc(app, "确认创建…", "Confirming…")) }
+                                    CreateFlow.Act.REVEAL -> { eval(w, AutoKeyJs.script(r.json, "reveal")); say(tc(app, "读取 Key…", "Reading the key…")) }
                                     CreateFlow.Act.NEED_USER -> { assistAt = assistAt ?: now()
                                         show(View.ASSIST, "需要你操作 · ${s.name}", "${d.reason}（配方 v${r.version}）。请在页面上新建并复制 Key，出现后会自动保存。", true) }
                                     CreateFlow.Act.WAIT, CreateFlow.Act.DONE -> {}
                                 }
                             }
                         }
-                        "elsewhere" -> if (view == View.HIDDEN && clock.elapsed(now()) > 15_000) show(View.VERIFY, "需要你操作 · ${s.name}", "页面跳到了 ${st.optString("host")}，请完成登录")
+                        "elsewhere" -> if (view == View.WORKING && clock.elapsed(now()) > 15_000) show(View.VERIFY, "需要你操作 · ${s.name}", "页面跳到了 ${st.optString("host")}，请完成登录")
                     }
                     if (st.optBoolean("disposableRejected") && mailbox != null && mailSent > 0 && state != "in") {
                         TempMailPolicy.markRejected(s.id, mailbox!!.provider); mailSent = 0
@@ -382,16 +509,27 @@ object AutoKey {
                 }
                 // Step budget (tracked by step, so URL churn cannot reset it). The create flow has its own budgets.
                 val onKeysNow = st != null && st.optBoolean("onKeys") && st.optString("state") == "in"
-                if (!onKeysNow && _host.value.view == View.HIDDEN && _popup.value == null && clock.expiredOnce(now())) {
+                if (!onKeysNow && _host.value.view == View.WORKING && _popup.value == null && clock.expiredOnce(now())) {
                     assistAt = assistAt ?: now()
                     show(View.ASSIST, "需要你操作 · ${s.name}", "「${clock.step.zh}」这一步 ${(budgets[clock.step] ?: clock.step.budgetMs) / 1000} 秒没有进展，请在页面上继续；Key 出现后会自动保存。", true)
                 }
             }
         } finally {
+            clip?.let { (cm, l) -> runCatching { cm.removePrimaryClipChangedListener(l) } }
+            matcher = null; clipAtStart = null; direct.clear()
             detach(attachedTo, attached)
             closePopup()
             _host.value = Host()
         }
+    }
+
+    /** Clipboard / paste values waiting in [direct]; a hit ends the run. */
+    private fun drainDirect(cands: Candidates): Candidates.C? {
+        while (true) {
+            val (t, via) = direct.poll() ?: break
+            if (via == "paste-loose") cands.offerLoose(t, "paste", now()) else cands.offer(t, via, now())
+        }
+        return cands.all().filter { it.via in Candidates.DIRECT }.maxByOrNull { it.firstSeen }
     }
 
     /** Plain web login (no key): visible from the start, captures the session cookie. */
