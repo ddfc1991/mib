@@ -4,6 +4,9 @@
  * Modifications for Mibot (com.dl1991.mibot), distributed under GPL-3.0-or-later:
  * trimmed to the virtual-display control surface Mibot's agent tools use
  * (no audio muting, app copies, devtools socket or device unlock).
+ * 2026-11: display parity with Mika 6661b9e — trusted→untrusted display retry,
+ * per-display keep-awake (DisplayAwake), fullscreen windowing on the agent display,
+ * key injection with WAIT_FOR_RESULT and Mika's sendPair fallback semantics.
  */
 package com.openminis.app.mibot.phone
 
@@ -34,6 +37,8 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.Surface
 import java.io.ByteArrayOutputStream
+import java.lang.reflect.Method
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.system.exitProcess
@@ -79,22 +84,85 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
         Class.forName("android.app.ActivityTaskManager").getMethod("getService").invoke(null)!!
     }
 
+    /** Per own display: was it created with the trusted flags, which flags, did fullscreen windowing stick. */
+    private class DisplayState(val trusted: Boolean, val flags: Int, val windowingModeSet: Boolean)
+    private val displayStates = HashMap<Int, DisplayState>()
+
     override fun createDisplay(surface: Surface, width: Int, height: Int, dpi: Int): Int = try {
-        val vd = displayManager.createVirtualDisplay("mibot-agent", width, height, dpi, surface, displayFlags())
+        createVirtualDisplay(surface, width, height, dpi, trusted = true)
+    } catch (t: Throwable) {
+        if (!retryWithoutTrust(t)) {
+            Log.e(TAG, "createDisplay failed", t)
+            -1
+        } else {
+            // Some ROMs don't give shell ADD_TRUSTED_DISPLAY: drop the trusted-only flags and try again.
+            // The display then has no focus of its own; the self-check reports that (trusted=false).
+            Log.w(TAG, "createDisplay without trusted display flags, retrying", t)
+            try {
+                createVirtualDisplay(surface, width, height, dpi, trusted = false)
+            } catch (t: Throwable) {
+                Log.e(TAG, "createDisplay failed", t)
+                -1
+            }
+        }
+    }
+
+    private fun createVirtualDisplay(surface: Surface, width: Int, height: Int, dpi: Int, trusted: Boolean): Int {
+        val flags = displayFlags(Build.VERSION.SDK_INT, trusted)
+        val vd = displayManager.createVirtualDisplay("mibot-agent", width, height, dpi, surface, flags)
         val id = vd.display.displayId
         synchronized(displays) { displays[id] = vd }
+        val fullscreen = setFullscreenWindowingMode(id)
+        synchronized(displays) { displayStates[id] = DisplayState(trusted, flags, fullscreen) }
         setImePolicy(id)
-        id
-    } catch (t: Throwable) {
-        Log.e(TAG, "createDisplay failed", t)
-        -1
+        if (DisplayAwake.needed(flags, FLAG_OWN_DISPLAY_GROUP, displayGroup(id))) awake.start(id)
+        return id
     }
+
+    /** Displays in their own group never sleep, see [DisplayAwake]. */
+    private val awake by lazy {
+        val timer = Executors.newSingleThreadScheduledExecutor { Thread(it, "mibot-display-awake").apply { isDaemon = true } }
+        DisplayAwake(::pokeDisplay) { r ->
+            val f = timer.scheduleWithFixedDelay(r, 0, DisplayAwake.PERIOD_MS, TimeUnit.MILLISECONDS)
+            return@DisplayAwake { f.cancel(false) }
+        }
+    }
+
+    /** IPowerManager and its per-display userActivity; null when unavailable (logged once, display still usable). */
+    @get:SuppressLint("PrivateApi")
+    private val userActivity: Pair<Any, Method>? by lazy {
+        runCatching {
+            val binder = Class.forName("android.os.ServiceManager").getMethod("getService", String::class.java).invoke(null, "power")
+            val power = Class.forName("android.os.IPowerManager\$Stub").getMethod("asInterface", android.os.IBinder::class.java).invoke(null, binder)!!
+            power to (DisplayAwake.userActivityMethod(power.javaClass) ?: error("no per-display userActivity"))
+        }.onFailure { Log.w(TAG, "display keep-awake unavailable: ${it.message}") }.getOrNull()
+    }
+
+    private fun pokeDisplay(displayId: Int): Boolean {
+        val (power, method) = userActivity ?: return false
+        return try {
+            method.invoke(power, displayId, SystemClock.uptimeMillis(), DisplayAwake.EVENT_TOUCH, 0)
+            true
+        } catch (t: Throwable) {
+            Log.w(TAG, "userActivity failed, display keep-awake off", t)
+            false
+        }
+    }
+
+    /** The display's group (hidden DisplayInfo.displayGroupId); null when unreadable. */
+    @SuppressLint("PrivateApi")
+    private fun displayGroup(displayId: Int): Int? = runCatching {
+        val global = Class.forName("android.hardware.display.DisplayManagerGlobal").getMethod("getInstance").invoke(null)!!
+        val info = global.javaClass.getMethod("getDisplayInfo", Int::class.java).invoke(global, displayId)!!
+        info.javaClass.getField("displayGroupId").getInt(info)
+    }.getOrNull()
 
     private fun ownDisplay(displayId: Int): Boolean =
         displayId != Display.DEFAULT_DISPLAY && synchronized(displays) { displayId in displays }
 
     override fun releaseDisplay(displayId: Int) {
-        synchronized(displays) { displays.remove(displayId) }?.release()
+        awake.stop(displayId)
+        synchronized(displays) { displayStates.remove(displayId); displays.remove(displayId) }?.release()
     }
 
     override fun startApp(displayId: Int, packageName: String): Int = synchronized(launchLock) {
@@ -193,7 +261,9 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
         val now = SystemClock.uptimeMillis()
         val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0, VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD)
         val up = KeyEvent.changeAction(down, KeyEvent.ACTION_UP)
-        return injectPair(down, up, displayId) { sh("input", "-d", "$displayId", "keyevent", "$keyCode").first == 0 }
+        return sendPair({ inject(down, displayId) }, { inject(up, displayId) }) {
+            sh("input", "-d", "$displayId", "keyevent", "$keyCode").first == 0
+        }
     }
 
     override fun injectCtrlKey(displayId: Int, keyCode: Int): Boolean {
@@ -203,7 +273,7 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
         val meta = KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON
         val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta, VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD)
         val up = KeyEvent.changeAction(down, KeyEvent.ACTION_UP)
-        return injectPair(down, up, displayId) { false }
+        return sendPair({ inject(down, displayId) }, { inject(up, displayId) }) { false }
     }
 
     override fun injectText(displayId: Int, text: String): Boolean {
@@ -227,7 +297,9 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
         return try {
             down.source = InputDevice.SOURCE_TOUCHSCREEN
             up.source = InputDevice.SOURCE_TOUCHSCREEN
-            injectPair(down, up, displayId) { sh("input", "-d", "$displayId", "tap", "$x", "$y").first == 0 }
+            sendPair({ inject(down, displayId) }, { inject(up, displayId) }) {
+                sh("input", "-d", "$displayId", "tap", "$x", "$y").first == 0
+            }
         } finally {
             down.recycle()
             up.recycle()
@@ -255,11 +327,6 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
         if (!send(0, MotionEvent.ACTION_DOWN)) return false
         for (i in 1 until n) send(i, MotionEvent.ACTION_MOVE)
         return send(n - 1, MotionEvent.ACTION_UP) || send(n - 1, MotionEvent.ACTION_UP)
-    }
-
-    private inline fun injectPair(down: InputEvent, up: InputEvent, displayId: Int, fallback: () -> Boolean): Boolean {
-        if (!inject(down, displayId)) return fallback()
-        return inject(up, displayId) || inject(up, displayId)
     }
 
     override fun setClipText(text: String): Int = synchronized(clipLock) {
@@ -342,7 +409,9 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
 
     override fun releaseAll() {
         restoreClip()
-        synchronized(displays) { displays.values.toList().also { displays.clear() } }.forEach { runCatching { it.release() } }
+        awake.stopAll()
+        synchronized(displays) { displayStates.clear(); displays.values.toList().also { displays.clear() } }
+            .forEach { runCatching { it.release() } }
     }
 
     override fun destroy() {
@@ -350,15 +419,23 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
         exitProcess(0)
     }
 
-    private fun displayFlags(): Int {
-        var flags = FLAG_PUBLIC or FLAG_OWN_CONTENT_ONLY or FLAG_SUPPORTS_TOUCH or
-            FLAG_ROTATES_WITH_CONTENT or FLAG_DESTROY_CONTENT_ON_REMOVAL
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            flags = flags or FLAG_TRUSTED or FLAG_OWN_DISPLAY_GROUP or FLAG_ALWAYS_UNLOCKED or FLAG_TOUCH_FEEDBACK_DISABLED
-        }
-        // Don't steal the main screen's focus when apps start on the agent display.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) flags = flags or FLAG_OWN_FOCUS or FLAG_STEAL_TOP_FOCUS_DISABLED
-        return flags
+    /**
+     * Only the freshly created agent display, never the main screen. Some ROMs make new
+     * secondary displays freeform, so apps open as small windows and a11y coordinates get
+     * scaled. Force fullscreen right after creation, before anything is launched on it.
+     * Returns whether either path succeeded.
+     */
+    @SuppressLint("PrivateApi")
+    private fun setFullscreenWindowingMode(displayId: Int): Boolean = runCatching {
+        val wm = Class.forName("android.view.WindowManagerGlobal").getMethod("getWindowManagerService").invoke(null)!!
+        // WindowConfiguration.WINDOWING_MODE_FULLSCREEN = 1 (hidden constant)
+        wm.javaClass.getMethod("setWindowingMode", Int::class.java, Int::class.java).invoke(wm, displayId, 1)
+        true
+    }.getOrElse {
+        Log.w(TAG, "setWindowingMode failed, falling back to wm", it)
+        val ok = sh("wm", "set-display-windowing-mode", "-d", "$displayId", "1").first == 0
+        if (!ok) Log.w(TAG, "could not set fullscreen windowing mode on display $displayId")
+        ok
     }
 
     /** Keep the IME on the agent display instead of popping up on the user's screen. */
@@ -371,12 +448,12 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
     }
 
     @SuppressLint("PrivateApi")
-    private fun inject(event: InputEvent, displayId: Int): Boolean = try {
+    private fun inject(event: InputEvent, displayId: Int, waitForFinish: Boolean = false): Boolean = try {
         if (!ownDisplay(displayId)) throw IllegalArgumentException("not an agent display: $displayId")
         event.javaClass.getMethod("setDisplayId", Int::class.java).invoke(event, displayId)
         val manager = inputManager()
         manager.javaClass.getMethod("injectInputEvent", InputEvent::class.java, Int::class.java)
-            .invoke(manager, event, INJECT_MODE_ASYNC) as Boolean
+            .invoke(manager, event, injectMode(event is KeyEvent, waitForFinish)) as Boolean
     } catch (t: Throwable) {
         Log.w(TAG, "injectInputEvent failed", t)
         false
@@ -436,7 +513,10 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
         )
 
         private val TASK_INFO: Class<*> by lazy { Class.forName("android.app.TaskInfo") }
+        // InputManager.INJECT_INPUT_EVENT_MODE_*
         private const val INJECT_MODE_ASYNC = 0
+        private const val INJECT_MODE_WAIT_FOR_RESULT = 1
+        private const val INJECT_MODE_WAIT_FOR_FINISH = 2
         private const val VIRTUAL_KEYBOARD = -1
         private const val USER_CURRENT = -2
 
@@ -452,6 +532,50 @@ class ShellService(private val allowedUid: Int) : IMibotShell.Stub() {
         private const val FLAG_OWN_FOCUS = 1 shl 14
         private const val FLAG_STEAL_TOP_FOCUS_DISABLED = 1 shl 16
         private const val IME_POLICY_LOCAL = 0
+
+        /**
+         * Flags for the agent display. With [trusted] false, drop the ones that need a trusted
+         * display: on some ROMs shell lacks ADD_TRUSTED_DISPLAY and FLAG_TRUSTED is rejected with
+         * SecurityException; OWN_DISPLAY_GROUP, ALWAYS_UNLOCKED and OWN_FOCUS/STEAL_TOP_FOCUS_DISABLED
+         * are trusted-only too. The rest are unchanged.
+         */
+        internal fun displayFlags(sdk: Int, trusted: Boolean): Int {
+            var flags = FLAG_PUBLIC or FLAG_OWN_CONTENT_ONLY or FLAG_SUPPORTS_TOUCH or
+                FLAG_ROTATES_WITH_CONTENT or FLAG_DESTROY_CONTENT_ON_REMOVAL
+            if (sdk >= Build.VERSION_CODES.TIRAMISU) {
+                flags = flags or FLAG_TOUCH_FEEDBACK_DISABLED
+                if (trusted) flags = flags or FLAG_TRUSTED or FLAG_OWN_DISPLAY_GROUP or FLAG_ALWAYS_UNLOCKED
+            }
+            // OWN_FOCUS alone would make the agent display the top focused display whenever an app starts
+            // on it; STEAL_TOP_FOCUS_DISABLED (needs OWN_FOCUS + TRUSTED) keeps the main screen's focus.
+            if (sdk >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && trusted) {
+                flags = flags or FLAG_OWN_FOCUS or FLAG_STEAL_TOP_FOCUS_DISABLED
+            }
+            return flags
+        }
+
+        /**
+         * Keys wait until the system decides where they go (WAIT_FOR_RESULT): with no window to take
+         * them, injection reports failure instead of "sent = done". Touches stay ASYNC (a stroke is
+         * timed point by point). [waitForFinish] waits for the app to finish handling.
+         */
+        internal fun injectMode(key: Boolean, waitForFinish: Boolean): Int = when {
+            waitForFinish -> INJECT_MODE_WAIT_FOR_FINISH
+            key -> INJECT_MODE_WAIT_FOR_RESULT
+            else -> INJECT_MODE_ASYNC
+        }
+
+        /**
+         * A down/up pair: only fall back (shell `input`) when DOWN was not injected; falling back after
+         * a delivered DOWN would cause an extra full tap/key, so then only retry UP once.
+         */
+        internal inline fun sendPair(down: () -> Boolean, up: () -> Boolean, fallback: () -> Boolean): Boolean {
+            if (!down()) return fallback()
+            return up() || up()
+        }
+
+        /** Only a missing permission (SecurityException, e.g. no ADD_TRUSTED_DISPLAY) is worth an untrusted retry. */
+        internal fun retryWithoutTrust(t: Throwable): Boolean = t is SecurityException
 
         private const val EXTRA_IS_SENSITIVE = "android.content.extra.IS_SENSITIVE"
         private const val EXTRA_SUPPRESS_CLIPBOARD_OVERLAY = "com.android.systemui.SUPPRESS_CLIPBOARD_OVERLAY"
