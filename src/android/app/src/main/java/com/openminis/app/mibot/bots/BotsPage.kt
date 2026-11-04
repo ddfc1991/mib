@@ -93,7 +93,7 @@ private fun BotAvatar(ctx: Context, def: SubAgentDefinition, index: Int) {
  * Temporary sub-agent runs show inside the chat that started them.
  */
 @Composable
-fun BotsPage(onOpen: (String) -> Unit, onNew: () -> Unit, onAgentSettings: () -> Unit, onPlugins: () -> Unit = {}) {
+fun BotsPage(onOpen: (String) -> Unit, onNew: () -> Unit, onAgentSettings: () -> Unit, onPlugins: () -> Unit = {}, showTitle: Boolean = true) {
     val ctx = LocalContext.current
     val repo = remember { (ctx.applicationContext as MinisApp).providerRepository }
     var gen by remember { mutableIntStateOf(0) }
@@ -111,7 +111,8 @@ fun BotsPage(onOpen: (String) -> Unit, onNew: () -> Unit, onAgentSettings: () ->
     }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottom + 24.dp)) {
-        item { MibotPageTitle("Bots", t("保存的 AI 角色，主 AI 可以把任务交给它们", "Saved AI profiles the main AI can hand tasks to")) }
+        // [fork/mibot-ui-tabs] Under Settings the top bar carries the title.
+        if (showTitle) item { MibotPageTitle("Bots", t("保存的 AI 角色，主 AI 可以把任务交给它们", "Saved AI profiles the main AI can hand tasks to")) }
         item {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 MibotButton(t("新建 Bot", "New Bot"), enabled = roster.size < SubAgentLimits.MAX_COUNT, modifier = Modifier.weight(1f), onClick = onNew)

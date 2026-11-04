@@ -530,6 +530,12 @@ fun ChatScreen(
      */
     isTwoPane: Boolean = false,
     /**
+     * [fork/mibot-ui-tabs] Glass UI, single pane: the chat IS the 对话 tab and
+     * the conversation list lives in the left drawer, so the navigation slot
+     * opens the drawer instead of going back to a list. Null = stock arrow.
+     */
+    onOpenDrawer: (() -> Unit)? = null,
+    /**
      * [T-android-tablet-sidebar-collapse] Show/hide the session list, or null
      * when there is nothing to toggle.
      *
@@ -3330,7 +3336,11 @@ fun ChatScreen(
                 },
                 navigationIcon = {
                     // [T-android-tablet-split] See `isTwoPane`.
-                    if (!isTwoPane) {
+                    if (!isTwoPane && onOpenDrawer != null) {
+                        IconButton(onClick = onOpenDrawer) {
+                            Icon(androidx.compose.material.icons.Icons.Filled.Menu, contentDescription = "Conversations")
+                        }
+                    } else if (!isTwoPane) {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }

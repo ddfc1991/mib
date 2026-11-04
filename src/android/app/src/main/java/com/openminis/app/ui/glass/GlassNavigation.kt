@@ -25,7 +25,10 @@ import kotlinx.coroutines.launch
 object GlassRoutes {
     const val FEED = "glass_feed"
     const val IDEAS = "glass_ideas"
+    /** [fork/mibot-ui-tabs] Settings › Bots (no longer a bottom tab). */
     const val BOTS = "glass_bots"
+    /** [fork/mibot-ui-tabs] Bottom tab 群聊. */
+    const val GROUPS = "glass_groups"
     const val BACKDROP = "glass_backdrop"
 }
 
@@ -37,21 +40,78 @@ fun glassEnabled(): Boolean {
 }
 
 /**
+ * [fork/mibot-ui-tabs] The chat the 对话 tab opens: the last chat shown in
+ * this process, else the most recent top-level session, else a new draft.
+ * Read-only over the chat store: nothing here writes sessions or prefs.
+ */
+object GlassChatTarget {
+    /** Last chat the detail pane showed (raw id; may be a `__new__` draft). */
+    @Volatile var lastShown: String? = null
+
+    /** True when the list route showed the (onboarding) list, not a chat. */
+    @Volatile var listIsHome: Boolean = false
+
+    internal val scope = kotlinx.coroutines.MainScope()
+
+    /**
+     * Null means "show the list as before": a device with neither a session
+     * nor a provider keeps the onboarding steps the list carries.
+     */
+    suspend fun resolve(context: android.content.Context): String? {
+        val app = context.applicationContext as? com.openminis.app.MinisApp ?: return null
+        if (!app.subsystemsReady()) return null
+        val chats = app.chatRepository
+        lastShown?.let { raw ->
+            val id = com.openminis.app.ui.chat.ChatViewModelStore.resolvePersistedId(raw)
+            if (com.openminis.app.ui.navigation.isDraftSessionId(id)) return id
+            val row = runCatching { chats.getSession(id) }.getOrNull()
+            if (row != null && !row.isChild) return id
+        }
+        // Same breakers the cold-start resolver honours: after repeated
+        // hangs/crashes do not re-enter the session that may be the trigger.
+        val forceFresh = runCatching {
+            com.openminis.app.diagnostics.HangDetector.shouldForceHomeOnLaunch(context) ||
+                com.openminis.app.crash.CrashFrequencyDetector.shouldForceHomeOnLaunch(context) ||
+                com.openminis.app.diagnostics.LaunchCycleBeacon.shouldForceHomeOnLaunch()
+        }.getOrDefault(false)
+        val sessions = runCatching { chats.dao.listSessions() }.getOrDefault(emptyList())
+        if (sessions.isEmpty() && app.providerRepository.instances.isEmpty()) return null
+        if (!forceFresh) sessions.firstOrNull { !it.isChild }?.let { return it.id }
+        return com.openminis.app.ui.chat.ChatViewModelStore.newChatDraftId()
+    }
+}
+
+/**
  * Switch top-level tab. Tabs sit one level above the chat list so Back from
  * any tab returns to Chats, and each tab keeps its state (save/restore).
+ *
+ * [fork/mibot-ui-tabs] 对话 opens a chat directly (see [GlassChatTarget]);
+ * the conversation list lives in the left drawer.
  */
 fun NavHostController.navigateToGlassTab(tab: GlassTab) {
     val route = when (tab) {
         GlassTab.CHATS -> Routes.SESSION_LIST
         GlassTab.FEED -> GlassRoutes.FEED
         GlassTab.IDEAS -> GlassRoutes.IDEAS
-        GlassTab.BOTS -> GlassRoutes.BOTS
+        GlassTab.GROUPS -> GlassRoutes.GROUPS
         GlassTab.SETTINGS -> Routes.SETTINGS
     }
     if (currentDestination?.route == route) return
     if (tab == GlassTab.CHATS) {
-        if (!popBackStack(Routes.SESSION_LIST, inclusive = false)) {
-            navigate(Routes.SESSION_LIST) { launchSingleTop = true }
+        if (currentDestination?.route == Routes.CHAT) return
+        val nav = this
+        GlassChatTarget.scope.launch {
+            val target = GlassChatTarget.resolve(nav.context)
+            if (target == null) {
+                if (!nav.popBackStack(Routes.SESSION_LIST, inclusive = false)) {
+                    nav.navigate(Routes.SESSION_LIST) { launchSingleTop = true }
+                }
+            } else {
+                nav.navigate(Routes.chat(target)) {
+                    popUpTo(Routes.SESSION_LIST) { inclusive = false }
+                    launchSingleTop = true
+                }
+            }
         }
         return
     }
