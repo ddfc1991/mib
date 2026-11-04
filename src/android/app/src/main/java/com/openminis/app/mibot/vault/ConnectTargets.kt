@@ -78,6 +78,12 @@ object ConnectTargets {
             val root = JSONObject(recipesJson)
             if (root.optInt("version", 0) < 1) out += "key_recipes.json needs version >= 1"
             val recipes = root.optJSONObject("recipes") ?: JSONObject()
+            // [fork/mibot-autokey-v2] A recipe's own `hosts` (a console that moved, e.g. platform.claude.com)
+            // count as that service's domains for the recipe URLs only; services.json URLs keep the strict check.
+            val withHosts = svcs.map { sv ->
+                val a = recipes.optJSONObject(sv.id)?.optJSONArray("hosts") ?: return@map sv
+                sv.copy(domains = (sv.domains + (0 until a.length()).map { a.optString(it).lowercase() }.filter { it.isNotBlank() }).distinct())
+            }
             for (id in recipes.keys()) {
                 val r = recipes.getJSONObject(id)
                 val svc = svcs.find { it.id == id }
@@ -85,7 +91,7 @@ object ConnectTargets {
                 if (r.optInt("v", 0) < 1) out += "recipe $id needs v >= 1"
                 for (k in listOf("start", "login")) {
                     val u = r.optString(k).takeIf { it.isNotBlank() } ?: continue
-                    val own = owner(u, svcs)
+                    val own = owner(u, withHosts)
                     if (own != id) out += "recipe $id.$k ($u) belongs to ${own ?: "nobody"}"
                 }
                 r.optString("keyRegex").takeIf { it.isNotBlank() }?.let { rx ->

@@ -95,6 +95,16 @@ object RecipeMerge {
             r.optString("keysMatch").takeIf { it.isNotBlank() }?.let { rx -> if (runCatching { Regex(rx) }.isFailure) out += "$id: keysMatch invalid" }
             val h = r.optString("handoff")
             if (h.isNotBlank() && h != "customtab") out += "$id: unknown handoff $h"
+            r.optJSONArray("precheck")?.let { a ->
+                for (i in 0 until a.length()) {
+                    val pc = a.optJSONObject(i)
+                    if (pc == null || pc.optString("rx").isBlank()) { out += "$id: precheck[$i] needs rx"; continue }
+                    if (runCatching { Regex(pc.optString("rx")) }.isFailure) out += "$id: precheck[$i] rx invalid"
+                    val v = pc.optString("view", "assist")
+                    if (v != "assist" && v != "verify") out += "$id: precheck[$i] unknown view $v"
+                }
+            }
+            r.optJSONArray("hosts")?.let { a -> for (i in 0 until a.length()) { val hh = a.optString(i); if (hh.isBlank() || hh.contains("://") || hh != hh.lowercase()) out += "$id: bad host '$hh'" } }
         }
         return out
     }
@@ -382,3 +392,4 @@ object IntentLinks {
 
     fun isGoogleLogin(host: String?): Boolean = host != null && (host == "accounts.google.com" || host.endsWith(".accounts.google.com"))
 }
+

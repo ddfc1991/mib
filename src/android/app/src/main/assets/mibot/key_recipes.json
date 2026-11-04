@@ -1,7 +1,7 @@
 {
- "version": 1,
- "updated": "2026-11-01",
- "note": "Mibot auto API-key recipes. Override per service with a higher \"v\" in filesDir/vault/key_recipes.json (vault recipe add). URL patterns + DOM selectors; text lists are matched against button labels.",
+ "version": 2,
+ "updated": "2026-11-04",
+ "note": "Mibot auto API-key recipes. Override per service with a higher \"v\" in filesDir/vault/key_recipes.json (vault recipe add). URL patterns + DOM selectors; text lists are matched against button labels. v2 (2026-11-04): per-recipe hosts + keysMatch, precheck [{rx, view: verify|assist, msg}], revealSelectors, handoff:customtab.",
  "defaults": {
   "loginUrl": [
    "login",
@@ -51,19 +51,13 @@
    "[class*=slider-verify]",
    "[class*=nc_wrapper]",
    "#tcaptcha_iframe",
-   "[id*=tcaptcha]",
-   "input[autocomplete=one-time-code]",
-   "[class*=qrcode]",
-   "[class*=qr-code]",
-   "[class*=QrCode]"
+   "[id*=tcaptcha]"
   ],
   "verifyText": [
    "人机验证",
-   "安全验证",
    "拖动滑块",
    "请完成验证",
    "请完成安全验证",
-   "扫码登录",
    "验证码已发送",
    "请输入验证码",
    "输入短信验证码",
@@ -150,20 +144,38 @@
  },
  "recipes": {
   "openai": {
-   "v": 1,
+   "v": 2,
    "start": "https://platform.openai.com/api-keys",
    "keyRegex": "sk-(proj-)?[A-Za-z0-9_\\-]{32,}",
+   "hosts": [
+    "platform.openai.com",
+    "auth.openai.com"
+   ],
+   "keysMatch": "api-keys",
    "createText": [
     "Create new secret key"
    ],
    "confirmText": [
     "Create secret key"
+   ],
+   "precheck": [
+    {
+     "rx": "verify your phone|phone number verification|verify phone",
+     "view": "verify",
+     "msg": "OpenAI 首个 Key 需要手机号验证（由你完成），完成后会自动继续"
+    }
    ]
   },
   "claude": {
-   "v": 1,
-   "start": "https://console.anthropic.com/settings/keys",
+   "v": 2,
+   "start": "https://platform.claude.com/settings/keys",
    "keyRegex": "sk-ant-[A-Za-z0-9_\\-]{40,}",
+   "hosts": [
+    "platform.claude.com",
+    "claude.com",
+    "console.anthropic.com"
+   ],
+   "keysMatch": "settings/keys",
    "createText": [
     "Create Key"
    ],
@@ -173,49 +185,91 @@
    ]
   },
   "gemini": {
-   "v": 1,
+   "v": 2,
    "start": "https://aistudio.google.com/app/apikey",
    "keyRegex": "AIza[0-9A-Za-z_\\-]{35}",
+   "handoff": "customtab",
+   "keyScope": "page",
    "createText": [
     "Create API key",
     "创建 API 密钥"
    ],
-   "keyScope": "dialog",
-   "hint": "Google 可能拒绝在内嵌浏览器里登录；遇到时请用「用浏览器打开」登录 AI Studio 后再回来"
+   "hint": "Google 不允许在内置浏览器登录：在浏览器里登录 AI Studio，新建并复制 Key，回到 Mibot 会自动读取剪贴板（或粘贴）"
   },
   "deepseek": {
-   "v": 1,
+   "v": 2,
    "start": "https://platform.deepseek.com/api_keys",
    "keyRegex": "sk-[0-9a-f]{32}",
    "login": "https://platform.deepseek.com/sign_in",
+   "hosts": [
+    "platform.deepseek.com"
+   ],
+   "keysMatch": "api.?keys",
+   "navText": [
+    "API keys",
+    "API Keys"
+   ],
    "createText": [
     "创建 API key",
     "Create new API key"
    ]
   },
   "kimi": {
-   "v": 1,
-   "start": "https://platform.moonshot.cn/console/api-keys",
+   "v": 2,
+   "start": "https://platform.kimi.com/console/api-keys",
    "keyRegex": "sk-[A-Za-z0-9]{40,}",
+   "hosts": [
+    "platform.kimi.com",
+    "kimi.com",
+    "kimi.ai",
+    "platform.moonshot.cn"
+   ],
+   "keysMatch": "api.?keys",
+   "navText": [
+    "API Key 管理"
+   ],
    "createText": [
     "新建 API Key",
     "新建"
    ]
   },
   "qwen": {
-   "v": 1,
+   "v": 2,
    "start": "https://bailian.console.aliyun.com/?apiKey=1",
    "keyRegex": "sk-[0-9a-f]{32}",
+   "hosts": [
+    "bailian.console.aliyun.com",
+    "aliyun.com"
+   ],
+   "keysMatch": "api.?key",
    "createText": [
     "创建 API-KEY",
     "创建API-KEY",
     "创建 API Key"
+   ],
+   "revealSelectors": [
+    "[class*=copy] svg",
+    "[class*=copy]",
+    "[aria-label*=复制]",
+    "[title*=复制]"
+   ],
+   "precheck": [
+    {
+     "rx": "还未开通模型服务|开通百炼|开通模型服务",
+     "view": "assist",
+     "msg": "需要先开通百炼模型服务并完成实名认证（由你完成），之后会继续新建 Key"
+    }
    ]
   },
   "siliconflow": {
-   "v": 1,
-   "start": "https://cloud.siliconflow.cn/account/ak",
+   "v": 2,
+   "start": "https://cloud.siliconflow.cn/me/account/ak",
    "keyRegex": "sk-[a-z]{40,}",
+   "hosts": [
+    "cloud.siliconflow.cn",
+    "account.siliconflow.cn"
+   ],
+   "keysMatch": "account/ak",
    "createText": [
     "新建 API 密钥",
     "新建API密钥",
@@ -223,97 +277,212 @@
    ]
   },
   "zhipu": {
-   "v": 1,
-   "start": "https://open.bigmodel.cn/usercenter/apikeys",
+   "v": 2,
+   "start": "https://bigmodel.cn/usercenter/proj-mgmt/apikeys",
    "keyRegex": "[0-9a-f]{32}\\.[A-Za-z0-9]{16}",
+   "hosts": [
+    "bigmodel.cn",
+    "open.bigmodel.cn"
+   ],
+   "keysMatch": "apikeys",
    "createText": [
     "添加新的 API Key",
     "添加 API Key"
+   ],
+   "revealSelectors": [
+    "[class*=copy]",
+    "[aria-label*=复制]",
+    "[title*=复制]"
    ]
   },
   "doubao": {
-   "v": 1,
+   "v": 2,
    "start": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
-   "keyRegex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+   "keyRegex": "ark-[A-Za-z0-9_\\-]{20,}",
+   "hosts": [
+    "console.volcengine.com",
+    "volcengine.com"
+   ],
+   "keysMatch": "apiKey",
+   "keyScope": "page",
    "createText": [
     "创建 API Key"
    ],
-   "keyScope": "dialog"
+   "revealSelectors": [
+    "[class*=eye]",
+    "[class*=Eye]",
+    "[aria-label*=查看]",
+    "[title*=查看]",
+    "[aria-label*=显示]",
+    "[class*=copy]",
+    "[aria-label*=复制]"
+   ],
+   "precheck": [
+    {
+     "rx": "请先开通|开通管理.{0,20}(未开通|去开通)|尚未开通",
+     "view": "assist",
+     "msg": "需要先在火山方舟「开通管理」开通模型并完成实名（由你完成），之后会继续新建 Key"
+    }
+   ],
+   "hint": "2026-09-17 之后新建的方舟 Key 是 ark- 开头的新格式；新 Key 在列表里，点眼睛图标显示"
   },
   "hunyuan": {
-   "v": 1,
+   "v": 2,
    "start": "https://console.cloud.tencent.com/hunyuan/api-key",
    "keyRegex": "sk-[A-Za-z0-9]{40,}",
+   "hosts": [
+    "console.cloud.tencent.com/hunyuan",
+    "cloud.tencent.com"
+   ],
+   "keysMatch": "api.?key",
    "createText": [
     "创建 API KEY",
     "新建密钥",
     "创建 API Key"
    ],
-   "hint": "需腾讯云主账号；首次使用需先在控制台「立即开通」混元服务"
+   "deprecated": "TokenHub migration",
+   "hint": "腾讯正在把混元迁到 TokenHub（新购已停）；需腾讯云主账号 + 实名 + 开通。TokenHub 的 Key 页面还没核实，暂用旧控制台"
   },
   "minimax": {
-   "v": 1,
-   "start": "https://platform.minimaxi.com/user-center/basic-information/interface-key",
-   "keyRegex": "eyJ[A-Za-z0-9_\\-]{60,}\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+",
+   "v": 2,
+   "start": "https://platform.minimaxi.com/console/access?tab=api-keys",
+   "keyRegex": "sk-(api|cp)-[A-Za-z0-9_\\-]{20,}",
+   "hosts": [
+    "platform.minimaxi.com"
+   ],
+   "keysMatch": "api-keys|interface-key",
+   "keyScope": "page",
    "createText": [
     "创建新的密钥",
-    "创建密钥"
-   ],
-   "keyScope": "dialog"
+    "创建密钥",
+    "创建 API Key"
+   ]
   },
   "groq": {
-   "v": 1,
+   "v": 2,
    "start": "https://console.groq.com/keys",
    "keyRegex": "gsk_[A-Za-z0-9]{40,}",
+   "hosts": [
+    "console.groq.com"
+   ],
+   "keysMatch": "/keys",
    "createText": [
     "Create API Key"
+   ],
+   "confirmText": [
+    "Submit"
    ]
   },
   "mistral": {
-   "v": 1,
-   "start": "https://console.mistral.ai/api-keys",
+   "v": 2,
+   "start": "https://admin.mistral.ai/organization/api-keys",
    "keyRegex": "[A-Za-z0-9]{32}",
+   "hosts": [
+    "admin.mistral.ai",
+    "console.mistral.ai",
+    "auth.mistral.ai",
+    "v2.auth.mistral.ai"
+   ],
+   "keysMatch": "api-keys",
+   "keyScope": "dialog",
    "createText": [
     "Create new key"
    ],
-   "keyScope": "dialog"
+   "confirmText": [
+    "Create new key",
+    "Create Key"
+   ],
+   "precheck": [
+    {
+     "rx": "verify your phone|phone number",
+     "view": "verify",
+     "msg": "Mistral 要求手机号验证（由你完成），完成后会自动继续"
+    }
+   ]
   },
   "perplexity": {
-   "v": 1,
-   "start": "https://www.perplexity.ai/settings/api",
+   "v": 2,
+   "start": "https://console.perplexity.ai/",
    "keyRegex": "pplx-[A-Za-z0-9]{40,}",
+   "hosts": [
+    "console.perplexity.ai",
+    "perplexity.ai"
+   ],
+   "keysMatch": "api.?keys|/api",
+   "navText": [
+    "API Keys",
+    "API keys"
+   ],
    "createText": [
     "Create Key",
+    "+ Create Key",
     "Generate"
+   ],
+   "precheck": [
+    {
+     "rx": "add (a )?payment method|add payment",
+     "view": "assist",
+     "msg": "Perplexity 需要先绑定付款方式才能新建 Key（由你完成）"
+    }
    ]
   },
   "xai": {
-   "v": 1,
-   "start": "https://console.x.ai/",
+   "v": 2,
+   "start": "https://console.x.ai/team/default/api-keys",
    "keyRegex": "xai-[A-Za-z0-9]{40,}",
+   "hosts": [
+    "console.x.ai",
+    "accounts.x.ai"
+   ],
+   "keysMatch": "api-keys",
    "createText": [
     "Create API Key",
     "Create API key"
+   ],
+   "confirmText": [
+    "Create API key",
+    "Save"
+   ],
+   "precheck": [
+    {
+     "rx": "purchase credits|no credits|add credits|insufficient credits",
+     "view": "assist",
+     "msg": "xAI 团队没有额度时不能新建 Key：请先充值（由你完成）"
+    }
    ]
   },
   "huggingface": {
-   "v": 1,
-   "start": "https://huggingface.co/settings/tokens",
+   "v": 2,
+   "start": "https://huggingface.co/settings/tokens/new?tokenType=read",
    "keyRegex": "hf_[A-Za-z0-9]{30,}",
+   "hosts": [
+    "huggingface.co"
+   ],
+   "keysMatch": "settings/tokens",
    "createText": [
     "Create new token"
    ],
    "confirmText": [
     "Create token"
+   ],
+   "clickText": [
+    "Read"
    ]
   },
   "elevenlabs": {
-   "v": 1,
-   "start": "https://elevenlabs.io/app/settings/api-keys",
+   "v": 2,
+   "start": "https://elevenlabs.io/app/developers/api-keys",
    "keyRegex": "sk_[0-9a-f]{40,}",
+   "hosts": [
+    "elevenlabs.io"
+   ],
+   "keysMatch": "api-keys",
    "createText": [
     "Create API Key",
     "Create Key"
+   ],
+   "switchOff": [
+    "Restrict Key"
    ]
   }
  }

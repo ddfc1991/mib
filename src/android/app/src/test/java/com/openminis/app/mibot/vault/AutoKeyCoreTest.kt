@@ -504,4 +504,76 @@ class AutoKeyCoreTest {
         assertFalse(IntentLinks.isGoogleLogin("accounts.google.com.evil.io"))
         assertFalse(IntentLinks.isGoogleLogin(null))
     }
+
+    // ---------------------------------------------------------------- recipes v2 (bundled data)
+
+    private fun asset(name: String): File? = listOf(
+        File("src/main/assets/mibot/$name"),
+        File("app/src/main/assets/mibot/$name"),
+        File("src/android/app/src/main/assets/mibot/$name"),
+    ).firstOrNull { it.isFile }
+
+    private fun bundled(): JSONObject? = asset("key_recipes.json")?.let { JSONObject(it.readText()) }
+
+    @Test
+    fun `bundled recipes are v2 for all 17 services and every start URL belongs to its service`() {
+        val rf = asset("key_recipes.json"); val sf = asset("services.json")
+        assumeTrue("assets not reachable", rf != null && sf != null)
+        val root = JSONObject(rf!!.readText())
+        assertTrue(root.optInt("version") >= 2)
+        val ids = root.getJSONObject("recipes").keys().asSequence().toSet()
+        for (id in listOf("openai", "claude", "gemini", "deepseek", "kimi", "qwen", "siliconflow", "zhipu", "doubao", "hunyuan",
+            "minimax", "groq", "mistral", "perplexity", "xai", "huggingface", "elevenlabs")) {
+            assertTrue(id, id in ids)
+            assertTrue(id, root.getJSONObject("recipes").getJSONObject(id).optInt("v") >= 2)
+        }
+        assertEquals(emptyList<String>(), ConnectTargets.problems(sf!!.readText(), rf.readText()))
+    }
+
+    @Test
+    fun `verify selectors no longer treat QR or one-time-code inputs as captcha`() {
+        val d = bundled()?.getJSONObject("defaults"); assumeTrue(d != null)
+        val v = list(d!!.getJSONArray("verifySelectors")).map { it.toString() }
+        assertFalse(v.toString(), v.any { it.contains("one-time-code") || it.contains("qr", ignoreCase = true) })
+        val t = list(d.getJSONArray("verifyText")).map { it.toString() }
+        assertFalse("扫码登录" in t); assertFalse("安全验证" in t)
+    }
+
+    @Test
+    fun `v2 recipe hosts, key pages and key formats`() {
+        val r = bundled()?.getJSONObject("recipes"); assumeTrue(r != null)
+        fun merged(id: String, domains: List<String>) = RecipeMerge.merge(JSONObject(), r!!.getJSONObject(id), RecipeMerge.Svc(id, domains, null, "https://example.com/"))
+        val claude = merged("claude", listOf("anthropic.com", "console.anthropic.com", "claude.ai"))
+        assertTrue(RecipeMerge.ownHost("platform.claude.com", RecipeMerge.hosts(claude)))
+        assertTrue(Regex(claude.getString("keysMatch"), RegexOption.IGNORE_CASE).containsMatchIn("https://platform.claude.com/settings/keys"))
+        val mm = merged("minimax", listOf("minimaxi.com"))
+        assertTrue(Regex(mm.getString("keysMatch"), RegexOption.IGNORE_CASE).containsMatchIn("https://platform.minimaxi.com/console/access?tab=api-keys"))
+        val mmK = KeyMatcher(mm.getString("keyRegex"))
+        assertTrue(mmK.matches("sk-api-" + "Ab3_dE5-fG7hI9jK1lM3nO5pQ7"))
+        assertTrue(mmK.matches("sk-cp-" + "Ab3dE5fG7hI9jK1lM3nO5pQ7rS"))
+        assertFalse(mmK.matches("eyJhbGciOiJIUzI1NiJ9" + "a".repeat(60) + ".b.c"))
+        val ark = KeyMatcher(merged("doubao", listOf("volcengine.com")).getString("keyRegex"))
+        assertTrue(ark.matches("ark-" + "0f1e2d3c4b5a69788796a5b4c3d2e1f0"))
+        assertFalse(ark.matches("ark****d5b88"))
+        assertTrue(ark.findAll("request 0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0").isEmpty())
+        val xai = merged("xai", listOf("x.ai"))
+        assertTrue(xai.getString("start").endsWith("/team/default/api-keys"))
+        assertFalse(xai.getString("keysMatch") == ".*")
+        assertEquals("customtab", r!!.getJSONObject("gemini").optString("handoff"))
+        for (id in r.keys()) assertEquals(id, emptyList<String>(), RecipeMerge.problems(JSONObject().put("version", 2).put("recipes", JSONObject().put(id, r.getJSONObject(id))).toString()))
+    }
+
+    @Test
+    fun `problems flags bad prechecks and hosts`() {
+        val bad = JSONObject().put("version", 2).put("recipes", JSONObject().put("x", JSONObject().put("v", 2)
+            .put("precheck", JSONArray().put(JSONObject().put("rx", "(")).put(JSONObject().put("rx", "ok").put("view", "popup")).put(JSONObject()))
+            .put("hosts", arr("https://x.com", "Upper.com", "ok.com"))))
+        val p = RecipeMerge.problems(bad.toString())
+        assertTrue(p.toString(), "x: precheck[0] rx invalid" in p)
+        assertTrue(p.toString(), "x: precheck[1] unknown view popup" in p)
+        assertTrue(p.toString(), "x: precheck[2] needs rx" in p)
+        assertTrue(p.toString(), "x: bad host 'https://x.com'" in p)
+        assertTrue(p.toString(), "x: bad host 'Upper.com'" in p)
+        assertFalse(p.toString(), p.any { it.contains("ok.com") })
+    }
 }

@@ -387,6 +387,7 @@ object AutoKey {
             var lastWeb: WebView? = first
             var fills = 0; var navs = 0; var lastNav = 0L; var assistAt: Long? = null; var stuckShown = false
             var mailbox: Mailbox? = null; var mailSent = 0L; var smsSince = 0L; var mailTries = 0
+            val prechecks = r.json.optJSONArray("precheck"); var preShown = -1
             while (true) {
                 if (cancelled) return Result.Cancelled
                 if (laterRequested) return later()
@@ -430,7 +431,16 @@ object AutoKey {
                     StateSteps.stepFor(state, obs.onKeys, obs.rendered)?.let { clock.enter(it, now()) }
                     if (flow.createdAt != null || (state == "in" && obs.onKeys)) publishStep(flow.clock.step, flow.clock.since.takeIf { it > 0 } ?: now(), budgets)
                     else publishStep(clock.step, clock.since, budgets)
-                    if (!_host.value.tookOver) when (state) {
+                    // Recipe prechecks (实名 / 开通 / payment / phone verify): a human step, shown once per match, never automated.
+                    val pc = obs.precheck.takeIf { it >= 0 }?.let { prechecks?.optJSONObject(it) }
+                    if (pc != null && preShown != obs.precheck && !_host.value.tookOver) {
+                        preShown = obs.precheck; assistAt = assistAt ?: now()
+                        show(if (pc.optString("view") == "verify") View.VERIFY else View.ASSIST, "需要你操作 · ${s.name}", pc.optString("msg").ifBlank { "页面需要你先完成一步" }, true)
+                    } else if (pc == null && preShown >= 0) {
+                        preShown = -1
+                        if (_host.value.view != View.WORKING && _popup.value == null) show(View.WORKING, "连接 ${s.name}", "")
+                    }
+                    if (!_host.value.tookOver && preShown < 0) when (state) {
                         "loading", "unknown" -> {}
                         "challenge" -> {
                             say(tc(app, "等待页面安全检查…", "Waiting for the site's security check…"))
