@@ -4,8 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Message
 import android.net.Uri
 import android.webkit.CookieManager
+import android.webkit.HttpAuthHandler
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -40,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +77,123 @@ internal fun openInBrowser(ctx: Context, url: String) {
 internal fun mobileUa(default: String): String = default.replace("; wv)", ")").replace(Regex(" Version/\\d+\\.\\d+"), "")
 
 /**
+ * [fork/mibot-autokey-v2] UA for a URL in the connect WebView: the system
+ * default (honest WebView UA) on Google sign-in hosts, where a spoofed UA
+ * only makes Google's checks stricter; the Chrome-like mobile UA elsewhere.
+ */
+internal fun uaFor(ctx: Context, url: String?): String {
+    val def = runCatching { WebSettings.getDefaultUserAgent(ctx) }.getOrDefault("")
+    val host = runCatching { Uri.parse(url.orEmpty()).host }.getOrNull()
+    return if (IntentLinks.isGoogleLogin(host) || def.isBlank()) def else mobileUa(def)
+}
+
+/** Settings shared by the connect WebView and its OAuth popups. */
+@SuppressLint("SetJavaScriptEnabled")
+private fun configureConnectWeb(w: WebView, c: Context) {
+    w.settings.javaScriptEnabled = true
+    w.settings.domStorageEnabled = true
+    w.settings.databaseEnabled = true
+    w.settings.loadWithOverviewMode = true
+    w.settings.useWideViewPort = true
+    w.settings.javaScriptCanOpenWindowsAutomatically = true
+    // OAuth popups (GitHub / Microsoft / Apple): window.open gets a real child window, so window.opener works.
+    w.settings.setSupportMultipleWindows(true)
+    w.settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+    w.settings.userAgentString = mobileUa(w.settings.userAgentString)
+    CookieManager.getInstance().setAcceptCookie(true)
+    CookieManager.getInstance().setAcceptThirdPartyCookies(w, true)
+    w.webChromeClient = connectChrome(c)
+    w.webViewClient = connectClient(c, popup = false)
+}
+
+private fun connectChrome(c: Context): WebChromeClient = object : WebChromeClient() {
+    override fun onProgressChanged(view: WebView?, newProgress: Int) { if (view === AutoKey.web) AutoKey.onProgress(newProgress) }
+    override fun onCreateWindow(view: WebView?, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message?): Boolean {
+        val msg = resultMsg ?: return false
+        val child = WebView(c)
+        configureConnectWeb(child, c)
+        child.webViewClient = connectClient(c, popup = true)
+        child.webChromeClient = object : WebChromeClient() {
+            override fun onCloseWindow(window: WebView?) { AutoKey.onPopupClosed(window) }
+        }
+        val transport = msg.obj as? WebView.WebViewTransport ?: run { child.destroy(); return false }
+        transport.webView = child
+        msg.sendToTarget()
+        AutoKey.onPopup(child)
+        return true
+    }
+    override fun onCloseWindow(window: WebView?) { AutoKey.onPopupClosed(window) }
+}
+
+/** The connect WebViewClient (main page and popups). */
+private fun connectClient(c: Context, popup: Boolean): WebViewClient = object : WebViewClient() {
+    override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+        if (!popup) { AutoKey.onUrl(url.orEmpty()); AutoKey.onPageError(null) }
+        if (IntentLinks.isGoogleLogin(runCatching { Uri.parse(url.orEmpty()).host }.getOrNull())) AutoKey.onGoogleLogin()
+    }
+    override fun onPageFinished(view: WebView?, url: String?) { if (!popup) AutoKey.onUrl(url.orEmpty()); CookieManager.getInstance().flush() }
+    override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) { if (!popup) AutoKey.onUrl(url.orEmpty()) }
+    override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+        if (!popup && request?.isForMainFrame == true) AutoKey.onPageError("${error?.description ?: "加载失败"}（${request.url.host}）")
+    }
+    override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
+        if (!popup && request?.isForMainFrame == true && (errorResponse?.statusCode ?: 0) >= 500) AutoKey.onPageError("HTTP ${errorResponse?.statusCode}（${request.url.host}）")
+    }
+    // The app's process-wide Browser proxy (Settings › Network) challenges every request with 407.
+    override fun onReceivedHttpAuthRequest(view: WebView?, handler: HttpAuthHandler?, host: String?, realm: String?) {
+        if (handler != null && com.openminis.app.network.WebViewNetworkProxy.answerAuth(handler, host, realm, view?.url)) return
+        super.onReceivedHttpAuthRequest(view, handler, host, realm)
+    }
+    // A crashed / killed renderer must not take the app down: drop this WebView and let the layer rebuild one.
+    override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
+        AutoKey.onRendererGone(view)
+        return true
+    }
+    override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
+        if (AutoKeyDemo.enabled && request?.url?.host == AutoKeyDemo.HOST) {
+            return WebResourceResponse("text/html", "utf-8", AutoKeyDemo.html().byteInputStream())
+        }
+        return null
+    }
+    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+        val req = request ?: return false
+        val u = req.url ?: return false
+        val url = u.toString()
+        when (u.scheme?.lowercase()) {
+            "http", "https" -> {
+                // Default (honest) UA on Google sign-in, Chrome-like UA elsewhere. A UA change applies to the next load.
+                if (view != null && req.isForMainFrame) {
+                    val want = uaFor(c, url)
+                    if (want.isNotBlank() && view.settings.userAgentString != want) {
+                        view.settings.userAgentString = want
+                        view.loadUrl(url)
+                        return true
+                    }
+                }
+                return false
+            }
+            "about", "data", "blob", "javascript" -> return false
+            "intent" -> {
+                // intent://…#Intent;scheme=…;package=…;S.browser_fallback_url=…;end (WeChat / Alipay / face-verify links).
+                val it = runCatching { Intent.parseUri(url, Intent.URI_INTENT_SCHEME) }.getOrNull()
+                val ok = it != null && runCatching {
+                    it.addCategory(Intent.CATEGORY_BROWSABLE); it.component = null; it.selector = null
+                    it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    c.startActivity(it); true
+                }.getOrDefault(false)
+                if (!ok) IntentLinks.fallback(url)?.let { fb -> view?.loadUrl(fb) }
+                return true
+            }
+            else -> {
+                // App deep links (weixin://, alipays://…) leave the WebView.
+                runCatching { c.startActivity(Intent(Intent.ACTION_VIEW, u).addCategory(Intent.CATEGORY_BROWSABLE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                return true
+            }
+        }
+    }
+}
+
+/**
  * [fork/mibot-v5b2] The connect WebView, shared by every recipe run. While the
  * engine works it is laid out full-size but reports a 0×0 footprint and is
  * fully transparent (no touches, nothing drawn); when a human is needed it
@@ -86,6 +207,8 @@ internal fun mobileUa(default: String): String = default.replace("; wv)", ")").r
 @Composable
 fun ConnectWebLayer() {
     val st by AutoKey.host.collectAsState()
+    val gen by AutoKey.webGen.collectAsState()
+    val popupWeb by AutoKey.popup.collectAsState()
     if (!st.active) return
     val ctx = LocalContext.current
     val visible = st.view != AutoKey.View.HIDDEN
@@ -121,47 +244,27 @@ fun ConnectWebLayer() {
                 else MibotDivider(inset = 0.dp)
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                AndroidView(factory = { c ->
-                    WebView(c).apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        settings.databaseEnabled = true
-                        settings.loadWithOverviewMode = true
-                        settings.useWideViewPort = true
-                        settings.javaScriptCanOpenWindowsAutomatically = true
-                        settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-                        settings.userAgentString = mobileUa(settings.userAgentString)
-                        CookieManager.getInstance().setAcceptCookie(true)
-                        CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onProgressChanged(view: WebView?, newProgress: Int) { AutoKey.onProgress(newProgress) }
+                // key(webGen): a renderer crash bumps webGen, the old WebView is released and a fresh one built.
+                key(gen) {
+                    AndroidView(factory = { c ->
+                        WebView(c).apply {
+                            configureConnectWeb(this, c)
+                            AutoKey.web = this
                         }
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) { AutoKey.onUrl(url.orEmpty()); AutoKey.onPageError(null) }
-                            override fun onPageFinished(view: WebView?, url: String?) { AutoKey.onUrl(url.orEmpty()); CookieManager.getInstance().flush() }
-                            override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) { AutoKey.onUrl(url.orEmpty()) }
-                            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                                if (request?.isForMainFrame == true) AutoKey.onPageError("${error?.description ?: "加载失败"}（${request.url.host}）")
+                    }, modifier = Modifier.fillMaxSize(), onRelease = { w -> if (AutoKey.web === w) AutoKey.web = null; runCatching { w.stopLoading() }; w.destroy() })
+                }
+                popupWeb?.let { pw ->
+                    key(pw) {
+                        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface.copy(alpha = 1f))) {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("登录窗口", fontSize = MibotType.Secondary, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                                Text("关闭", fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { AutoKey.closePopup() }.padding(6.dp))
                             }
-                            override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
-                                if (request?.isForMainFrame == true && (errorResponse?.statusCode ?: 0) >= 500) AutoKey.onPageError("HTTP ${errorResponse?.statusCode}（${request.url.host}）")
-                            }
-                            override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
-                                if (AutoKeyDemo.enabled && request?.url?.host == AutoKeyDemo.HOST) {
-                                    return WebResourceResponse("text/html", "utf-8", AutoKeyDemo.html().byteInputStream())
-                                }
-                                return null
-                            }
-                            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                val u = request?.url ?: return false
-                                // App deep links (weixin://, alipays://…) leave the WebView.
-                                if (u.scheme != "http" && u.scheme != "https") { runCatching { c.startActivity(Intent(Intent.ACTION_VIEW, u).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }; return true }
-                                return false
-                            }
+                            AndroidView(factory = { (pw.parent as? android.view.ViewGroup)?.removeView(pw); pw }, modifier = Modifier.weight(1f).fillMaxWidth(),
+                                onRelease = { w -> runCatching { w.stopLoading() }; w.destroy() })
                         }
-                        AutoKey.web = this
                     }
-                }, modifier = Modifier.fillMaxSize(), onRelease = { w -> if (AutoKey.web === w) AutoKey.web = null; w.destroy() })
+                }
                 if (visible && st.error != null) {
                     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface.copy(alpha = 1f)).padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("页面没有打开", fontSize = MibotType.Title, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface)
@@ -176,7 +279,8 @@ fun ConnectWebLayer() {
             if (visible) {
                 Row(Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MibotButton("取消", { AutoKey.userCancel() }, tonal = true, modifier = Modifier.weight(1f))
-                    if (st.canSaveLogin) MibotButton("我已登录，保存", { AutoKey.userSaveLogin() }, modifier = Modifier.weight(1f))
+                    if (st.handoff) MibotButton("用浏览器完成", { AutoKey.userHandoff(ctx) }, modifier = Modifier.weight(1f))
+                    else if (st.canSaveLogin) MibotButton("我已登录，保存", { AutoKey.userSaveLogin() }, modifier = Modifier.weight(1f))
                     else MibotButton("用浏览器打开", { openInBrowser(ctx, st.url.ifBlank { st.loadUrl }) }, tonal = true, modifier = Modifier.weight(1f))
                 }
             }

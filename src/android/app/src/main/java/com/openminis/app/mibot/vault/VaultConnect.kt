@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -205,7 +206,31 @@ object VaultConnect {
         }
     }
 
+    /** [fork/mibot-autokey-v2] Hard ceiling per task, so one stuck service never blocks the queue. */
+    private const val TASK_TIMEOUT_MS = 16 * 60_000L
+
     private suspend fun runOne(app: Context, t: Task) {
+        val s = t.service
+        val finished = try {
+            withTimeoutOrNull(TASK_TIMEOUT_MS) { runOneBounded(app, t); true }
+        } catch (c: kotlinx.coroutines.CancellationException) {
+            throw c
+        } catch (e: Throwable) {
+            Log.w(TAG, "${s.id}: ${e.message}")
+            update(s.id) { it.copy(phase = Phase.FAILED, detail = e.message ?: e.javaClass.simpleName) }
+            true
+        }
+        if (finished == null) {
+            Log.w(TAG, "${s.id}: task timed out")
+            update(s.id) { it.copy(phase = Phase.FAILED, detail = tc(app, "超时（16 分钟）已停止，可点重试；队列继续下一个", "Timed out after 16 min — stopped; the queue moves on")) }
+        }
+        // Never leave a row spinning after its run ended.
+        _tasks.value.find { it.service.id == s.id }?.takeIf { it.phase == Phase.CONNECTING }?.let {
+            update(s.id) { it.copy(phase = Phase.FAILED, detail = it.detail.ifBlank { tc(app, "连接中断", "Connection interrupted") }) }
+        }
+    }
+
+    private suspend fun runOneBounded(app: Context, t: Task) {
         val s = t.service
         update(s.id) { it.copy(phase = Phase.CONNECTING, detail = tc(app, "连接中…", "Connecting…")) }
         try {
@@ -218,6 +243,7 @@ object VaultConnect {
                 recipe != null -> when (val r = AutoKey.fetchKey(app, s, recipe) { step -> update(s.id) { it.copy(phase = Phase.CONNECTING, detail = step) } }) {
                     is AutoKey.Result.Key -> Triple(r.key, "api_key", r.via)
                     is AutoKey.Result.Failed -> error(r.reason)
+                    is AutoKey.Result.Handoff -> { update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = r.reason) }; return }
                     is AutoKey.Result.Cancelled -> { update(s.id) { it.copy(phase = Phase.SKIPPED, detail = tc(app, "已取消", "Cancelled")) }; return }
                     is AutoKey.Result.Cookies -> Triple(r.cookie, "cookie", "web")
                 }
@@ -225,6 +251,7 @@ object VaultConnect {
                     is AutoKey.Result.Cookies -> Triple(r.cookie, "cookie", "web")
                     is AutoKey.Result.Key -> Triple(r.key, "api_key", r.via)
                     is AutoKey.Result.Failed -> error(r.reason)
+                    is AutoKey.Result.Handoff -> { update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = r.reason) }; return }
                     is AutoKey.Result.Cancelled -> { update(s.id) { it.copy(phase = Phase.SKIPPED, detail = tc(app, "已取消", "Cancelled")) }; return }
                 }
             }
