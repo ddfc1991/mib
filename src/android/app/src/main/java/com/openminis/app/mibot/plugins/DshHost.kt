@@ -382,6 +382,7 @@ object DshHostManager {
                 host = h?.copy(state = if (h.state == "RUNNING" || h.state == "SKILLS") "STOPPED" else h.state))
         }
         log(ctx, fullName, "已停止")
+        com.openminis.app.mibot.feed.Feed.pluginEvent(ctx, fullName, "stopped")
     }
 
     /** Uninstall hook: stop and delete imported skills + staged profile. */
@@ -415,6 +416,7 @@ object DshHostManager {
             it.copy(host = r, status = if (phase == Phase.RUNNING) PluginStatus.RUNNING else PluginStatus.IDLE,
                 note = when (r.state) { "SKILLS" -> "运行中 · 已导入 ${r.skills.size} 个技能"; "RUNNING" -> null; else -> null })
         }
+        com.openminis.app.mibot.feed.Feed.pluginHostState(ctx, fullName, r.state, r.error)
         return r
     }
 

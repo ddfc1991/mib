@@ -443,6 +443,7 @@ object PluginInstaller {
             perms = prev?.perms ?: PluginPerms.all.associate { it.first to false },
             conversion = prev?.conversion,
         ))
+        com.openminis.app.mibot.feed.Feed.pluginEvent(ctx, p.fullName, "installed")
         null
     }
 

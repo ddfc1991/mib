@@ -263,7 +263,7 @@ class ScheduledTaskManager(private val context: Context) {
         // [T-android-scheduled-fire-claim] Atomic: a run finishing minutes
         // after its fire must not write back a count / anchor the next fire
         // has moved on since.
-        store.update(taskId) { t ->
+        val updated = store.update(taskId) { t ->
             t.copy(
                 lastFiredAt = now,
                 lastResultPreview = resultPreview,
@@ -272,6 +272,8 @@ class ScheduledTaskManager(private val context: Context) {
                 fireCount = t.firesSoFar + 1,
             )
         }
+        // [fork/mibot-feed] One 动态 line per finished run (async, never throws).
+        if (updated != null) com.openminis.app.mibot.feed.Feed.taskFinished(context, updated.label, resultPreview, ok, sessionId)
     }
 
     private fun registerAlarm(task: ScheduledTask) {

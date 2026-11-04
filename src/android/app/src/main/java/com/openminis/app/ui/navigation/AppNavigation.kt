@@ -665,14 +665,26 @@ fun AppNavigation(
                 current = com.openminis.app.ui.glass.GlassTab.FEED,
                 onSelect = { navController.navigateToGlassTab(it) },
                 scrollUnder = true,
-            ) { com.openminis.app.ui.glass.GlassFeedPage() }
+            ) {
+                // [fork/mibot-feed] Real 动态 (filesDir/feed); 讨论 opens a new chat prefilled.
+                com.openminis.app.mibot.feed.FeedPage(
+                    onDiscuss = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+                    onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
+                    onOpenGroup = { id -> navController.safeNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id)) },
+                )
+            }
         }
         composable(com.openminis.app.ui.glass.GlassRoutes.IDEAS) {
             com.openminis.app.ui.glass.GlassTabShell(
                 current = com.openminis.app.ui.glass.GlassTab.IDEAS,
                 onSelect = { navController.navigateToGlassTab(it) },
                 scrollUnder = true,
-            ) { com.openminis.app.ui.glass.GlassIdeasPage() }
+            ) {
+                // [fork/mibot-ideas] Real 点子 (filesDir/ideas).
+                com.openminis.app.mibot.ideas.IdeasPage(
+                    onChat = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+                )
+            }
         }
         // [fork/mibot-ui-tabs] Bottom tab 群聊 (was Bots).
         composable(com.openminis.app.ui.glass.GlassRoutes.GROUPS) {

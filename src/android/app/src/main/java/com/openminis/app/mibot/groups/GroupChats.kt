@@ -177,6 +177,9 @@ object GroupChats {
                     StopReason.DONE -> null
                 }
                 if (note != null) _notes.update { it + (groupId to note) }
+                // [fork/mibot-feed] Turn summary to 动态 (successful replies only).
+                com.openminis.app.mibot.feed.Feed.groupTurn(app, groupId, file.group.title,
+                    result.replies.filter { !it.error }.map { (it.botName ?: "Bot") to it.text })
             } catch (e: CancellationException) {
                 _notes.update { it + (groupId to tc(app, "已停止", "Stopped")) }
                 throw e
