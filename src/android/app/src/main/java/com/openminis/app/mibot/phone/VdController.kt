@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.hardware.display.DisplayManager
 import android.os.Build
 import android.provider.Settings
 import android.view.Display
@@ -92,17 +93,14 @@ object VdController {
             }
         }
         if (shell != null) {
-            val dm = app.resources.displayMetrics
-            // Phone-shaped display at ~2/3 of the real resolution: sharp enough for
-            // the model, cheap to capture.
-            val w = (if (width > 0) width else (dm.widthPixels * 2 / 3)).coerceIn(360, 1440) / 2 * 2
-            val h = (if (height > 0) height else (dm.heightPixels * 2 / 3)).coerceIn(640, 3200) / 2 * 2
-            val dpi = (dm.densityDpi * 2 / 3).coerceIn(160, 640)
+            // S3: real resolution and dpi (Mika), portrait buffer; screenshots are downscaled separately.
+            val (w, h, dpi) = displaySpec(app, width, height)
+            val dmgr = app.getSystemService(DisplayManager::class.java)
             return@withContext runCatching {
-                val d = AgentDisplay(shell, w, h, dpi)
+                val d = AgentDisplay(shell, w, h, dpi, dmgr)
                 display = d
                 _framesFlow.value = d.frames
-                val s = State(Mode.HELPER, d.displayId, w, h)
+                val s = State(Mode.HELPER, d.displayId, d.width, d.height)
                 _state.value = s
                 log("vd_create: display ${d.displayId} ${w}x$h@$dpi (${phone.hub.source})")
                 // S2: which display the ROM actually gave us (trusted or untrusted fallback, keep-awake, fullscreen).
@@ -152,11 +150,36 @@ object VdController {
         VdForegroundService.stop(app)
     }
 
+    /** Size of the agent display for this phone: real resolution and dpi, portrait (see [AgentDisplaySpec]). */
+    @Suppress("DEPRECATION")
+    fun displaySpec(context: Context, width: Int = 0, height: Int = 0): Triple<Int, Int, Int> {
+        val app = context.applicationContext
+        val real = android.util.DisplayMetrics()
+        val main = app.getSystemService(DisplayManager::class.java)?.getDisplay(Display.DEFAULT_DISPLAY)
+        if (main != null) main.getRealMetrics(real) else real.setTo(app.resources.displayMetrics)
+        return AgentDisplaySpec.of(real.widthPixels, real.heightPixels, real.densityDpi, width, height)
+    }
+
+    /** The active state; the agent display's size is read live because it rotates with landscape apps. */
     private fun requireActive(): State {
         val s = _state.value
         check(s.mode != Mode.NONE) { "No virtual display. Call vd_create first." }
+        val d = display
+        if (s.mode == Mode.HELPER && d != null) {
+            val w = d.width
+            val h = d.height
+            if (w != s.width || h != s.height) {
+                val n = s.copy(width = w, height = h)
+                _state.value = n
+                log("display ${s.displayId} rotated: ${w}x$h")
+                return n
+            }
+        }
         return s
     }
+
+    /** Current state with the live display size (for tools that report it). */
+    fun current(): State = if (_state.value.mode == Mode.NONE) _state.value else requireActive()
 
     // ------------------------------------------------------------ actions
 
@@ -198,6 +221,10 @@ object VdController {
         }
     }
 
+    /** Scale of the last screenshot (image = display × scale), so image points can be mapped back. */
+    @Volatile var lastShotScale: Float = 1f
+        private set
+
     /** JPEG of the agent display (or the main screen in A11Y mode), long side ≤ [maxSide]. */
     suspend fun screenshot(context: Context, maxSide: Int = 1280): ByteArray? = withContext(Dispatchers.Default) {
         val s = requireActive()
@@ -216,8 +243,10 @@ object VdController {
             Mode.NONE -> null
         }
         bmp ?: return@withContext null
-        val scale = minOf(1f, maxSide.toFloat() / maxOf(bmp.width, bmp.height))
-        val scaled = if (scale < 1f) Bitmap.createScaledBitmap(bmp, (bmp.width * scale).toInt(), (bmp.height * scale).toInt(), true) else bmp
+        val scale = ShotScale.scale(bmp.width, bmp.height, maxSide)
+        lastShotScale = scale
+        val (sw, sh) = ShotScale.size(bmp.width, bmp.height, scale)
+        val scaled = if (scale < 1f) Bitmap.createScaledBitmap(bmp, sw, sh, true) else bmp
         val out = ByteArrayOutputStream()
         scaled.compress(Bitmap.CompressFormat.JPEG, 80, out)
         if (scaled !== bmp) scaled.recycle()

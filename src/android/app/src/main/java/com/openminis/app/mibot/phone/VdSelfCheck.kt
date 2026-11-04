@@ -214,12 +214,10 @@ object VdSelfCheck {
 
         suspend fun display(): Check {
             val sh = shell ?: return check("display", Status.FAIL, "no helper", adviceHelper)
-            val dm = app.resources.displayMetrics
             // Same size rule as VdController.create, so the check sees what the agent gets.
-            val w = (dm.widthPixels * 2 / 3).coerceIn(360, 1440) / 2 * 2
-            val h = (dm.heightPixels * 2 / 3).coerceIn(640, 3200) / 2 * 2
-            val dpi = (dm.densityDpi * 2 / 3).coerceIn(160, 640)
-            val made = withContext(NonCancellable + Dispatchers.IO) { runCatching { AgentDisplay(sh, w, h, dpi) }.onSuccess { display = it } }
+            val (w, h, dpi) = VdController.displaySpec(app)
+            val dmgr = app.getSystemService(android.hardware.display.DisplayManager::class.java)
+            val made = withContext(NonCancellable + Dispatchers.IO) { runCatching { AgentDisplay(sh, w, h, dpi, dmgr) }.onSuccess { display = it } }
             val d = made.getOrElse {
                 return check("display", Status.FAIL, "createDisplay failed (${it.message ?: it.javaClass.simpleName})",
                     t("系统拒绝了可信和普通两种虚拟屏。请复制日志发给开发者。", "The system refused both the trusted and the plain virtual display. Copy the log and send it to the developer."))
