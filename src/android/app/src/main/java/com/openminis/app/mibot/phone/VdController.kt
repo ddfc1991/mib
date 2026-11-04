@@ -1,10 +1,8 @@
 package com.openminis.app.mibot.phone
 
-import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.Path
 import android.graphics.Rect
 import android.os.Build
 import android.provider.Settings
@@ -227,83 +225,116 @@ object VdController {
         out.toByteArray()
     }
 
+    // S5: accessibility first on the agent display, shell injection as the fallback (Mika's input model).
+    // Every result names the path that worked, e.g. "tapped (300,500) via a11y", so logs answer which
+    // path a given phone supports.
+
+    private fun a11yOn(): Boolean = VdA11y.service()?.also { VdA11y.ensureFlags(it) } != null
+
     suspend fun tap(context: Context, x: Int, y: Int): String = withContext(Dispatchers.IO) {
         val s = requireActive()
         val app = context.applicationContext
+        if (x < 0 || y < 0 || x >= s.width || y >= s.height) return@withContext "tap failed: ($x,$y) is outside the display (${s.width}x${s.height})"
         askIfSensitive(app, s, x, y, null)?.let { return@withContext it }
-        val ok = when (s.mode) {
-            Mode.HELPER -> helper(app)?.injectTap(s.displayId, x, y) == true
-            Mode.A11Y -> gesture(listOf(x to y, x to y), 60)
-            Mode.NONE -> false
-        }
-        log("vd_tap $x,$y -> $ok")
-        if (ok) "tapped ($x,$y)" else "tap failed"
+        val sh = if (s.mode == Mode.HELPER) helper(app) else null
+        val order = VdInputOrder.tap(a11y = a11yOn(), helper = sh != null)
+        val r = VdInputOrder.firstOk(order, listOf(
+            VdInputOrder.Step(VdInputOrder.A11Y_GESTURE) { VdA11y.taps(s.displayId, x.toFloat(), y.toFloat()) },
+            VdInputOrder.Step(VdInputOrder.NODE_CLICK) { VdA11y.clickAt(s.displayId, x, y) },
+            VdInputOrder.Step(VdInputOrder.SHELL) { sh?.injectTap(s.displayId, x, y) == true },
+        ))
+        log("vd_tap $x,$y -> ${r.describe()}")
+        if (r.ok) "tapped ($x,$y) via ${r.describe()}" else "tap failed (${r.describe()})"
     }
 
     suspend fun swipe(context: Context, x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Int): String = withContext(Dispatchers.IO) {
         val s = requireActive()
         val dur = durationMs.coerceIn(80, 3_000).toLong()
-        val ok = when (s.mode) {
-            Mode.HELPER -> {
+        val sh = if (s.mode == Mode.HELPER) helper(context) else null
+        val order = VdInputOrder.swipe(a11y = a11yOn(), helper = sh != null)
+        val r = VdInputOrder.firstOk(order, listOf(
+            VdInputOrder.Step(VdInputOrder.A11Y_GESTURE) { VdA11y.line(s.displayId, listOf(x1 to y1, x2 to y2), dur) },
+            VdInputOrder.Step(VdInputOrder.SHELL) {
                 val n = (dur / 16).toInt().coerceIn(4, 120)
                 val xs = IntArray(n + 1) { x1 + (x2 - x1) * it / n }
                 val ys = IntArray(n + 1) { y1 + (y2 - y1) * it / n }
                 val ts = LongArray(n + 1) { dur * it / n }
-                helper(context)?.injectStroke(s.displayId, xs, ys, ts) == true
-            }
-            Mode.A11Y -> gesture(listOf(x1 to y1, x2 to y2), dur)
-            Mode.NONE -> false
-        }
-        log("vd_swipe $x1,$y1→$x2,$y2 ${dur}ms -> $ok")
-        if (ok) "swiped" else "swipe failed"
+                sh?.injectStroke(s.displayId, xs, ys, ts) == true
+            },
+        ))
+        log("vd_swipe $x1,$y1→$x2,$y2 ${dur}ms -> ${r.describe()}")
+        if (r.ok) "swiped via ${r.describe()}" else "swipe failed (${r.describe()})"
     }
 
     suspend fun type(context: Context, text: String, submit: Boolean): String = withContext(Dispatchers.IO) {
         val s = requireActive()
         val app = context.applicationContext
         askIfSensitive(app, s, null, null, text)?.let { return@withContext it }
-        val ok = when (s.mode) {
-            Mode.HELPER -> {
-                val sh = helper(app) ?: return@withContext "helper not connected"
-                val ascii = text.all { it.code in 32..126 }
-                if (ascii && text.length <= 200) sh.injectText(s.displayId, text)
-                else {
-                    val r = sh.setClipText(text)
-                    val pasted = r == ShellService.CLIP_SET && sh.injectCtrlKey(s.displayId, KeyEvent.KEYCODE_V)
-                    delay(300)
-                    sh.restoreClip()
-                    pasted
+        val sh = if (s.mode == Mode.HELPER) helper(app) else null
+        val a11y = a11yOn()
+        val field = if (a11y) VdA11y.focusedEditable(s.displayId) else null
+        // Web editors (contenteditable) only take real input: SET_TEXT changes the page text without
+        // input events, so they go straight to paste when the helper can do it. Passwords never use the clipboard.
+        val web = field?.let { VdA11y.inWebView(it) } == true
+        val password = field?.isPassword == true
+        val ascii = text.all { it.code in 32..126 } && text.length <= 200
+        var order = VdInputOrder.type(a11y = a11y, hasField = field != null, helper = sh != null, ascii = ascii)
+        if (web && !password && sh != null) order = order.filter { it != VdInputOrder.SET_TEXT } + VdInputOrder.SET_TEXT
+        if (password) order = order.filter { it != VdInputOrder.PASTE }
+        val r = VdInputOrder.firstOk(order, listOf(
+            VdInputOrder.Step(VdInputOrder.SET_TEXT) { field?.let { VdA11y.setTextVerified(it, text) } == true },
+            VdInputOrder.Step(VdInputOrder.PASTE) { sh != null && paste(sh, s.displayId, field, text) },
+            VdInputOrder.Step(VdInputOrder.KEYS) { sh?.injectText(s.displayId, text) == true },
+        ))
+        var msg = if (r.ok) "typed ${text.length} chars via ${r.describe()}" else
+            "type failed (${r.describe()}${if (field == null) "; no focused input field on the display — tap the field first" else ""})"
+        if (r.ok && submit) msg += "; " + key(app, "ENTER")
+        log("vd_type (${text.length} chars) -> ${r.describe()}")
+        msg
+    }
+
+    /** Clipboard (through the helper, restored afterwards) → ACTION_PASTE on the field, or Ctrl+A/Ctrl+V on the display. */
+    private suspend fun paste(sh: IMibotShell, displayId: Int, field: AccessibilityNodeInfo?, text: String): Boolean {
+        if (runCatching { sh.setClipText(text) }.getOrDefault(ShellService.CLIP_FAILED) != ShellService.CLIP_SET) return false
+        try {
+            if (field != null) {
+                val before = field.text?.toString()
+                VdA11y.selectAll(field)
+                if (VdA11y.paste(field)) {
+                    // The app reads the clipboard asynchronously: wait for the field to change before restoring.
+                    if (VdA11y.awaitText(field, text)) return true
+                    field.refresh()
+                    if (field.text?.toString() != before) return true
                 }
             }
-            Mode.A11Y -> {
-                val svc = MinisAccessibilityService.getInstance()
-                val node = svc?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
-                svc != null && node != null && svc.setNodeText(node, text)
-            }
-            Mode.NONE -> false
+            sh.injectCtrlKey(displayId, KeyEvent.KEYCODE_A)
+            val ok = sh.injectCtrlKey(displayId, KeyEvent.KEYCODE_V)
+            delay(300)
+            return ok
+        } finally {
+            runCatching { sh.restoreClip() }
         }
-        if (ok && submit) key(app, "ENTER")
-        log("vd_type (${text.length} chars) -> $ok")
-        if (ok) "typed ${text.length} chars" else "type failed (is an input field focused? tap it first)"
     }
 
     suspend fun key(context: Context, name: String): String = withContext(Dispatchers.IO) {
         val s = requireActive()
         val code = KEYS[name.uppercase().removePrefix("KEYCODE_")] ?: name.toIntOrNull()
             ?: return@withContext "unknown key '$name' (allowed: ${KEYS.keys.joinToString()})"
-        val ok = when (s.mode) {
-            Mode.HELPER -> helper(context)?.injectKey(s.displayId, code) == true
-            Mode.A11Y -> {
-                val svc = MinisAccessibilityService.getInstance()
-                when (code) {
-                    KeyEvent.KEYCODE_BACK -> svc?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) == true
-                    else -> false
-                }
-            }
-            Mode.NONE -> false
+        val sh = if (s.mode == Mode.HELPER) helper(context) else null
+        val a11y = a11yOn()
+        val field = if (a11y && code == KeyEvent.KEYCODE_ENTER) VdA11y.focusedEditable(s.displayId) else null
+        val order = when (code) {
+            KeyEvent.KEYCODE_BACK -> VdInputOrder.back(a11y = a11y, displayTopFocused = a11y && VdA11y.isTopFocused(s.displayId), helper = sh != null)
+            KeyEvent.KEYCODE_ENTER -> VdInputOrder.enter(a11y = a11y, hasField = field != null, helper = sh != null)
+            else -> VdInputOrder.key(helper = sh != null)
         }
-        log("vd_key $name -> $ok")
-        if (ok) "pressed $name" else "key failed"
+        val r = VdInputOrder.firstOk(order, listOf(
+            VdInputOrder.Step(VdInputOrder.GLOBAL_BACK) { VdA11y.globalBack() },
+            VdInputOrder.Step(VdInputOrder.IME_ENTER) { field?.let { VdA11y.imeEnter(it) } == true },
+            VdInputOrder.Step(VdInputOrder.SHELL) { sh?.injectKey(s.displayId, code) == true },
+        ))
+        log("vd_key $name -> ${r.describe()}")
+        if (r.ok) "pressed $name via ${r.describe()}" else "key failed (${r.describe()})"
     }
 
     /** Compact accessibility tree of the agent display (needs Mibot's accessibility service). */
@@ -311,10 +342,8 @@ object VdController {
         val s = requireActive()
         val svc = MinisAccessibilityService.getInstance()
             ?: return "Accessibility is off, so the UI tree can't be read. Use vd_screenshot (the model reads the image) or enable Mibot's accessibility service."
-        val roots: List<AccessibilityNodeInfo> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val all = svc.windowsOnAllDisplays
-            (all.get(s.displayId) ?: emptyList()).mapNotNull { it.root }
-        } else svc.windows.mapNotNull { it.root }
+        VdA11y.ensureFlags(svc)
+        val roots: List<AccessibilityNodeInfo> = VdA11y.roots(s.displayId)
         if (roots.isEmpty()) return "No windows on display ${s.displayId} yet (app still starting?)."
         val sb = StringBuilder("display ${s.displayId} ${s.width}x${s.height}; top=${topActivity(context) ?: "?"}\n")
         var n = 0
@@ -367,7 +396,7 @@ object VdController {
         var reason: String? = null
         if (text != null) {
             if (Regex("^\\s*\\d{4,8}\\s*$").matches(text)) reason = tc(app, "输入看起来像验证码", "the text looks like a verification code")
-            val focus = MinisAccessibilityService.getInstance()?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+            val focus = VdA11y.focusedEditable(s.displayId)
             if (focus?.isPassword == true) reason = tc(app, "当前输入框是密码框", "the focused field is a password field")
         }
         if (reason == null && x != null && y != null && s.mode == Mode.HELPER) {
@@ -405,15 +434,6 @@ object VdController {
     }
 
     // ------------------------------------------------------------ a11y helpers
-
-    private fun gesture(points: List<Pair<Int, Int>>, durationMs: Long): Boolean {
-        val svc = MinisAccessibilityService.getInstance() ?: return false
-        val p = Path().apply {
-            moveTo(points[0].first.toFloat(), points[0].second.toFloat())
-            points.drop(1).forEach { lineTo(it.first.toFloat(), it.second.toFloat()) }
-        }
-        return svc.dispatchSimpleGesture(p, 0, durationMs)
-    }
 
     fun overlayGranted(context: Context) = Settings.canDrawOverlays(context)
 

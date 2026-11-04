@@ -92,7 +92,7 @@ object VdTools {
                 }
                 SWIPE -> {
                     val msg = VdController.swipe(ctx, a.optInt("x1"), a.optInt("y1"), a.optInt("x2"), a.optInt("y2"), a.optInt("duration_ms", 300))
-                    ToolExecutionResult(msg, msg == "swiped")
+                    ToolExecutionResult(msg, msg.startsWith("swiped"))
                 }
                 TYPE -> {
                     val msg = VdController.type(ctx, a.optString("text"), a.optBoolean("submit", false))
