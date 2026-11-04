@@ -1,7 +1,7 @@
 {
  "version": 2,
  "updated": "2026-11-04",
- "note": "Mibot auto API-key recipes. Override per service with a higher \"v\" in filesDir/vault/key_recipes.json (vault recipe add). URL patterns + DOM selectors; text lists are matched against button labels. v2 (2026-11-04): per-recipe hosts + keysMatch, precheck [{rx, view: verify|assist, msg}], revealSelectors, handoff:customtab.",
+ "note": "Mibot auto API-key recipes. Override per service with a higher \"v\" in filesDir/vault/key_recipes.json (vault recipe add). URL patterns + DOM selectors; text lists are matched against button labels. v2 (2026-11-04): per-recipe hosts + keysMatch, precheck [{rx, view: verify|assist, msg}], revealSelectors, handoff:customtab, flow:oauth_pkce.",
  "defaults": {
   "loginUrl": [
    "login",
@@ -484,6 +484,20 @@
    "switchOff": [
     "Restrict Key"
    ]
+  },
+  "openrouter": {
+   "v": 2,
+   "flow": "oauth_pkce",
+   "authUrl": "https://openrouter.ai/auth",
+   "exchangeUrl": "https://openrouter.ai/api/v1/auth/keys",
+   "callbacks": [
+    "deeplink",
+    "loopback"
+   ],
+   "deepLink": "mibot://openrouter-callback",
+   "keyLabel": "Mibot",
+   "keyRegex": "sk-or-v1-[0-9a-f]{40,}",
+   "hint": "OpenRouter 官方 OAuth PKCE：浏览器里点「授权」，Key 直接交给 Mibot。文档只写了 https / localhost 回调，App 深链不被接受时自动改用本机回调"
   }
  }
 }

@@ -550,7 +550,9 @@ class MainActivity : ComponentActivity() {
         // while inside a chat, synthesise an OpenSession deep-link so
         // the navigation stack lands on that chat instead of the
         // sessions list. T166.
-        val explicitDeepLink = DeepLinkHandler.parse(intent?.data)
+        // [fork/mibot-autokey-v2] An OAuth PKCE callback is consumed here, never routed as a minis:// link.
+        val pkceCallback = com.openminis.app.mibot.vault.OAuthPkce.onDeepLink(intent?.data)
+        val explicitDeepLink = if (pkceCallback) DeepLinkAction.Unknown else DeepLinkHandler.parse(intent?.data)
         val launchDeepLink = if (explicitDeepLink !is DeepLinkAction.Unknown) {
             explicitDeepLink
         } else {
@@ -796,6 +798,8 @@ class MainActivity : ComponentActivity() {
         if (intent.getBooleanExtra("shared_content", false)) {
             com.openminis.app.share.ShareCoordinator.processPendingShare(this)
         }
+        // [fork/mibot-autokey-v2] mibot://openrouter-callback?code=…&state=… (OAuth PKCE recipe flow).
+        if (com.openminis.app.mibot.vault.OAuthPkce.onDeepLink(intent.data)) return
         handleDeepLink(intent.data)
     }
 

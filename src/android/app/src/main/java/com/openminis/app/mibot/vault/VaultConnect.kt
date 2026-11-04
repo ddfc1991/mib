@@ -184,7 +184,7 @@ object VaultConnect {
 
     fun skip(id: String) {
         val t = _tasks.value.find { it.service.id == id } ?: return
-        if (t.phase == Phase.NEEDS_YOU || t.phase == Phase.CONNECTING) AutoKey.userCancel()
+        if (t.phase == Phase.NEEDS_YOU || t.phase == Phase.CONNECTING) { AutoKey.userCancel(); OAuthPkce.cancel() }
         update(id) { it.copy(phase = Phase.SKIPPED, detail = "") }
     }
 
@@ -234,13 +234,20 @@ object VaultConnect {
         val s = t.service
         update(s.id) { it.copy(phase = Phase.CONNECTING, detail = tc(app, "连接中…", "Connecting…")) }
         try {
-            val recipe = if (t.mode == Mode.AUTO && s.auth == "api_key") KeyRecipes.forService(app, s) else null
+            val recipe = if (t.mode == Mode.AUTO && (s.auth == "api_key" || s.auth == "oauth_openrouter")) KeyRecipes.forService(app, s) else null
             val (secret, kind, via) = when {
+                // [fork/mibot-autokey-v2] Recipe flow oauth_pkce: app deep link first, localhost callback as fallback.
+                recipe != null && recipe.json.optString("flow") == "oauth_pkce" -> {
+                    update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = tc(app, "在打开的页面里点「授权」", "Tap Authorize on the page that opened")) }
+                    val k = try { OAuthPkce.run(app, recipe) { step -> update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = step) } } }
+                        catch (c: OAuthPkce.Cancelled) { update(s.id) { it.copy(phase = Phase.SKIPPED, detail = tc(app, "已取消", "Cancelled")) }; return }
+                    Triple(k, "api_key", "oauth")
+                }
                 t.mode == Mode.AUTO && s.auth == "oauth_openrouter" -> {
                     update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = tc(app, "在打开的页面里点「授权」", "Tap Authorize on the page that opened")) }
                     Triple(openRouterPkce(app), "api_key", "oauth")
                 }
-                recipe != null -> when (val r = AutoKey.fetchKey(app, s, recipe) { step -> update(s.id) { it.copy(phase = Phase.CONNECTING, detail = step) } }) {
+                recipe != null && s.auth == "api_key" -> when (val r = AutoKey.fetchKey(app, s, recipe) { step -> update(s.id) { it.copy(phase = Phase.CONNECTING, detail = step) } }) {
                     is AutoKey.Result.Key -> Triple(r.key, "api_key", r.via)
                     is AutoKey.Result.Failed -> error(r.reason)
                     is AutoKey.Result.Handoff -> { update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = r.reason) }; return }

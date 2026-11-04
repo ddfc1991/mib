@@ -95,6 +95,17 @@ object RecipeMerge {
             r.optString("keysMatch").takeIf { it.isNotBlank() }?.let { rx -> if (runCatching { Regex(rx) }.isFailure) out += "$id: keysMatch invalid" }
             val h = r.optString("handoff")
             if (h.isNotBlank() && h != "customtab") out += "$id: unknown handoff $h"
+            when (val fl = r.optString("flow")) {
+                "", "web" -> {}
+                "oauth_pkce" -> {
+                    for (k in listOf("authUrl", "exchangeUrl")) if (!r.optString(k).startsWith("https://")) out += "$id: oauth_pkce needs https $k"
+                    val cbs = r.optJSONArray("callbacks")
+                    if (cbs == null || cbs.length() == 0) out += "$id: oauth_pkce needs callbacks"
+                    else for (i in 0 until cbs.length()) if (cbs.optString(i) !in Pkce.CALLBACK_KINDS) out += "$id: unknown callback ${cbs.optString(i)}"
+                    r.optString("deepLink").takeIf { it.isNotBlank() }?.let { dl -> if (!Regex("^[a-z][a-z0-9+.-]*://[a-z0-9.-]+(/.*)?$").matches(dl) || dl.startsWith("http")) out += "$id: bad deepLink $dl" }
+                }
+                else -> out += "$id: unknown flow $fl"
+            }
             r.optJSONArray("precheck")?.let { a ->
                 for (i in 0 until a.length()) {
                     val pc = a.optJSONObject(i)
@@ -393,3 +404,66 @@ object IntentLinks {
     fun isGoogleLogin(host: String?): Boolean = host != null && (host == "accounts.google.com" || host.endsWith(".accounts.google.com"))
 }
 
+/**
+ * [fork/mibot-autokey-v2] OAuth PKCE (recipe `flow: "oauth_pkce"`, OpenRouter):
+ * verifier / S256 challenge, the authorization URL and the callback parser,
+ * pure so they are unit tested. OpenRouter docs (openrouter.ai/docs/guides/
+ * overview/auth/oauth, fetched 2026-11-04): GET /auth?callback_url=…
+ * &code_challenge=…&code_challenge_method=S256[&state=…&key_label=…], then
+ * POST /api/v1/auth/keys {code, code_verifier, code_challenge_method} → {key}.
+ */
+object Pkce {
+    private fun b64url(b: ByteArray): String = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(b)
+
+    /** RFC 7636 verifier from [random] bytes (32 bytes → 43 chars; 96 → 128). */
+    fun verifier(random: ByteArray): String {
+        require(random.size in 32..96) { "32..96 random bytes" }
+        return b64url(random)
+    }
+
+    fun challengeS256(verifier: String): String =
+        b64url(java.security.MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII)))
+
+    private fun enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+
+    fun authUrl(base: String, callback: String, challenge: String, state: String?, keyLabel: String?): String = buildString {
+        append(base).append(if ('?' in base) '&' else '?')
+        append("callback_url=").append(enc(callback))
+        append("&code_challenge=").append(enc(challenge)).append("&code_challenge_method=S256")
+        if (!state.isNullOrBlank()) append("&state=").append(enc(state))
+        if (!keyLabel.isNullOrBlank()) append("&key_label=").append(enc(keyLabel))
+    }
+
+    data class Callback(val code: String?, val state: String?, val error: String?)
+
+    /**
+     * Parses [url] when it is the callback [expected] (same scheme, host and
+     * path; query ignored), else null. A callback without code and without
+     * error is still returned (code = null) so the caller can report it.
+     */
+    fun parseCallback(url: String, expected: String): Callback? {
+        val u = runCatching { URI(url.trim()) }.getOrNull() ?: return null
+        val e = runCatching { URI(expected.trim()) }.getOrNull() ?: return null
+        if (!u.scheme.equals(e.scheme, ignoreCase = true)) return null
+        if (!(u.host ?: u.authority ?: "").equals(e.host ?: e.authority ?: "", ignoreCase = true)) return null
+        if ((u.path ?: "").trimEnd('/') != (e.path ?: "").trimEnd('/')) return null
+        val q = HashMap<String, String>()
+        (u.rawQuery ?: "").split('&').filter { it.isNotBlank() }.forEach { kv ->
+            val k = java.net.URLDecoder.decode(kv.substringBefore('='), "UTF-8")
+            val v = java.net.URLDecoder.decode(kv.substringAfter('=', ""), "UTF-8")
+            q.putIfAbsent(k, v)
+        }
+        return Callback(q["code"]?.takeIf { it.isNotBlank() }, q["state"]?.takeIf { it.isNotBlank() },
+            (q["error_description"] ?: q["error"])?.takeIf { it.isNotBlank() })
+    }
+
+    fun exchangeBody(code: String, verifier: String): JSONObject =
+        JSONObject().put("code", code).put("code_verifier", verifier).put("code_challenge_method", "S256")
+
+    /** The verifier for a callback: by state; with no state, only when exactly one attempt is open. */
+    fun verifierFor(cb: Callback, attempts: Map<String, String>): String? =
+        if (cb.state != null) attempts[cb.state] else attempts.values.singleOrNull()
+
+    /** Callback kinds a recipe may list, in the order they are tried. */
+    val CALLBACK_KINDS = setOf("deeplink", "loopback")
+}

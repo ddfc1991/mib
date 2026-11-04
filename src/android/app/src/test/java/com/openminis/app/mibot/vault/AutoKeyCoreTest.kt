@@ -576,4 +576,58 @@ class AutoKeyCoreTest {
         assertTrue(p.toString(), "x: bad host 'Upper.com'" in p)
         assertFalse(p.toString(), p.any { it.contains("ok.com") })
     }
+
+    // ---------------------------------------------------------------- OAuth PKCE (oauth_pkce flow)
+
+    @Test
+    fun `pkce S256 challenge matches RFC 7636 appendix B`() {
+        assertEquals("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", Pkce.challengeS256("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"))
+        val v = Pkce.verifier(ByteArray(64) { it.toByte() })
+        assertEquals(86, v.length)
+        assertTrue(v, Regex("[A-Za-z0-9_-]+").matches(v))
+        assertTrue(runCatching { Pkce.verifier(ByteArray(8)) }.isFailure)
+    }
+
+    @Test
+    fun `pkce auth url carries callback, challenge, S256, state and label`() {
+        val u = Pkce.authUrl("https://openrouter.ai/auth", "mibot://openrouter-callback", "abc-_", "st1", "Mibot Key")
+        assertEquals("https://openrouter.ai/auth?callback_url=mibot%3A%2F%2Fopenrouter-callback&code_challenge=abc-_&code_challenge_method=S256&state=st1&key_label=Mibot%20Key", u)
+        assertTrue(Pkce.authUrl("https://x.io/a?z=1", "http://localhost:3000/callback", "c", null, null).startsWith("https://x.io/a?z=1&callback_url=http%3A%2F%2Flocalhost%3A3000%2Fcallback&"))
+    }
+
+    @Test
+    fun `pkce callback parser only takes our deep link`() {
+        val cb = Pkce.parseCallback("mibot://openrouter-callback?code=abc%2B1&state=s9", "mibot://openrouter-callback")
+        assertEquals(Pkce.Callback("abc+1", "s9", null), cb)
+        assertEquals(Pkce.Callback(null, null, "access denied"), Pkce.parseCallback("mibot://openrouter-callback?error=access_denied&error_description=access%20denied", "mibot://openrouter-callback"))
+        assertNull(Pkce.parseCallback("mibot://other?code=1", "mibot://openrouter-callback"))
+        assertNull(Pkce.parseCallback("minis://openrouter-callback?code=1", "mibot://openrouter-callback"))
+        assertNull(Pkce.parseCallback("https://openrouter-callback?code=1", "mibot://openrouter-callback"))
+        assertNull(Pkce.parseCallback("not a url", "mibot://openrouter-callback"))
+        val attempts = linkedMapOf("s1" to "v1", "s2" to "v2")
+        assertEquals("v2", Pkce.verifierFor(Pkce.Callback("c", "s2", null), attempts))
+        assertNull(Pkce.verifierFor(Pkce.Callback("c", "zz", null), attempts))
+        assertNull(Pkce.verifierFor(Pkce.Callback("c", null, null), attempts))
+        assertEquals("v1", Pkce.verifierFor(Pkce.Callback("c", null, null), mapOf("s1" to "v1")))
+        val body = Pkce.exchangeBody("c0", "v0")
+        assertEquals("c0", body.getString("code")); assertEquals("v0", body.getString("code_verifier")); assertEquals("S256", body.getString("code_challenge_method"))
+    }
+
+    @Test
+    fun `oauth_pkce recipes are validated`() {
+        fun probs(r: JSONObject) = RecipeMerge.problems(JSONObject().put("version", 2).put("recipes", JSONObject().put("o", r.put("v", 2))).toString())
+        val good = JSONObject().put("flow", "oauth_pkce").put("authUrl", "https://openrouter.ai/auth").put("exchangeUrl", "https://openrouter.ai/api/v1/auth/keys")
+            .put("callbacks", arr("deeplink", "loopback")).put("deepLink", "mibot://openrouter-callback")
+        assertEquals(emptyList<String>(), probs(good))
+        val p = probs(JSONObject().put("flow", "oauth_pkce").put("authUrl", "http://x").put("callbacks", arr("popup")).put("deepLink", "https://x.com"))
+        assertTrue(p.toString(), "o: oauth_pkce needs https authUrl" in p)
+        assertTrue(p.toString(), "o: oauth_pkce needs https exchangeUrl" in p)
+        assertTrue(p.toString(), "o: unknown callback popup" in p)
+        assertTrue(p.toString(), "o: bad deepLink https://x.com" in p)
+        assertTrue(probs(JSONObject().put("flow", "magic")).contains("o: unknown flow magic"))
+        val or = bundled()?.getJSONObject("recipes")?.optJSONObject("openrouter")
+        assumeTrue(or != null)
+        assertEquals("oauth_pkce", or!!.getString("flow"))
+        assertEquals("mibot://openrouter-callback", or.getString("deepLink"))
+    }
 }
