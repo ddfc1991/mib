@@ -138,8 +138,18 @@ fun GlassDrawerHost(
     val haze = rememberHazeState()
     val sessions by remember(chatRepository) { chatRepository.observeSessions() }
         .collectAsState(initial = emptyList())
-    val items = remember(sessions) {
-        if (GlassDemo.enabled) GlassDemo.items() else RecentItems.fromSessions(sessions)
+    // [fork/mibot-groups] Bot group chats ride the same mixed Recent list.
+    val context = LocalContext.current
+    val groupStore = remember(context) { com.openminis.app.mibot.groups.GroupChats.store(context) }
+    val groups by groupStore.groups.collectAsState()
+    val items = remember(sessions, groups) {
+        if (GlassDemo.enabled) GlassDemo.items() else {
+            val names = com.openminis.app.mibot.groups.GroupChats.roster(context).associate { it.id to it.displayName(context) }
+            val groupRows = groups.map { g ->
+                RecentItem.Group(g.id, g.title, g.updatedAt, g.memberBotIds.mapNotNull { names[it] })
+            }
+            RecentItems.merge(RecentItems.fromSessions(sessions), groupRows, "")
+        }
     }
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -158,7 +168,11 @@ fun GlassDrawerHost(
                             launchSingleTop = true
                         }
                     }
-                    // Group chats open once feat/bots provides them.
+                    if (item is RecentItem.Group && !item.id.startsWith("demo-")) {
+                        navController.navigate(com.openminis.app.mibot.groups.GroupRoutes.chat(item.id)) {
+                            launchSingleTop = true
+                        }
+                    }
                 },
                 onNewChat = {
                     scope.launch { drawerState.close() }

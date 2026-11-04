@@ -680,7 +680,19 @@ fun AppNavigation(
                 current = com.openminis.app.ui.glass.GlassTab.GROUPS,
                 onSelect = { navController.navigateToGlassTab(it) },
                 scrollUnder = true,
-            ) { com.openminis.app.mibot.groups.GroupChatsPage() }
+            ) {
+                com.openminis.app.mibot.groups.GroupChatsPage(onOpen = { id ->
+                    navController.safeNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id))
+                })
+            }
+        }
+        // [fork/mibot-groups] One bot group chat (from the 群聊 tab or the drawer).
+        composable(
+            route = com.openminis.app.mibot.groups.GroupRoutes.CHAT,
+            arguments = listOf(navArgument("groupId") { type = NavType.StringType }),
+        ) { entry ->
+            val gid = entry.arguments?.getString("groupId") ?: return@composable
+            com.openminis.app.mibot.groups.GroupChatScreen(gid, onBack = { navController.safePopBackStack() })
         }
         // [fork/mibot-ui-tabs] Settings › Bots: a plain pushed page, Back
         // returns to Settings.
