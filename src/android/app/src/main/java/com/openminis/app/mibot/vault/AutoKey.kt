@@ -374,7 +374,7 @@ object AutoKey {
                     delay(500)
                 }
             }
-            val first = awaitWeb() ?: return Result.Failed(tc(app, "连接页面没有打开，请留在「自动发现并连接」页", "Keep the Discover & connect page open"))
+            val first = awaitWeb() ?: return Result.Failed(tc(app, "连接页面没有打开", "The connect page did not open"))
             val cred = savedLogin(app, s)
             attached = attach(first, r.keyRegex); attachedTo = first
             load(first, r.start)
@@ -409,10 +409,10 @@ object AutoKey {
                     } else st = eval(w, AutoKeyJs.script(r.json, "detect"))
                 }
                 when (nulls.onResult(st != null || rebuilt)) {
-                    NullEvals.Verdict.FAIL -> return Result.Failed(if (w == null) tc(app, "连接页面被关闭了（离开了「自动发现并连接」页）", "The connect page was closed")
+                    NullEvals.Verdict.FAIL -> return Result.Failed(if (w == null) tc(app, "连接页面被关闭了", "The connect page was closed")
                         else tc(app, "页面一直没有响应", "The page stopped responding"))
                     NullEvals.Verdict.SHOW_STUCK -> if (!stuckShown) { stuckShown = true
-                        show(View.ASSIST, "页面没有响应 · ${s.name}", if (w == null) "连接页面被关闭了，请回到「自动发现并连接」页" else "页面卡住了，可点「重试」或「用浏览器打开」", true) }
+                        show(View.ASSIST, "页面没有响应 · ${s.name}", if (w == null) "连接页面被关闭了，正在等它重新打开" else "页面卡住了，可点「重试」或「用浏览器打开」", true) }
                     else -> {}
                 }
                 // Keys from any channel: the poll (main frame) and the document-start layer (any frame).

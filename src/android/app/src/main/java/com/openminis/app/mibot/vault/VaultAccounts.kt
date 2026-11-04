@@ -580,7 +580,7 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
     }
 
     sheetId?.let { id -> VaultServices.get(ctx, id)?.let { sv -> ConnectChoiceSheet(sv) { VaultConnect.sheet.value = null } } }
-    ConnectWebLayer()
+    // [fork/mibot-autokey-v2] ConnectWebLayer lives at the app root (MainActivity) so the run's WebView survives leaving this page.
     }
 }
 

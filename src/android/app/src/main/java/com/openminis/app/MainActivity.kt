@@ -680,6 +680,10 @@ class MainActivity : ComponentActivity() {
                 com.openminis.app.mibot.phone.VdMiniView(onOpen = {
                     navController.navigate(com.openminis.app.mibot.phone.VdRoutes.PAGE) { launchSingleTop = true }
                 })
+
+                // [fork/mibot-autokey-v2] The AutoKey connect sheet + its WebView, hosted at the root so
+                // a run keeps its page when the user leaves 自动发现并连接 (it used to be destroyed there).
+                com.openminis.app.mibot.vault.ConnectWebLayer()
             }
         }
     }
