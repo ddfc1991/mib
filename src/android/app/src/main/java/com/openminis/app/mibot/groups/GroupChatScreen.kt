@@ -1,5 +1,6 @@
 package com.openminis.app.mibot.groups
 
+import com.openminis.app.ui.glass.frosted
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -110,7 +111,7 @@ fun GroupChatScreen(groupId: String, onBack: () -> Unit) {
         ) {
             members.forEach { m ->
                 Row(
-                    Modifier.clip(RoundedCornerShape(50)).background(MibotTokens.card()).border(1.dp, MibotTokens.hairline(), RoundedCornerShape(50))
+                    Modifier.frosted(RoundedCornerShape(50))
                         .clickable { input = (input.trimEnd() + " @" + m.name + " ").trimStart() }
                         .padding(start = 4.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -151,8 +152,7 @@ fun GroupChatScreen(groupId: String, onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Box(
-                Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(22.dp)).background(MibotTokens.card())
-                    .border(1.dp, MibotTokens.hairline(), RoundedCornerShape(22.dp)).padding(horizontal = 16.dp, vertical = 12.dp),
+                Modifier.weight(1f).heightIn(min = 44.dp).frosted(RoundedCornerShape(22.dp), elevation = 2.dp).padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 if (input.isEmpty()) Text(t("发消息，@ 点名 Bot", "Message — @ to address a bot"), fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 BasicTextField(
@@ -166,8 +166,8 @@ fun GroupChatScreen(groupId: String, onBack: () -> Unit) {
             }
             val canSend = !busy && input.isNotBlank() && members.isNotEmpty()
             Box(
-                Modifier.size(44.dp).clip(CircleShape)
-                    .background(if (busy || canSend) MaterialTheme.colorScheme.primary else MibotTokens.card())
+                Modifier.size(44.dp)
+                    .then(if (busy || canSend) Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primary) else Modifier.frosted(CircleShape))
                     .clickable(enabled = busy || canSend) {
                         if (busy) GroupChats.stop(groupId) else { GroupChats.send(ctx, groupId, input); input = "" }
                     },
@@ -220,8 +220,11 @@ private fun MessageBubble(m: GroupMessage, members: List<GroupBot>) {
                 else -> MaterialTheme.colorScheme.onSurface
             }
             Box(
-                Modifier.widthIn(max = 300.dp).clip(RoundedCornerShape(16.dp)).background(bg)
-                    .then(if (!mine && !m.error) Modifier.border(1.dp, MibotTokens.hairline(), RoundedCornerShape(16.dp)) else Modifier)
+                Modifier.widthIn(max = 300.dp)
+                    .then(
+                        if (!mine && !m.error) Modifier.frosted(RoundedCornerShape(16.dp))
+                        else Modifier.clip(RoundedCornerShape(16.dp)).background(bg),
+                    )
                     .padding(horizontal = 12.dp, vertical = 9.dp),
             ) {
                 Text(

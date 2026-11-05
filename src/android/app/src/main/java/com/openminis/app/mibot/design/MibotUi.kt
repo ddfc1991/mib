@@ -53,6 +53,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openminis.app.ui.theme.LocalMibotDark
+import com.openminis.app.ui.glass.FrostLevel
+import com.openminis.app.ui.glass.FrostTokens
+import com.openminis.app.ui.glass.frosted
 
 /**
  * [fork/mibot-v3] Design tokens — the ONE place sizes come from. Every Mibot
@@ -153,10 +156,15 @@ object MibotTokens {
     fun hairline(): Color =
         if (LocalMibotDark.current) Color.White.copy(alpha = 0.09f) else Color(0xFF1B1D22).copy(alpha = 0.08f)
 
-    /** [fork/mibot-v4] Frosted card fill: translucent so the sky shows through. */
+    /**
+     * [fork/frost] Flat card fill for places that can't blur (row strips,
+     * Material `Surface(color=)`). Was 0.72 over the moving sky; now the
+     * frost fallback (~0.88) so text never sits on a busy background.
+     * Real cards use [com.openminis.app.ui.glass.frosted] instead.
+     */
     @Composable
     @ReadOnlyComposable
-    fun card(): Color = if (LocalMibotDark.current) Color(0xB8181A1F) else Color(0xB8FFFFFF)
+    fun card(): Color = FrostTokens.flat(LocalMibotDark.current)
 
     /** Muted tint for every line icon in rows (one consistent colour, no multicolour). */
     @Composable
@@ -188,7 +196,7 @@ object MibotTokens {
     /** [fork/mibot-v5] Secondary (tonal glass) button / chip fill. */
     @Composable
     @ReadOnlyComposable
-    fun tonal(): Color = if (LocalMibotDark.current) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.72f)
+    fun tonal(): Color = FrostTokens.flat(LocalMibotDark.current)
 
     /** [fork/mibot-v5] Selected chip fill: a faint accent wash, never a solid block. */
     @Composable
@@ -244,9 +252,7 @@ fun MibotTopBar(title: String, onBack: (() -> Unit)?, actions: @Composable RowSc
                 Modifier
                     .align(Alignment.CenterStart)
                     .size(MibotIcon.TopButton)
-                    .clip(CircleShape)
-                    .background(MibotTokens.card())
-                    .border(1.dp, MibotTokens.hairline(), CircleShape)
+                    .frosted(CircleShape, FrostLevel.Bar, elevation = 2.dp)
                     .clickable(onClick = onBack)
                     .semantics { contentDescription = "Back" },
                 contentAlignment = Alignment.Center,
@@ -296,9 +302,7 @@ fun MibotCard(
         modifier
             .fillMaxWidth()
             .padding(horizontal = MibotTokens.ScreenPadding)
-            .clip(MibotTokens.CardShape)
-            .background(MibotTokens.card())
-            .border(1.dp, MibotTokens.hairline(), MibotTokens.CardShape)
+            .frosted(MibotTokens.CardShape, elevation = 1.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(padding),
         content = content,
@@ -490,9 +494,10 @@ fun MibotButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
     Box(
         modifier
             .heightIn(min = MibotSpace.ButtonMin)
-            .clip(MibotRadius.Pill)
-            .background(bg)
-            .then(if (tonal && enabled) Modifier.border(1.dp, MibotTokens.hairline(), MibotRadius.Pill) else Modifier)
+            .then(
+                if (tonal && enabled) Modifier.frosted(MibotRadius.Pill)
+                else Modifier.clip(MibotRadius.Pill).background(bg),
+            )
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = MibotSpace.L, vertical = MibotSpace.S),
         contentAlignment = Alignment.Center,
@@ -531,9 +536,8 @@ fun MibotFilterChips(options: List<String>, selected: String, onSelect: (String)
             Text(
                 opt,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(if (sel) MibotTokens.selected() else MibotTokens.card())
-                    .border(1.dp, if (sel) MibotTokens.accent().copy(alpha = 0.35f) else MibotTokens.hairline(), RoundedCornerShape(50))
+                    .frosted(RoundedCornerShape(50), tint = if (sel) MibotTokens.selected() else Color.Transparent)
+                    .then(if (sel) Modifier.border(1.dp, MibotTokens.accent().copy(alpha = 0.35f), RoundedCornerShape(50)) else Modifier)
                     .clickable { onSelect(opt) }
                     .padding(horizontal = MibotSpace.M, vertical = 5.dp),
                 color = if (sel) MibotTokens.accent() else MaterialTheme.colorScheme.onSurface,

@@ -619,6 +619,8 @@ class MainActivity : ComponentActivity() {
             val mibotOn = androidx.compose.runtime.remember { com.openminis.app.ui.glass.GlassPrefs.flow(this) }
                 .collectAsState().value.enabled
             MinisTheme(darkTheme = darkTheme, fontScale = fontScale, mibot = mibotOn) {
+              // [fork/frost] Publishes the shared backdrop every frosted surface blurs.
+              com.openminis.app.ui.glass.FrostHost(enabled = mibotOn) {
                 com.openminis.app.mibot.vault.VaultConfirmHost()
                 val navController = rememberNavController().also { this.navController = it }
 
@@ -686,6 +688,7 @@ class MainActivity : ComponentActivity() {
                 // [fork/mibot-autokey-v2] The AutoKey connect sheet + its WebView, hosted at the root so
                 // a run keeps its page when the user leaves 自动发现并连接 (it used to be destroyed there).
                 com.openminis.app.mibot.vault.ConnectWebLayer()
+              }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.openminis.app.ui.chat
 
+import com.openminis.app.ui.glass.frosted
 import android.icu.text.MeasureFormat
 import android.icu.util.Measure
 import android.icu.util.MeasureUnit
@@ -259,9 +260,8 @@ private fun PillCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .shadow(6.dp, CircleShape, clip = false, ambientColor = Color.Black.copy(alpha = 0.08f), spotColor = Color.Black.copy(alpha = 0.08f))
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .background(ScheduledAccent.copy(alpha = 0.06f), CircleShape)
+                    // [fork/frost] frosted pill (was colorScheme.surface, 0.55 in Mibot) over the transcript.
+                    .frosted(CircleShape, border = false, elevation = 6.dp, tint = ScheduledAccent.copy(alpha = 0.06f))
                     .border(0.75.dp, ScheduledAccent.copy(alpha = 0.28f), CircleShape)
                     .combinedClickable(
                         onClick = onOpen,

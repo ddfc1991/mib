@@ -1,5 +1,7 @@
 package com.openminis.app.mibot.vault
 
+import com.openminis.app.ui.glass.FrostLevel
+import com.openminis.app.ui.glass.frosted
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -255,7 +257,7 @@ fun ConnectWebLayer() {
         if (full) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {})
         val shell = when {
             chip -> Modifier.align(Alignment.BottomEnd).windowInsetsPadding(WindowInsets.navigationBars).padding(end = 12.dp, bottom = 84.dp).width(208.dp)
-                .clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 1f)).border(1.dp, MibotTokens.accent().copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .frosted(RoundedCornerShape(16.dp), FrostLevel.Sheet, border = false, elevation = 6.dp).border(1.dp, MibotTokens.accent().copy(alpha = 0.5f), RoundedCornerShape(16.dp))
             full -> Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.9f)
                 .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 1f))
             else -> Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.5f)
@@ -414,8 +416,8 @@ fun ConnectChoiceSheet(s: VaultService, onDismiss: () -> Unit) {
     val webHost = Uri.parse(s.webStart).host.orEmpty()
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss))
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 1f)).windowInsetsPadding(WindowInsets.navigationBars).padding(16.dp)) {
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+            .frosted(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp), FrostLevel.Sheet).windowInsetsPadding(WindowInsets.navigationBars).padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BrandLogo(s.logo, s.name, s.color, size = 36.dp)
                 Spacer(Modifier.width(12.dp))

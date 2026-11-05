@@ -73,7 +73,7 @@ fun GlassSidebar(
     val style = LocalGlassStyle.current
     val dark = style == GlassStyle.DUSK
     val fg = if (dark) GlassPalette.DuskOn else GlassPalette.WarmOn
-    val fgMuted = fg.copy(alpha = 0.6f)
+    val fgMuted = fg.copy(alpha = 0.72f) // [fork/frost] ≥4.5:1 on the sheet
     var query by rememberSaveable { mutableStateOf("") }
     val shown = remember(items, query) { RecentItems.merge(items, emptyList(), query) }
 

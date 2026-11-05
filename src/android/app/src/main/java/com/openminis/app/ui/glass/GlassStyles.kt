@@ -6,7 +6,6 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
 
 /**
  * [fork/glass-ui] Haze styles for the glass surfaces. Haze blurs with
@@ -15,34 +14,22 @@ import dev.chrisbanes.haze.HazeTint
  * opaque to keep text legible over an un-blurred backdrop.
  */
 object GlassStyles {
-    private fun tint(style: GlassStyle) =
-        if (style == GlassStyle.DUSK) GlassPalette.DuskTint else GlassPalette.WarmTint
+    // [fork/frost] Both styles now come from the shared frost tokens: the bar
+    // was a 0.40/0.46 scrim (text on a busy page), now dark 0.62 / light 0.72
+    // over the blur with a 0.88 no-blur fallback; the sheet is a little denser.
 
-    /** Docked bottom bar: subtle translucent fill. */
+    /** Docked / floating bottom bar. */
     @Composable
     @ReadOnlyComposable
-    fun bar(style: GlassStyle): HazeStyle = HazeStyle(
-        backgroundColor = tint(style),
-        // [fork/mibot-v4] Lighter tint so the blurred page reads through the
-        // floating capsule; API 30 (no RenderEffect) gets a translucent scrim.
-        tints = listOf(HazeTint(tint(style).copy(alpha = if (style == GlassStyle.DUSK) 0.40f else 0.46f))),
-        blurRadius = 26.dp,
-        noiseFactor = 0.05f,
-        fallbackTint = HazeTint(tint(style).copy(alpha = if (style == GlassStyle.DUSK) 0.80f else 0.84f)),
-    )
+    fun bar(style: GlassStyle): HazeStyle =
+        FrostTokens.style(style == GlassStyle.DUSK, FrostLevel.Bar, LocalFrost.current.photo)
 
-    /** Sidebar sheet: a little denser than the bar so long lists stay readable. */
+    /** Sidebar sheet: denser so long lists stay readable. */
     @Composable
     @ReadOnlyComposable
-    fun sheet(style: GlassStyle): HazeStyle = HazeStyle(
-        backgroundColor = tint(style),
-        tints = listOf(HazeTint(tint(style).copy(alpha = if (style == GlassStyle.DUSK) 0.66f else 0.76f))),
-        blurRadius = 32.dp,
-        noiseFactor = 0.04f,
-        fallbackTint = HazeTint(tint(style).copy(alpha = 0.97f)),
-    )
+    fun sheet(style: GlassStyle): HazeStyle =
+        FrostTokens.style(style == GlassStyle.DUSK, FrostLevel.Sheet, LocalFrost.current.photo)
 
     /** Hairline colour for borders/dividers on glass. */
-    fun hairline(style: GlassStyle): Color =
-        if (style == GlassStyle.DUSK) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+    fun hairline(style: GlassStyle): Color = FrostTokens.hairline(style == GlassStyle.DUSK)
 }

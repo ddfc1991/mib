@@ -1,5 +1,6 @@
 package com.openminis.app.ui.components
 
+import com.openminis.app.ui.glass.frosted
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -42,11 +43,13 @@ fun SettingsSection(
         )
         Surface(
             shape = if (mibotUi) com.openminis.app.mibot.design.MibotRadius.CardShape else RoundedCornerShape(16.dp),
-            color = if (mibotUi) com.openminis.app.mibot.design.MibotTokens.card() else MaterialTheme.colorScheme.surface,
-            border = if (mibotUi) androidx.compose.foundation.BorderStroke(1.dp, com.openminis.app.mibot.design.MibotTokens.hairline()) else null,
+            // [fork/frost] Mibot: frosted glass instead of a 0.72 flat fill.
+            color = if (mibotUi) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.surface,
+            border = null,
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .then(if (mibotUi) Modifier.frosted(com.openminis.app.mibot.design.MibotRadius.CardShape) else Modifier),
         ) {
             Column(content = content)
         }

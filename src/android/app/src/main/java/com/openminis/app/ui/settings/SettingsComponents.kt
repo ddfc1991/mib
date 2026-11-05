@@ -1,5 +1,6 @@
 package com.openminis.app.ui.settings
 
+import com.openminis.app.ui.glass.frosted
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -272,9 +273,7 @@ fun SettingsSection(
                 .padding(horizontal = if (mibotUi) com.openminis.app.mibot.design.MibotSpace.Screen else 16.dp)
                 .then(
                     if (mibotUi) Modifier
-                        .clip(com.openminis.app.mibot.design.MibotRadius.CardShape)
-                        .background(com.openminis.app.mibot.design.MibotTokens.card())
-                        .border(1.dp, com.openminis.app.mibot.design.MibotTokens.hairline(), com.openminis.app.mibot.design.MibotRadius.CardShape)
+                        .frosted(com.openminis.app.mibot.design.MibotRadius.CardShape) // [fork/frost]
                     else Modifier
                         .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerLow),
