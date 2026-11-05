@@ -68,7 +68,7 @@ private fun PageHeader(title: String, horizontal: Int = 20) {
 
 @Composable
 private fun cardColors() = CardDefaults.cardColors(
-    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+    containerColor = FrostTokens.flat(frostIsDark()), // [fork/frost] was surface@0.78 flat
     // Translucent containers defeat contentColorFor(); set it explicitly.
     contentColor = MaterialTheme.colorScheme.onSurface,
 )

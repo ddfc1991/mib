@@ -1,5 +1,6 @@
 package com.openminis.app.mibot.vault
 
+import com.openminis.app.ui.glass.frosted
 import android.accounts.AccountManager
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -123,9 +124,7 @@ private fun SearchBox(value: String, onChange: (String) -> Unit) {
         Modifier
             .fillMaxWidth()
             .padding(horizontal = MibotSpace.Screen)
-            .clip(MibotRadius.Pill)
-            .background(MibotTokens.card())
-            .border(1.dp, MibotTokens.hairline(), MibotRadius.Pill)
+            .frosted(MibotRadius.Pill)
             .padding(horizontal = MibotSpace.M, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

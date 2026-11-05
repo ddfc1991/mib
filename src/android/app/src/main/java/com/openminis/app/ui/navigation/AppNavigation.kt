@@ -1,5 +1,6 @@
 package com.openminis.app.ui.navigation
 
+import com.openminis.app.ui.glass.frostSource
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -556,7 +557,7 @@ fun AppNavigation(
     // scheme makes Scaffold containers transparent so it shows through.
     val mibotOn = com.openminis.app.ui.theme.LocalMibotActive.current
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
-    if (mibotOn) com.openminis.app.ui.glass.MibotBackdrop()
+    if (mibotOn) com.openminis.app.ui.glass.MibotBackdrop(Modifier.frostSource())
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onBackground,
     ) {

@@ -1,5 +1,6 @@
 package com.openminis.app.mibot.plugins
 
+import com.openminis.app.ui.glass.frosted
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -295,7 +296,7 @@ fun PluginMarketScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
 
 @Composable
 private fun Hairline(start: Dp = 0.dp) {
-    Box(Modifier.fillMaxWidth().background(MibotTokens.card()).padding(start = start).height(0.5.dp).background(MibotTokens.hairline()))
+    Box(Modifier.fillMaxWidth().frosted(border = false).padding(start = start).height(0.5.dp).background(MibotTokens.hairline()))
 }
 
 @Composable
@@ -315,7 +316,7 @@ private fun SectionHeader(title: String, count: Int, sub: String) {
 
 @Composable
 private fun EmptyLine(text: String) {
-    Text(text, modifier = Modifier.fillMaxWidth().background(MibotTokens.card()).padding(horizontal = RowPadH, vertical = 12.dp),
+    Text(text, modifier = Modifier.fillMaxWidth().frosted(border = false).padding(horizontal = RowPadH, vertical = 12.dp),
         fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
@@ -347,9 +348,7 @@ private fun SearchField(value: String, onChange: (String) -> Unit, onSubmit: () 
             .fillMaxWidth()
             .padding(horizontal = RowPadH, vertical = 4.dp)
             .height(40.dp)
-            .clip(shape)
-            .background(MibotTokens.card())
-            .border(0.5.dp, MibotTokens.hairline(), shape)
+            .frosted(shape)
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -413,7 +412,7 @@ private fun FilterBar(
 @Composable
 private fun <T> Segmented(options: List<Pair<String, T>>, selected: T, onSelect: (T) -> Unit) {
     val outer = RoundedCornerShape(8.dp)
-    Row(Modifier.height(30.dp).clip(outer).background(MibotTokens.tile()).border(0.5.dp, MibotTokens.hairline(), outer).padding(2.dp)) {
+    Row(Modifier.height(30.dp).frosted(outer).background(MibotTokens.tile()).padding(2.dp)) {
         options.forEach { (label, v) ->
             val on = v == selected
             Box(
@@ -435,9 +434,9 @@ private fun <T> Segmented(options: List<Pair<String, T>>, selected: T, onSelect:
 private fun CategoryChip(label: String, on: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(6.dp)
     Box(
-        Modifier.height(28.dp).clip(shape)
-            .background(if (on) MibotTokens.selected() else MibotTokens.card())
-            .border(0.5.dp, if (on) MibotTokens.accent().copy(alpha = 0.45f) else MibotTokens.hairline(), shape)
+        Modifier.height(28.dp)
+            .frosted(shape, tint = if (on) MibotTokens.selected() else Color.Transparent)
+            .then(if (on) Modifier.border(0.5.dp, MibotTokens.accent().copy(alpha = 0.45f), shape) else Modifier)
             .clickable(onClick = onClick).padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -505,7 +504,7 @@ private fun MarketRow(
     Row(
         Modifier
             .fillMaxWidth()
-            .background(MibotTokens.card())
+            .frosted(border = false)
             .combinedClickable(onClick = onOpen, onLongClick = onToggleOriginal)
             .padding(horizontal = RowPadH, vertical = 10.dp)
             .semantics { contentDescription = "插件 ${p.name}" },
@@ -1012,7 +1011,7 @@ private data class Row3(val key: String, val title: String, val desc: String, va
 private fun PolicySwitch(selected: DshToolPolicy.Setting, toolLabel: String, onSelect: (DshToolPolicy.Setting) -> Unit) {
     val outer = RoundedCornerShape(8.dp)
     val options = listOf("询问" to DshToolPolicy.Setting.ASK, "允许" to DshToolPolicy.Setting.ALLOW, "禁止" to DshToolPolicy.Setting.DENY)
-    Row(Modifier.height(28.dp).clip(outer).background(MibotTokens.tile()).border(0.5.dp, MibotTokens.hairline(), outer).padding(2.dp)) {
+    Row(Modifier.height(28.dp).frosted(outer).background(MibotTokens.tile()).padding(2.dp)) {
         options.forEach { (label, v) ->
             val on = v == selected
             Box(

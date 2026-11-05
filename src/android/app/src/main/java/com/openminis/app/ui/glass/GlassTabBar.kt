@@ -61,7 +61,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openminis.app.R
-import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
@@ -253,10 +252,9 @@ private fun GlassTabBar(
             Modifier
                 .fillMaxWidth()
                 .height(GlassTabBarCapsule)
-                .clip(shape)
-                .hazeEffect(state = haze, style = GlassStyles.bar(style)) {
-                    blurEnabled = android.os.Build.VERSION.SDK_INT >= 31
-                }
+                // [fork/frost] Shared frosted surface: blur of the page beneath,
+                // 0.62/0.72 scrim (0.88 flat below API 31), rim + soft shadow.
+                .frosted(shape, FrostLevel.Bar, border = false, elevation = 8.dp, haze = haze)
                 .border(1.dp, rim, shape),
             verticalAlignment = Alignment.CenterVertically,
         ) {
