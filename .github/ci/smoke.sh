@@ -32,7 +32,7 @@ shot 01-chats 2
 tap desc "Open sidebar" && shot 02-sidebar 3 || { echo "::warning::sidebar button not found"; fail=1; }
 adb shell input keyevent KEYCODE_BACK; sleep 2
 
-for t in Feed:03-feed Ideas:04-ideas Bots:05-bots Settings:06-settings; do
+for t in Feed:03-feed Ideas:04-ideas "Group chats":05-groups Settings:06-settings; do
   name="${t%%:*}"; file="${t##*:}"
   if tap desc "$name"; then shot "$file" 3; else echo "::warning::tab $name not found"; fail=1; fi
 done
@@ -76,7 +76,7 @@ for th in 1:light 2:dark; do
   zlaunch "$m" "$n" 14
   alive || { echo "::error::app not running (zh $n)"; fail=1; }
   zshot "$n-01-onboarding" 1
-  tap desc "Bots" && zshot "$n-04-bots" 3 || echo "::warning::zh Bots tab not found ($n)"
+  tap desc "群聊" && zshot "$n-04-groups" 3 || echo "::warning::zh 群聊 tab not found ($n)"
   tap desc "设置" && zshot "$n-05-settings" 3 || echo "::warning::zh 设置 tab not found ($n)"
   tap desc "对话" >/dev/null 2>&1 || true; sleep 2
   if tap desc "打开侧边栏"; then
