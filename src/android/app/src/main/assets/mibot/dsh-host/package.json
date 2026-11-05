@@ -1,11 +1,13 @@
 {
   "name": "mibot-dsh-host",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
-  "description": "Mibot DSH plugin host kit (stage 1): real Cordis core + Mibot bridge services, NDJSON JSON-RPC over stdio.",
+  "description": "Mibot DSH plugin host kit: real Cordis core + Mibot bridge services (logger, locale, config, commands, tools) + @deepseek-ai/dsh-tools stand-in (defineTool), NDJSON JSON-RPC over stdio.",
   "license": "GPL-3.0-only",
-  "mibotKit": 1,
+  "mibotKit": 3,
   "dsh": "0.2.1-rc.5",
-  "engines": { "node": ">=22.12" }
+  "engines": {
+    "node": ">=22.12"
+  }
 }

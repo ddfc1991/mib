@@ -14152,6 +14152,9 @@ class ChatViewModel(
         if (name in com.openminis.app.mibot.phone.VdTools.NAMES) {
             return com.openminis.app.mibot.phone.VdTools.execute(context, name, argsJson)
         }
+        if (com.openminis.app.mibot.plugins.DshAgentTools.isPluginTool(name)) { // [fork/mibot-dsh-tools] D3
+            return com.openminis.app.mibot.plugins.DshAgentTools.execute(context, name, argsJson, toolId, assistantId)
+        }
         if ((name == "shell_execute" || name == "browser_use") && argsJson.contains("{{vault:")) {
             val sub = com.openminis.app.mibot.vault.VaultBroker.substitute(
                 context, argsJson, actor = "agent", purpose = name, jsonEscape = true,

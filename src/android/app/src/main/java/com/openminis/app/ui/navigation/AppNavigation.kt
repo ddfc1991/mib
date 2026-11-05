@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -664,27 +665,63 @@ fun AppNavigation(
                 current = com.openminis.app.ui.glass.GlassTab.FEED,
                 onSelect = { navController.navigateToGlassTab(it) },
                 scrollUnder = true,
-            ) { com.openminis.app.ui.glass.GlassFeedPage() }
+            ) {
+                // [fork/mibot-feed] Real 动态 (filesDir/feed); 讨论 opens a new chat prefilled.
+                com.openminis.app.mibot.feed.FeedPage(
+                    onDiscuss = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+                    onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
+                    onOpenGroup = { id -> navController.safeNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id)) },
+                )
+            }
         }
         composable(com.openminis.app.ui.glass.GlassRoutes.IDEAS) {
             com.openminis.app.ui.glass.GlassTabShell(
                 current = com.openminis.app.ui.glass.GlassTab.IDEAS,
                 onSelect = { navController.navigateToGlassTab(it) },
                 scrollUnder = true,
-            ) { com.openminis.app.ui.glass.GlassIdeasPage() }
+            ) {
+                // [fork/mibot-ideas] Real 点子 (filesDir/ideas).
+                com.openminis.app.mibot.ideas.IdeasPage(
+                    onChat = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+                )
+            }
         }
-        composable(com.openminis.app.ui.glass.GlassRoutes.BOTS) {
+        // [fork/mibot-ui-tabs] Bottom tab 群聊 (was Bots).
+        composable(com.openminis.app.ui.glass.GlassRoutes.GROUPS) {
             com.openminis.app.ui.glass.GlassTabShell(
-                current = com.openminis.app.ui.glass.GlassTab.BOTS,
+                current = com.openminis.app.ui.glass.GlassTab.GROUPS,
                 onSelect = { navController.navigateToGlassTab(it) },
                 scrollUnder = true,
             ) {
-                com.openminis.app.mibot.bots.BotsPage(
-                    onPlugins = { navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.MARKET) },
-                    onOpen = { id -> navController.navigate("sub_agent/$id") },
-                    onNew = { navController.navigate("sub_agent/${com.openminis.app.ui.settings.DRAFT_AGENT_ID}") },
-                    onAgentSettings = { navController.safeNavigate(Routes.AGENTS) },
-                )
+                com.openminis.app.mibot.groups.GroupChatsPage(onOpen = { id ->
+                    navController.safeNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id))
+                })
+            }
+        }
+        // [fork/mibot-groups] One bot group chat (from the 群聊 tab or the drawer).
+        composable(
+            route = com.openminis.app.mibot.groups.GroupRoutes.CHAT,
+            arguments = listOf(navArgument("groupId") { type = NavType.StringType }),
+        ) { entry ->
+            val gid = entry.arguments?.getString("groupId") ?: return@composable
+            com.openminis.app.mibot.groups.GroupChatScreen(gid, onBack = { navController.safePopBackStack() })
+        }
+        // [fork/mibot-ui-tabs] Settings › Bots: a plain pushed page, Back
+        // returns to Settings.
+        composable(com.openminis.app.ui.glass.GlassRoutes.BOTS) {
+            androidx.compose.foundation.layout.Column(
+                Modifier.fillMaxSize().navigationBarsPadding(),
+            ) {
+                com.openminis.app.mibot.design.MibotTopBar("Bots", onBack = { navController.safePopBackStack() })
+                androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
+                    com.openminis.app.mibot.bots.BotsPage(
+                        onPlugins = { navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.MARKET) },
+                        onOpen = { id -> navController.navigate("sub_agent/$id") },
+                        onNew = { navController.navigate("sub_agent/${com.openminis.app.ui.settings.DRAFT_AGENT_ID}") },
+                        onAgentSettings = { navController.safeNavigate(Routes.AGENTS) },
+                        showTitle = false,
+                    )
+                }
             }
         }
         composable(com.openminis.app.ui.glass.GlassRoutes.BACKDROP) {
@@ -708,7 +745,7 @@ fun AppNavigation(
                         modelGroups = go(Routes.MODEL_GROUPS),
                         backdrop = go(com.openminis.app.ui.glass.GlassRoutes.BACKDROP),
                         appearance = go(Routes.APPEARANCE),
-                        bots = { navController.navigateToGlassTab(com.openminis.app.ui.glass.GlassTab.BOTS) },
+                        bots = go(com.openminis.app.ui.glass.GlassRoutes.BOTS),
                         soul = go(Routes.SOUL),
                         skills = go(Routes.SKILLS),
                         memory = go(Routes.MEMORY),

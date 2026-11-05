@@ -45,6 +45,7 @@ import com.openminis.app.ui.glass.navigateToGlassTab
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -913,11 +914,30 @@ fun ChatSplitScaffoldRoute(
     // [fork/glass-ui] With the glass UI on, the pair sits inside the recent-list
     // drawer and the list pane gets the floating tab bar. Off: exactly stock.
     if (com.openminis.app.ui.glass.glassEnabled()) {
-        com.openminis.app.ui.glass.GlassDrawerHost(navController, chatRepository) { openDrawer ->
-            ChatSplitScaffoldRouteContent(
-                initialSessionId, navController, chatRepository, providerRepository,
-                memoryRepository, skillRepository, mcpRepository, openDrawer,
-            )
+        // [fork/mibot-ui-tabs] On a phone the list route opens a chat directly
+        // (last shown, else latest, else a new draft); the list itself is the
+        // drawer. Two-pane keeps the list beside the chat as before, and a
+        // device with no session and no provider keeps the onboarding list.
+        var effectiveId = initialSessionId
+        if (initialSessionId == null && !shouldUseTwoPane()) {
+            val ctx = LocalContext.current
+            val resolved by produceState(GLASS_TARGET_PENDING, ctx) {
+                value = com.openminis.app.ui.glass.GlassChatTarget.resolve(ctx) ?: GLASS_TARGET_LIST
+            }
+            if (resolved == GLASS_TARGET_PENDING) {
+                Box(Modifier.fillMaxSize())
+                return
+            }
+            com.openminis.app.ui.glass.GlassChatTarget.listIsHome = resolved == GLASS_TARGET_LIST
+            effectiveId = resolved.takeIf { it != GLASS_TARGET_LIST }
+        }
+        key(effectiveId) {
+            com.openminis.app.ui.glass.GlassDrawerHost(navController, chatRepository) { openDrawer ->
+                ChatSplitScaffoldRouteContent(
+                    effectiveId, navController, chatRepository, providerRepository,
+                    memoryRepository, skillRepository, mcpRepository, openDrawer,
+                )
+            }
         }
     } else {
         ChatSplitScaffoldRouteContent(
@@ -926,6 +946,9 @@ fun ChatSplitScaffoldRoute(
         )
     }
 }
+
+private const val GLASS_TARGET_PENDING = "\u0000pending"
+private const val GLASS_TARGET_LIST = "\u0000list"
 
 @Composable
 private fun ChatSplitScaffoldRouteContent(
@@ -978,6 +1001,14 @@ private fun ChatSplitScaffoldRouteContent(
         },
         detailPane = { sessionId, onBackInPane, onNewChatInPane, onMoveToInPane,
             onToggleSidebar, sidebarCollapsed ->
+          // [fork/mibot-ui-tabs] Glass phone: the chat is the 对话 tab.
+          val glassPhoneChat = openDrawer != null && !shouldUseTwoPane()
+          if (openDrawer != null) {
+              androidx.compose.runtime.SideEffect {
+                  com.openminis.app.ui.glass.GlassChatTarget.lastShown = sessionId
+              }
+          }
+          GlassChatPaneFrame(glassPhoneChat, navController) {
             com.openminis.app.ui.chat.ChatScreen(
                 // The pane navigator's contentKey IS the session id, so a
                 // draft ("__new__…") flows through unchanged and ChatScreen's
@@ -1038,9 +1069,42 @@ private fun ChatSplitScaffoldRouteContent(
                 },
                 onModelGroupsClick = { navController.safeNavigate(Routes.MODEL_GROUPS) },
                 onEditProviderClick = { id -> navController.safeNavigate(Routes.providerDetail(id)) },
+                onOpenDrawer = if (glassPhoneChat) openDrawer else null,
             )
+          }
         },
     )
+}
+
+/**
+ * [fork/mibot-ui-tabs] Glass phone chat: tab bar under the chat, and Back at
+ * the top of the chats tab leaves the app instead of revealing the list
+ * (which now lives in the drawer). A chat pushed over another screen still
+ * pops back to it.
+ */
+@Composable
+private fun GlassChatPaneFrame(
+    enabled: Boolean,
+    navController: androidx.navigation.NavHostController,
+    content: @Composable () -> Unit,
+) {
+    if (!enabled) {
+        content()
+        return
+    }
+    val activity = LocalContext.current as? android.app.Activity
+    androidx.activity.compose.BackHandler {
+        val prev = navController.previousBackStackEntry?.destination?.route
+        val listBelow = prev == Routes.SESSION_LIST && com.openminis.app.ui.glass.GlassChatTarget.listIsHome
+        if (prev == null || (prev == Routes.SESSION_LIST && !listBelow)) {
+            activity?.moveTaskToBack(true)
+        } else {
+            navController.popBackStack()
+        }
+    }
+    com.openminis.app.ui.glass.GlassChatTabFrame(
+        onSelect = { tab -> navController.navigateToGlassTab(tab) },
+    ) { content() }
 }
 
 /** [fork/glass-ui] Puts the list pane under the floating glass tab bar when enabled. */

@@ -412,6 +412,9 @@ fun VdScreen(onBack: () -> Unit) {
                 )
             }
         }
+        // ---------------------------------------------------------- self-check (S2)
+        VdSelfCheckSection()
+
         MibotFootnote(t(
             "安全：只操作 Mibot 自己建的虚拟屏，从不向主屏（屏 0）注入；你正在主屏用的 App 不会被拉走；付款、登录、密码、验证码类步骤会先问你；通知栏可随时停止。实现改编自 Mika（Apache-2.0）。",
             "Safety: only Mibot's own hidden display is ever touched — never your screen (display 0); apps you are using aren't pulled away; payment, login, password and code steps ask first; stop any time from the notification. Adapted from Mika (Apache-2.0).",
@@ -518,6 +521,67 @@ fun VdMiniView(onOpen: () -> Unit) {
                 Modifier.align(Alignment.BottomCenter).padding(bottom = 3.dp)
                     .clip(MibotRadius.Pill).background(MibotTokens.accent()).padding(horizontal = 6.dp, vertical = 1.dp),
             ) { Text(t("后台", "BG"), color = Color.White, fontSize = MibotType.Caption) }
+        }
+    }
+}
+
+/**
+ * 「虚拟屏自检」: runs [VdSelfCheck] and lists every check with pass/fail and the reason,
+ * plus a copy-log button for sending the report to the developer.
+ */
+@Composable
+private fun VdSelfCheckSection() {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val running by VdSelfCheck.running.collectAsState()
+    val results by VdSelfCheck.results.collectAsState()
+    MibotSectionHeader(t("虚拟屏自检", "Virtual screen self-check"))
+    MibotCard(padding = androidx.compose.foundation.layout.PaddingValues(MibotSpace.M)) {
+        Text(
+            t("新建一块测试虚拟屏，在上面打开「设置」，依次检查配对、助手、建屏（可信/普通）、取画面、shell 点按、无障碍点按和输入回读，结束后自动关闭。",
+                "Creates a test display, opens Settings on it and checks pairing, the helper, display creation (trusted/untrusted), frame grab, shell tap, accessibility tap and typing read-back; the display is closed afterwards."),
+            fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(MibotSpace.S))
+        Row(horizontalArrangement = Arrangement.spacedBy(MibotSpace.S)) {
+            MibotButton(
+                if (running) t("自检中…", "Checking…") else t("虚拟屏自检", "Run self-check"),
+                { scope.launch { VdSelfCheck.run(ctx) } },
+                enabled = !running,
+            )
+            MibotButton(t("复制日志", "Copy log"), {
+                val text = VdSelfCheck.reportText(ctx)
+                val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
+                runCatching { cm.setPrimaryClip(android.content.ClipData.newPlainText("Mibot self-check", text)) }
+                android.widget.Toast.makeText(ctx, tc(ctx, "已复制自检日志", "Self-check log copied"), android.widget.Toast.LENGTH_SHORT).show()
+            }, tonal = true, enabled = results.isNotEmpty() && !running)
+        }
+        results.forEach { c ->
+            Spacer(Modifier.height(MibotSpace.S))
+            Row(verticalAlignment = Alignment.Top) {
+                val (label, kind) = when (c.status) {
+                    VdSelfCheck.Status.PASS -> t("通过", "Pass") to ChipKind.OK
+                    VdSelfCheck.Status.WARN -> t("注意", "Warn") to ChipKind.WARN
+                    VdSelfCheck.Status.FAIL -> t("失败", "Fail") to ChipKind.ERR
+                    VdSelfCheck.Status.SKIP -> t("跳过", "Skipped") to ChipKind.NEUTRAL
+                }
+                Box(Modifier.width(64.dp)) { StatusChip(label, kind) }
+                Spacer(Modifier.width(MibotSpace.S))
+                Column(Modifier.weight(1f)) {
+                    Text(c.title, fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurface)
+                    Text(c.detail, fontSize = 11.sp, lineHeight = 15.sp, fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    c.advice?.let {
+                        Text(it, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine,
+                            color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+            }
+        }
+        if (running && results.isEmpty()) {
+            Spacer(Modifier.height(MibotSpace.S))
+            Text(t("正在检查…", "Checking…"), fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

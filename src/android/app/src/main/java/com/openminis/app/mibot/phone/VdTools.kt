@@ -65,7 +65,7 @@ object VdTools {
                 CREATE -> VdController.create(ctx).fold(
                     { s ->
                         val where = if (s.mode == VdController.Mode.A11Y) "MAIN SCREEN via accessibility (user approved; be careful, the user can see it)" else "hidden display ${s.displayId}"
-                        ToolExecutionResult("ready: $where, size ${s.width}x${s.height}. Next: vd_launch_app, then vd_screenshot.", true)
+                        ToolExecutionResult("ready: $where, size ${s.width}x${s.height} (size follows rotation; vd_screenshot reports the current one). Next: vd_launch_app, then vd_screenshot.", true)
                     },
                     { ToolExecutionResult(it.message ?: "vd_create failed", false) },
                 )
@@ -77,12 +77,15 @@ object VdTools {
                 }
                 SCREENSHOT -> {
                     val bytes = VdController.screenshot(ctx) ?: return ToolExecutionResult("no frame yet (display just created, or capture unavailable)", false)
-                    val s = VdController.state.value
+                    val s = VdController.current()
+                    val k = VdController.lastShotScale
                     val f = File(ctx.cacheDir, "vd/shot_${System.currentTimeMillis()}.jpg").apply { parentFile?.mkdirs(); writeBytes(bytes) }
                     // keep only the last 20 shots
                     f.parentFile?.listFiles()?.sortedByDescending { it.lastModified() }?.drop(20)?.forEach { it.delete() }
                     ToolExecutionResult(
-                        "screenshot of display ${s.displayId} (${s.width}x${s.height}; image may be downscaled — scale coordinates back to ${s.width}x${s.height}). top=${VdController.topActivity(ctx) ?: "?"}",
+                        (if (k < 1f) "screenshot of display ${s.displayId}: display ${s.width}x${s.height}${if (s.width > s.height) " (landscape)" else ""}, image downscaled ×${"%.3f".format(java.util.Locale.US, k)} — divide image coordinates by ${"%.3f".format(java.util.Locale.US, k)} for vd_tap/vd_swipe."
+                        else "screenshot of display ${s.displayId}: ${s.width}x${s.height}${if (s.width > s.height) " (landscape)" else ""}, image coordinates = display coordinates.") +
+                            " top=${VdController.topActivity(ctx) ?: "?"}",
                         true, imageData = bytes, imageMimeType = "image/jpeg", imageFilePath = f.absolutePath,
                     )
                 }
@@ -92,7 +95,7 @@ object VdTools {
                 }
                 SWIPE -> {
                     val msg = VdController.swipe(ctx, a.optInt("x1"), a.optInt("y1"), a.optInt("x2"), a.optInt("y2"), a.optInt("duration_ms", 300))
-                    ToolExecutionResult(msg, msg == "swiped")
+                    ToolExecutionResult(msg, msg.startsWith("swiped"))
                 }
                 TYPE -> {
                     val msg = VdController.type(ctx, a.optString("text"), a.optBoolean("submit", false))

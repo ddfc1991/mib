@@ -12,11 +12,12 @@
 //              and `baseUrl` (seen by `!!js` rows) is file://<profile>/
 //
 // Kotlin → host requests: ping, status, commands.list, commands.run {name,args},
+//                         tools.list, tools.execute {name,args,callId,timeoutMs?},
 //                         config.get, shutdown
-// host → Kotlin notifications: log {level,name,text}, status {…}
+// host → Kotlin notifications: log {level,name,text}, status {…}, tools/change {tools:[…]}
 //
-// Services provided in stage 1: logger (Cordis built-in, exported to Kotlin),
-// locale, config, commands. Every other service a plugin injects is recorded by
+// Services provided: logger (Cordis built-in, exported to Kotlin),
+// locale, config, commands (stage 1), tools (stage 2, D1). Every other service a plugin injects is recorded by
 // the stub registry and reported as missing (the fiber stays PENDING, which is
 // Cordis' own behaviour for unmet required injections).
 import fs from 'node:fs'
@@ -24,10 +25,10 @@ import path from 'node:path'
 import readline from 'node:readline'
 import { pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
-import { Context, Logger } from '@deepseek-ai/cordis'
+import { Context, Logger, Service } from '@deepseek-ai/cordis'
 import YAML from 'yaml'
 
-const KIT_VERSION = 1
+const KIT_VERSION = 3
 const STATE = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING']
 
 // ------------------------------------------------------------------ RPC
@@ -74,6 +75,7 @@ const status = {
   foreignOverrides: [],       // patch rows that rewrite other plugins' rows (DSH internals)
   skills: [],                 // { provider, dir, entries: [dir with SKILL.md] }
   commands: [],
+  tools: [],                  // names of the tools the plugin registered (visible ones)
   error: null,
 }
 function readVersion(name) {
@@ -156,7 +158,12 @@ const commandsImpl = (() => {
       pushStatus()
       return () => { map.delete(name); status.commands = [...map.keys()]; pushStatus() }
     },
-    list: () => [...map.values()].map((d) => ({ name: String(d.name).replace(/^\//, ''), description: d.description ?? d.summary ?? '' })),
+    list: () => [...map.values()].map((d) => {
+      const o = { name: String(d.name).replace(/^\//, ''), description: d.description ?? d.summary ?? '' }
+      const schema = d.parameters ?? d.args ?? d.schema
+      if (schema && typeof schema === 'object' || typeof schema === 'function') { try { o.parameters = normalizeToolSchema(schema) } catch {} }
+      return o
+    }),
     async run(name, args = {}) {
       const d = map.get(String(name).replace(/^\//, ''))
       if (!d) throw new Error(`no such command: ${name}`)
@@ -167,6 +174,247 @@ const commandsImpl = (() => {
   }
 })()
 provide('commands', commandsImpl)
+
+// tools — Cordis service (stage 2, D1). Plugins register tools
+//   ctx.tools.register({ name, description, parameters, risk?, annotations?, timeoutMs?, output?, execute(args, exec) }) → dispose
+// `parameters` is a JSON Schema object (or a Schemastery schema, converted).
+// Declared risk: def.risk ∈ read|write|external, else annotations.readOnlyHint → read,
+// annotations.openWorldHint → external, else write.
+// Kotlin mirrors the list (`tools/change` notification, `tools.list`) and calls
+// `tools.execute {name, args, callId, timeoutMs?}` → {ok, output (≤ 64 KB), images?, truncated?}.
+// guard()/restrict() only ever see the calling plugin's own tools: the owner of a
+// tool or guard is the top-level fiber (patch row) it was registered from.
+const TOOL_OUTPUT_CAP = 64 * 1024
+const TOOL_TIMEOUT_DEFAULT = 60_000
+const TOOL_TIMEOUT_MAX = 600_000
+const TOOL_NAME_RE = /^[A-Za-z0-9_.:-]{1,128}$/
+const SCHEMA_CAP = 32 * 1024
+const RISKS = new Set(['read', 'write', 'external'])
+
+function schemasteryToJson(s, depth = 0) {
+  if (depth > 32) return {}
+  const meta = s?.meta ?? {}
+  const out = {}
+  const put = (o) => {
+    if (meta.description != null) o.description = typeof meta.description === 'string' ? meta.description : (meta.description['zh-CN'] ?? meta.description.en ?? Object.values(meta.description)[0])
+    if (meta.default !== undefined && typeof meta.default !== 'function') o.default = meta.default
+    return o
+  }
+  switch (s?.type) {
+    case 'string': return put({ type: 'string', ...(meta.pattern?.source ? { pattern: meta.pattern.source } : {}) })
+    case 'number': return put({ type: meta.step === 1 ? 'integer' : 'number', ...(meta.min != null ? { minimum: meta.min } : {}), ...(meta.max != null ? { maximum: meta.max } : {}) })
+    case 'boolean': return put({ type: 'boolean' })
+    case 'const': return put({ const: s.value })
+    case 'array': return put({ type: 'array', items: schemasteryToJson(s.inner, depth + 1) })
+    case 'tuple': return put({ type: 'array', prefixItems: (s.list ?? []).map((x) => schemasteryToJson(x, depth + 1)) })
+    case 'dict': return put({ type: 'object', additionalProperties: schemasteryToJson(s.inner, depth + 1) })
+    case 'object': {
+      const properties = {}; const required = []
+      for (const [k, v] of Object.entries(s.dict ?? {})) {
+        properties[k] = schemasteryToJson(v, depth + 1)
+        if (v?.meta?.required) required.push(k)
+      }
+      return put({ type: 'object', properties, ...(required.length ? { required } : {}) })
+    }
+    case 'union': {
+      const list = s.list ?? []
+      if (list.length && list.every((x) => x?.type === 'const' && typeof x.value === 'string')) return put({ type: 'string', enum: list.map((x) => x.value) })
+      return put({ anyOf: list.map((x) => schemasteryToJson(x, depth + 1)) })
+    }
+    case 'intersect': return put({ allOf: (s.list ?? []).map((x) => schemasteryToJson(x, depth + 1)) })
+    case 'transform': return schemasteryToJson(s.inner, depth + 1)
+    default: return put(out)
+  }
+}
+
+/** Normalise a tool's parameter schema to a JSON-serialisable JSON Schema object (type: object). Throws on junk. */
+function normalizeToolSchema(p) {
+  if (p == null) return { type: 'object', properties: {} }
+  if (p[Symbol.for('schemastery')] || (typeof p === 'function' && typeof p.type === 'string')) p = schemasteryToJson(p)
+  if (typeof p !== 'object' || Array.isArray(p)) throw new TypeError('tool parameters must be a JSON Schema object')
+  let json
+  try { json = JSON.stringify(p) } catch (e) { throw new TypeError('tool parameters are not JSON-serialisable: ' + e.message) }
+  if (json.length > SCHEMA_CAP) throw new TypeError(`tool parameters schema too large (${json.length} > ${SCHEMA_CAP})`)
+  const s = JSON.parse(json)
+  if (s.type == null && s.properties) s.type = 'object'
+  if (s.type !== 'object') throw new TypeError(`tool parameters must have type "object" (got ${JSON.stringify(s.type)})`)
+  if (s.properties != null && (typeof s.properties !== 'object' || Array.isArray(s.properties))) throw new TypeError('tool parameters.properties must be an object')
+  s.properties ??= {}
+  if (s.required != null && (!Array.isArray(s.required) || s.required.some((r) => typeof r !== 'string'))) throw new TypeError('tool parameters.required must be a string array')
+  return s
+}
+
+function toolRisk(def) {
+  const r = String(def.risk ?? def.annotations?.risk ?? '').toLowerCase()
+  if (RISKS.has(r)) return r
+  if (def.annotations?.readOnlyHint === true) return 'read'
+  if (def.annotations?.openWorldHint === true) return 'external'
+  return 'write'
+}
+
+/** UTF-8 byte clip with a visible marker. */
+function clipOutput(s, cap = TOOL_OUTPUT_CAP) {
+  const buf = Buffer.from(s, 'utf8')
+  if (buf.length <= cap) return { text: s, truncated: false }
+  const marker = `\n…[output truncated: ${buf.length} bytes, limit ${cap}]`
+  let cut = cap - Buffer.byteLength(marker)
+  while (cut > 0 && (buf[cut] & 0xc0) === 0x80) cut--  // never split a UTF-8 sequence
+  return { text: buf.subarray(0, cut).toString('utf8') + marker, truncated: true }
+}
+
+/** Turn whatever execute() returned into {output, images}. */
+function renderToolResult(def, args, value) {
+  const images = []
+  const parts = []
+  const fromContent = (content) => {
+    for (const c of content) {
+      if (c == null) continue
+      if (typeof c === 'string') parts.push(c)
+      else if (c.type === 'text') parts.push(String(c.text ?? ''))
+      else if (c.type === 'image' && (c.path || c.file)) images.push(String(c.path || c.file))
+      else parts.push(safeJson(c))
+    }
+  }
+  let rendered = null
+  if (typeof def.output?.render === 'function') {
+    try { rendered = def.output.render(args, value) } catch (e) { parts.push(`[render failed: ${e?.message || e}] `) }
+  }
+  if (Array.isArray(rendered)) fromContent(rendered)
+  else if (typeof rendered === 'string') parts.push(rendered)
+  else if (value == null) parts.push('')
+  else if (typeof value === 'string') parts.push(value)
+  else if (Array.isArray(value?.content)) { fromContent(value.content); if (Array.isArray(value.images)) images.push(...value.images.map(String)) }
+  else if (typeof value === 'object' && typeof value.output === 'string') { parts.push(value.output); if (Array.isArray(value.images)) images.push(...value.images.map(String)) }
+  else if (typeof value === 'object') { try { parts.push(JSON.stringify(value, null, 2)) } catch { parts.push(String(value)) } }
+  else parts.push(String(value))
+  return { output: parts.join('\n'), images }
+}
+
+class ToolsService extends Service {
+  constructor(ctx) {
+    super(ctx, 'tools')
+    // Shared state lives on a plain object: `this` is re-bound per caller by Cordis' tracer.
+    this._s = { tools: new Map(), guards: [], restricts: [], timer: null }
+  }
+
+  /** The top-level fiber (patch row) a context belongs to; root for host code. */
+  _owner(ctx) {
+    let f = (ctx ?? this.ctx)?.fiber
+    const rootFiber = root.fiber
+    while (f && f.parent?.fiber && f.parent.fiber !== rootFiber && f.parent.fiber !== f) f = f.parent.fiber
+    return f ?? rootFiber
+  }
+
+  _changed() {
+    const s = this._s
+    status.tools = this._list().map((t) => t.name)
+    if (s.timer) return
+    s.timer = setTimeout(() => {   // coalesce a burst of register() calls into one notification
+      s.timer = null
+      const tools = this._list()
+      status.tools = tools.map((t) => t.name)
+      notify('tools/change', { tools })
+    }, 10)
+  }
+
+  _visible(entry) {
+    for (const r of this._s.restricts) if (r.owner === entry.owner && !r.allow(entry)) return false
+    return true
+  }
+
+  _list() {
+    return [...this._s.tools.values()].filter((e) => this._visible(e))
+      .map((e) => ({ name: e.name, description: e.description, parameters: e.parameters, risk: e.risk, ...(e.timeoutMs ? { timeoutMs: e.timeoutMs } : {}) }))
+  }
+
+  register(def, opts = {}) {
+    if (!def || typeof def !== 'object') throw new TypeError('tools.register needs a tool definition')
+    const name = String(def.name ?? '')
+    if (!TOOL_NAME_RE.test(name)) throw new TypeError(`invalid tool name ${JSON.stringify(name)}`)
+    const execute = def.execute ?? def.handler ?? def.run
+    if (typeof execute !== 'function') throw new TypeError(`tool ${name} has no execute()`)
+    const s = this._s
+    if (s.tools.has(name) && !opts.override) throw new Error(`tool ${name} is already registered`)
+    const caller = this.ctx
+    const owner = this._owner(caller)
+    if (s.tools.has(name) && s.tools.get(name).owner !== owner) throw new Error(`tool ${name} belongs to another plugin`)
+    const entry = {
+      name, def, execute, owner,
+      description: String(def.description ?? '').slice(0, 4000),
+      parameters: normalizeToolSchema(def.parameters ?? def.inputSchema ?? def.input),
+      risk: toolRisk(def),
+      timeoutMs: Number.isFinite(def.timeoutMs) && def.timeoutMs > 0 ? Math.min(def.timeoutMs, TOOL_TIMEOUT_MAX) : null,
+    }
+    const add = () => { s.tools.set(name, entry); this._changed(); return () => { if (s.tools.get(name) === entry) { s.tools.delete(name); this._changed() } } }
+    return typeof caller?.fiber?.effect === 'function' && caller.fiber !== root.fiber ? caller.fiber.effect(add, `tools.register(${name})`) : add()
+  }
+
+  /** guard(fn | {guard|check}) — fn(exec) → undefined/true allows; false / string / {allow:false|deny:true, reason} denies. Own tools only. */
+  guard(g) {
+    const fn = typeof g === 'function' ? g : (g?.guard ?? g?.check)
+    if (typeof fn !== 'function') throw new TypeError('tools.guard needs a function')
+    const s = this._s
+    const caller = this.ctx
+    const rec = { owner: this._owner(caller), fn }
+    const add = () => { s.guards.push(rec); return () => { const i = s.guards.indexOf(rec); if (i >= 0) s.guards.splice(i, 1) } }
+    return typeof caller?.fiber?.effect === 'function' && caller.fiber !== root.fiber ? caller.fiber.effect(add, 'tools.guard') : add()
+  }
+
+  /** restrict(names[] | predicate(def)) — hide this plugin's own tools that do not pass. */
+  restrict(filter) {
+    const allow = Array.isArray(filter) ? ((e) => filter.includes(e.name)) : typeof filter === 'function' ? ((e) => !!filter(e.def)) : null
+    if (!allow) throw new TypeError('tools.restrict needs a name list or a predicate')
+    const s = this._s
+    const caller = this.ctx
+    const rec = { owner: this._owner(caller), allow }
+    const add = () => { s.restricts.push(rec); this._changed(); return () => { const i = s.restricts.indexOf(rec); if (i >= 0) { s.restricts.splice(i, 1); this._changed() } } }
+    return typeof caller?.fiber?.effect === 'function' && caller.fiber !== root.fiber ? caller.fiber.effect(add, 'tools.restrict') : add()
+  }
+
+  definitions() { return this._list() }
+  get(name) { const e = this._s.tools.get(name); return e && this._visible(e) ? e.def : undefined }
+
+  async _execute({ name, args, callId, timeoutMs } = {}) {
+    const entry = this._s.tools.get(String(name))
+    if (!entry || !this._visible(entry)) return { ok: false, output: `unknown tool: ${name}` }
+    const a = args && typeof args === 'object' && !Array.isArray(args) ? args : {}
+    const limit = Math.max(1_000, Math.min(Number(timeoutMs) || entry.timeoutMs || TOOL_TIMEOUT_DEFAULT, TOOL_TIMEOUT_MAX))
+    const ac = new AbortController()
+    const exec = { name: entry.name, args: a, callId: callId ?? null, signal: ac.signal, risk: entry.risk, tool: entry.def }
+    const deny = (why) => ({ ok: false, denied: true, output: clipOutput(`tool ${entry.name} refused by its plugin: ${why}`).text })
+    // 1. guards registered by the same plugin
+    for (const g of this._s.guards) {
+      if (g.owner !== entry.owner) continue
+      let d
+      try { d = await g.fn(exec) } catch (e) { return deny(e?.message || String(e)) }
+      if (d === false) return deny('guard')
+      if (typeof d === 'string') return deny(d)
+      if (d && typeof d === 'object' && (d.allow === false || d.deny === true || d.decision === 'deny')) return deny(d.reason ?? d.message ?? 'guard')
+    }
+    let timer
+    try {
+      const run = async () => {
+        // 2. tools/pre-execute middleware (waterfall): a listener that does not call next() vetoes.
+        const pre = await root.waterfall('tools/pre-execute', exec, () => ({ allow: true }))
+        if (pre && (pre.allow === false || pre.deny === true || pre.decision === 'deny')) return deny(pre.reason ?? 'pre-execute')
+        const value = await entry.execute.call(entry.def, a, exec)
+        const { output, images } = renderToolResult(entry.def, a, value)
+        try { await root.parallel('tools/post-execute', exec, { ok: true, value }) } catch (e) { log('warn', 'tools', `post-execute: ${e?.message || e}`) }
+        const c = clipOutput(output)
+        return { ok: true, output: c.text, ...(images.length ? { images } : {}), ...(c.truncated ? { truncated: true } : {}) }
+      }
+      return await Promise.race([
+        run(),
+        new Promise((resolve) => { timer = setTimeout(() => { ac.abort(new Error('timeout')); resolve({ ok: false, timeout: true, output: `tool ${entry.name} timed out after ${limit} ms` }) }, limit) }),
+      ])
+    } catch (e) {
+      try { await root.parallel('tools/post-execute', exec, { ok: false, error: e }) } catch {}
+      return { ok: false, output: clipOutput(String(e?.message || e)).text }
+    } finally { clearTimeout(timer) }
+  }
+}
+const toolsImpl = new ToolsService(root)
+provided.add('tools')
 status.provided = [...provided].sort()
 
 // ------------------------------------------------------------------ patch rows
@@ -263,9 +511,11 @@ async function loadRow(entry, rowInject) {
 
   const own = entry.name === spec.pkg || String(entry.name).startsWith(spec.pkg + '/')
   if (!own && String(entry.name).startsWith('@deepseek-ai/')) {
-    // A DSH-internal plugin (dsh-tools, dsh-llm…) mounted by this patch: not in the kit.
-    row.kind = 'dsh-internal'
+    // A DSH-internal plugin (dsh-tools, dsh-llm…) mounted by this patch: fine when the
+    // host already provides its service (kit 3: `tools`), else not in the kit.
     const svc = String(entry.name).replace('@deepseek-ai/', '').replace(/^dsh-/, '')
+    if (provided.has(svc)) { row.kind = 'kit'; row.state = 'ACTIVE'; return }
+    row.kind = 'dsh-internal'
     row.missing = [svc]; status.missing.push(svc)
     return
   }
@@ -348,7 +598,7 @@ async function main() {
   const states = status.rows.map((r) => r.state)
   status.state = states.includes('FAILED') ? 'FAILED'
     : (status.missing.length || status.missingPackages.length || states.includes('PENDING')) ? 'PENDING'
-    : status.rows.length && status.rows.every((r) => r.kind === 'skills') ? 'SKILLS'
+    : status.rows.some((r) => r.kind === 'skills') && status.rows.every((r) => r.kind === 'skills' || r.kind === 'kit') ? 'SKILLS'
     : status.rows.length ? 'ACTIVE' : 'FAILED'
   if (!status.rows.length) status.error = 'cordis.patch.yml 没有可加载的行'
   status.error ??= status.rows.find((r) => r.error)?.error ?? null
@@ -370,6 +620,8 @@ rl.on('line', async (line) => {
       case 'ping': return reply({ pong: true, node: process.versions.node })
       case 'status': await ready; return reply(status)
       case 'commands.list': await ready; return reply(commandsImpl.list())
+      case 'tools.list': await ready; return reply(toolsImpl._list())
+      case 'tools.execute': await ready; return reply(await toolsImpl._execute(msg.params ?? {}))
       case 'commands.run': await ready; return reply(safeResult(await commandsImpl.run(msg.params?.name, msg.params?.args)))
       case 'config.get': return reply(configImpl.get())
       case 'locale.set': localeImpl._set(String(msg.params?.locale || 'zh-CN')); return reply(true)

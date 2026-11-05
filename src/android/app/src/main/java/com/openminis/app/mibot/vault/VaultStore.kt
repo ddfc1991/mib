@@ -120,6 +120,8 @@ object VaultStore {
             if (i >= 0) list[i] = saved else list.add(saved)
             _entries.value = list
             persist(ctx)
+            // [fork/mibot-feed] Provider/site name only — never the secret.
+            if (!newSecret.isNullOrEmpty()) com.openminis.app.mibot.feed.Feed.keySaved(ctx, saved.serviceId ?: saved.site)
             return saved
         }
     }

@@ -24,7 +24,15 @@ import org.json.JSONObject
  * No answer within two minutes counts as "no".
  */
 object VaultConfirmBus {
-    class Request(val title: String, val message: String, val danger: Boolean, val answer: CompletableDeferred<Boolean>)
+    class Request(val title: String, val message: String, val danger: Boolean, val answer: CompletableDeferred<Boolean>) {
+        /** [fork/mibot-dsh-tools] Show a third button 「始终允许」 (askChoice). */
+        var offerAlways: Boolean = false
+        /** Set before [answer] completes with true when the user picked 「始终允许」. */
+        @Volatile var alwaysPicked: Boolean = false
+    }
+
+    /** [fork/mibot-dsh-tools] Answer of [askChoice]. */
+    enum class Choice { DENY, ONCE, ALWAYS }
 
     val pending = MutableStateFlow<Request?>(null)
     private val mutex = Mutex()
@@ -34,6 +42,18 @@ object VaultConfirmBus {
         pending.value = req
         try {
             withTimeoutOrNull(120_000) { req.answer.await() } ?: false
+        } finally {
+            pending.value = null
+        }
+    }
+
+    /** Like [ask], with a third 「始终允许」 answer (plugin tool permissions). No answer = DENY. */
+    suspend fun askChoice(title: String, message: String, danger: Boolean = false): Choice = mutex.withLock {
+        val req = Request(title, message, danger, CompletableDeferred()).apply { offerAlways = true }
+        pending.value = req
+        try {
+            val ok = withTimeoutOrNull(120_000) { req.answer.await() } ?: false
+            when { !ok -> Choice.DENY; req.alwaysPicked -> Choice.ALWAYS; else -> Choice.ONCE }
         } finally {
             pending.value = null
         }
@@ -59,7 +79,12 @@ fun VaultConfirmHost() {
             }
         },
         dismissButton = {
-            TextButton(onClick = { r.answer.complete(false) }) { Text(if (zh) "拒绝" else "Deny") }
+            androidx.compose.foundation.layout.Row {
+                TextButton(onClick = { r.answer.complete(false) }) { Text(if (zh) "拒绝" else "Deny") }
+                if (r.offerAlways) {
+                    TextButton(onClick = { r.alwaysPicked = true; r.answer.complete(true) }) { Text(if (zh) "始终允许" else "Always allow") }
+                }
+            }
         },
     )
 }
@@ -144,6 +169,17 @@ object VaultBroker {
     /** Remove any secret that leaked into output. */
     fun scrub(output: String, secrets: List<String>): String =
         secrets.filter { it.length >= 4 }.fold(output) { acc, s -> acc.replace(s, "••••••") }
+
+    /**
+     * [fork/mibot-dsh-tools] Every stored secret value (decrypted transiently), for
+     * scrubbing output of code the vault does not control (DSH plugin tools). Never
+     * returned to the model; callers only pass it to a scrubber.
+     */
+    fun knownSecrets(ctx: Context): List<String> {
+        VaultStore.ensureLoaded(ctx)
+        return VaultStore.entries(ctx).value.mapNotNull { e -> if (e.hasSecret) VaultStore.revealSecret(ctx, e) else null }
+            .filter { it.length >= 4 }.distinct()
+    }
 
     /** Env vars for `vault use <id> -- cmd`. */
     fun envFor(e: VaultEntry, secret: String): Map<String, String> = mapOf(

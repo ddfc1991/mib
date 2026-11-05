@@ -21,18 +21,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.DynamicFeed
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.SmartToy
+import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -69,7 +70,8 @@ enum class GlassTab(val labelRes: Int, val icon: ImageVector, val selectedIcon: 
     CHATS(R.string.glass_tab_chats, Icons.Outlined.ChatBubbleOutline, Icons.Filled.ChatBubble),
     FEED(R.string.glass_tab_feed, Icons.Outlined.DynamicFeed, Icons.Filled.DynamicFeed),
     IDEAS(R.string.glass_tab_ideas, Icons.Outlined.Lightbulb, Icons.Filled.Lightbulb),
-    BOTS(R.string.glass_tab_bots, Icons.Outlined.SmartToy, Icons.Filled.SmartToy),
+    // [fork/mibot-ui-tabs] Bots moved to Settings; this slot is 群聊 now.
+    GROUPS(R.string.glass_tab_groups, Icons.Outlined.Groups, Icons.Filled.Groups),
     SETTINGS(R.string.glass_tab_settings, Icons.Outlined.Settings, Icons.Filled.Settings),
 }
 
@@ -135,6 +137,43 @@ fun GlassTabShell(
   }
 }
 
+/**
+ * [fork/mibot-ui-tabs] The chat screen as the 对话 tab: the chat keeps its own
+ * theme and background; only the floating bar is added under it. The bar
+ * steps aside while the keyboard is up so the composer sits on the IME.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun GlassChatTabFrame(
+    onSelect: (GlassTab) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val imeVisible = WindowInsets.isImeVisible
+    val haze = rememberHazeState()
+    Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .hazeSource(haze)
+                .then(
+                    if (imeVisible) Modifier
+                    else Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(bottom = GlassTabBarHeight),
+                ),
+        ) { content() }
+        if (!imeVisible) {
+            GlassStyleTheme {
+                GlassTabBar(
+                    current = GlassTab.CHATS,
+                    onSelect = { if (it != GlassTab.CHATS) onSelect(it) },
+                    style = LocalGlassStyle.current,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    haze = haze,
+                )
+            }
+        }
+    }
+}
+
 /** Status/navigation bar icon colour while a glass page is showing; restored after. */
 @Composable
 private fun GlassSystemBars(lightIcons: Boolean) {
@@ -175,7 +214,7 @@ private fun GlassTab.glyph(): com.openminis.app.mibot.design.LineGlyph = with(co
         GlassTab.CHATS -> MessageCircle
         GlassTab.FEED -> Newspaper
         GlassTab.IDEAS -> Lightbulb
-        GlassTab.BOTS -> Bot
+        GlassTab.GROUPS -> Users
         GlassTab.SETTINGS -> Settings
     }
 }

@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -183,7 +184,7 @@ object VaultConnect {
 
     fun skip(id: String) {
         val t = _tasks.value.find { it.service.id == id } ?: return
-        if (t.phase == Phase.NEEDS_YOU || t.phase == Phase.CONNECTING) AutoKey.userCancel()
+        if (t.phase == Phase.NEEDS_YOU || t.phase == Phase.CONNECTING) { AutoKey.userCancel(); OAuthPkce.cancel() }
         update(id) { it.copy(phase = Phase.SKIPPED, detail = "") }
     }
 
@@ -205,19 +206,51 @@ object VaultConnect {
         }
     }
 
+    /** [fork/mibot-autokey-v2] Hard ceiling per task, so one stuck service never blocks the queue. */
+    private const val TASK_TIMEOUT_MS = 16 * 60_000L
+
     private suspend fun runOne(app: Context, t: Task) {
+        val s = t.service
+        val finished = try {
+            withTimeoutOrNull(TASK_TIMEOUT_MS) { runOneBounded(app, t); true }
+        } catch (c: kotlinx.coroutines.CancellationException) {
+            throw c
+        } catch (e: Throwable) {
+            Log.w(TAG, "${s.id}: ${e.message}")
+            update(s.id) { it.copy(phase = Phase.FAILED, detail = e.message ?: e.javaClass.simpleName) }
+            true
+        }
+        if (finished == null) {
+            Log.w(TAG, "${s.id}: task timed out")
+            update(s.id) { it.copy(phase = Phase.FAILED, detail = tc(app, "超时（16 分钟）已停止，可点重试；队列继续下一个", "Timed out after 16 min — stopped; the queue moves on")) }
+        }
+        // Never leave a row spinning after its run ended.
+        _tasks.value.find { it.service.id == s.id }?.takeIf { it.phase == Phase.CONNECTING }?.let {
+            update(s.id) { it.copy(phase = Phase.FAILED, detail = it.detail.ifBlank { tc(app, "连接中断", "Connection interrupted") }) }
+        }
+    }
+
+    private suspend fun runOneBounded(app: Context, t: Task) {
         val s = t.service
         update(s.id) { it.copy(phase = Phase.CONNECTING, detail = tc(app, "连接中…", "Connecting…")) }
         try {
-            val recipe = if (t.mode == Mode.AUTO && s.auth == "api_key") KeyRecipes.forService(app, s) else null
+            val recipe = if (t.mode == Mode.AUTO && (s.auth == "api_key" || s.auth == "oauth_openrouter")) KeyRecipes.forService(app, s) else null
             val (secret, kind, via) = when {
+                // [fork/mibot-autokey-v2] Recipe flow oauth_pkce: app deep link first, localhost callback as fallback.
+                recipe != null && recipe.json.optString("flow") == "oauth_pkce" -> {
+                    update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = tc(app, "在打开的页面里点「授权」", "Tap Authorize on the page that opened")) }
+                    val k = try { OAuthPkce.run(app, recipe) { step -> update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = step) } } }
+                        catch (c: OAuthPkce.Cancelled) { update(s.id) { it.copy(phase = Phase.SKIPPED, detail = tc(app, "已取消", "Cancelled")) }; return }
+                    Triple(k, "api_key", "oauth")
+                }
                 t.mode == Mode.AUTO && s.auth == "oauth_openrouter" -> {
                     update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = tc(app, "在打开的页面里点「授权」", "Tap Authorize on the page that opened")) }
                     Triple(openRouterPkce(app), "api_key", "oauth")
                 }
-                recipe != null -> when (val r = AutoKey.fetchKey(app, s, recipe) { step -> update(s.id) { it.copy(phase = Phase.CONNECTING, detail = step) } }) {
+                recipe != null && s.auth == "api_key" -> when (val r = AutoKey.fetchKey(app, s, recipe) { step -> update(s.id) { it.copy(phase = Phase.CONNECTING, detail = step) } }) {
                     is AutoKey.Result.Key -> Triple(r.key, "api_key", r.via)
                     is AutoKey.Result.Failed -> error(r.reason)
+                    is AutoKey.Result.Handoff -> { update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = r.reason) }; return }
                     is AutoKey.Result.Cancelled -> { update(s.id) { it.copy(phase = Phase.SKIPPED, detail = tc(app, "已取消", "Cancelled")) }; return }
                     is AutoKey.Result.Cookies -> Triple(r.cookie, "cookie", "web")
                 }
@@ -225,6 +258,7 @@ object VaultConnect {
                     is AutoKey.Result.Cookies -> Triple(r.cookie, "cookie", "web")
                     is AutoKey.Result.Key -> Triple(r.key, "api_key", r.via)
                     is AutoKey.Result.Failed -> error(r.reason)
+                    is AutoKey.Result.Handoff -> { update(s.id) { it.copy(phase = Phase.NEEDS_YOU, detail = r.reason) }; return }
                     is AutoKey.Result.Cancelled -> { update(s.id) { it.copy(phase = Phase.SKIPPED, detail = tc(app, "已取消", "Cancelled")) }; return }
                 }
             }
@@ -235,7 +269,7 @@ object VaultConnect {
             if (kind == "api_key") {
                 val pr = AutoKey.probe(s, secret)
                 if (pr.ok == false) VaultStore.updateStatus(app, entry.id) { it.copy(error = "HTTP 401 · " + pr.detail, updatedAt = System.currentTimeMillis()) }
-                val viaZh = when (via) { "clipboard" -> "复制按钮"; "network" -> "页面接口"; "oauth" -> "OAuth"; else -> "页面" }
+                val viaZh = when (via) { "clipboard" -> "复制按钮"; "clipboard-native" -> "剪贴板"; "paste" -> "粘贴"; "network" -> "页面接口"; "oauth" -> "OAuth"; else -> "页面" }
                 when (pr.ok) {
                     true -> update(s.id) { it.copy(phase = Phase.CONNECTED, autoKey = true, entryId = entry.id, detail = tc(app, "已自动获取 Key · 来自$viaZh · ${pr.detail}", "Key fetched automatically · ${pr.detail}")) }
                     false -> update(s.id) { it.copy(phase = Phase.FAILED, entryId = entry.id, detail = tc(app, "读到的 Key 没通过探测：${pr.detail}", "Captured key failed the probe: ${pr.detail}")) }

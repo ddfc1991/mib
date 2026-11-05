@@ -900,7 +900,7 @@ private fun DshHostSection(p: MarketPlugin, inst: InstalledPlugin?, v: PluginCom
         }
         if (h != null && h.requested.isNotEmpty()) Text("申请的宿主服务：" + h.requested.joinToString(", "), fontSize = MibotType.Caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
-        if (h?.node != null) Text("Node ${h?.node} · 已提供：logger, locale, config, commands", fontSize = MibotType.Caption,
+        if (h?.node != null) Text("Node ${h?.node} · 已提供：logger, locale, config, commands, tools", fontSize = MibotType.Caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
         if (!blocked && inst != null) {
             Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -920,6 +920,7 @@ private fun DshHostSection(p: MarketPlugin, inst: InstalledPlugin?, v: PluginCom
             }
             cmdOut?.let { Text(it.take(1200), fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp)) }
         }
+        if (inst != null && !blocked) DshToolsPolicyBlock(inst, running = label == "运行中" && h?.state != "SKILLS")
         if (inst != null) {
             val lines = logsMap[p.fullName] ?: remember(inst.installedAt, h?.at) { DshHostManager.logLines(ctx, p.fullName) }
             Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -937,6 +938,98 @@ private fun DshHostSection(p: MarketPlugin, inst: InstalledPlugin?, v: PluginCom
             )
         }
     }
-    MibotFootnote("实验：Mibot 用沙箱里的 Node 22 + 真实 Cordis 内核加载 DSH 插件，每个插件一个进程。第一阶段提供 logger / locale / config / commands；" +
+    MibotFootnote("实验：Mibot 用沙箱里的 Node 22 + 真实 Cordis 内核加载 DSH 插件，每个插件一个进程。提供 logger / locale / config / commands / tools；插件工具会交给 AI 使用，权限按下方「工具」逐个设置；" +
         "插件需要的其他宿主服务会列为「待支持」。技能插件会导入为 Mibot 技能，停止时停用、卸载时删除。安装依赖时不执行 npm 脚本。")
+}
+
+/**
+ * [fork/mibot-dsh-tools] D4: the plugin's agent tools with a risk badge and a three-way
+ * switch (询问 / 允许 / 禁止), saved in installed.json ([InstalledPlugin.toolPolicy]);
+ * 「恢复默认」 clears every choice, 「始终允许」 picks from the dialog included.
+ */
+@Composable
+private fun DshToolsPolicyBlock(inst: InstalledPlugin, running: Boolean) {
+    val ctx = LocalContext.current
+    var tools by remember(inst.fullName) { mutableStateOf(DshToolRegistry.toolsOf(inst.fullName)) }
+    var commands by remember(inst.fullName) { mutableStateOf(DshToolRegistry.commandsOf(inst.fullName)) }
+    // The registry has no flow: re-read while the page is open (tools/change can arrive any time).
+    LaunchedEffect(inst.fullName, running) {
+        while (true) {
+            tools = DshToolRegistry.toolsOf(inst.fullName)
+            commands = DshToolRegistry.commandsOf(inst.fullName)
+            kotlinx.coroutines.delay(1_500)
+        }
+    }
+    val rows = tools.sortedBy { it.name }.map { Row3(it.name, it.name, it.description, it.risk) } +
+        (if (commands.isNotEmpty()) listOf(Row3(DshToolPolicy.COMMAND_KEY, "命令", commands.joinToString(" ") { "/" + it.name }, DshToolRisk.WRITE)) else emptyList())
+    Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("工具（AI 可调用）", fontSize = MibotType.Secondary, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f))
+        if (inst.toolPolicy.isNotEmpty()) Text("恢复默认", fontSize = MibotType.Secondary, color = MibotTokens.accent(),
+            modifier = Modifier.clickable { DshAgentTools.resetPolicy(ctx, inst.fullName) }.semantics { contentDescription = "工具权限恢复默认" })
+    }
+    if (rows.isEmpty()) {
+        Text(if (running) "这个插件没有注册工具。" else "启动插件后显示它注册的工具；已设置的权限会保留。",
+            fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+        return
+    }
+    rows.forEach { r ->
+        val setting = DshToolPolicy.settingOf(inst.toolPolicy, r.key, r.risk)
+        Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val (rl, rk) = when (r.risk) {
+                    DshToolRisk.READ -> "只读" to ChipKind.OK
+                    DshToolRisk.WRITE -> "可写" to ChipKind.WARN
+                    DshToolRisk.EXTERNAL -> "外部" to ChipKind.ERR
+                }
+                StatusChip(rl, rk)
+                Spacer(Modifier.width(8.dp))
+                Text(r.title, fontSize = MibotType.Secondary, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp))
+                PolicySwitch(DshToolPolicy.switchOf(setting), r.title) { picked ->
+                    DshAgentTools.setPolicy(ctx, inst.fullName, r.key, r.risk, picked)
+                }
+            }
+            if (r.desc.isNotBlank()) Text(r.desc.take(160), fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+            val note = when {
+                setting == DshToolPolicy.Setting.ALWAYS -> "已在弹窗中选择「始终允许」"
+                r.risk == DshToolRisk.EXTERNAL && setting == DshToolPolicy.Setting.ALLOW -> "外部操作仍会每次询问；在弹窗中选「始终允许」后不再询问"
+                else -> null
+            }
+            note?.let { Text(it, fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp)) }
+        }
+    }
+    Text("默认：只读工具直接运行；可写和外部工具每次询问。拒绝后本轮对话内不再询问。", fontSize = MibotType.Caption,
+        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+}
+
+private data class Row3(val key: String, val title: String, val desc: String, val risk: DshToolRisk)
+
+/** 询问 / 允许 / 禁止. */
+@Composable
+private fun PolicySwitch(selected: DshToolPolicy.Setting, toolLabel: String, onSelect: (DshToolPolicy.Setting) -> Unit) {
+    val outer = RoundedCornerShape(8.dp)
+    val options = listOf("询问" to DshToolPolicy.Setting.ASK, "允许" to DshToolPolicy.Setting.ALLOW, "禁止" to DshToolPolicy.Setting.DENY)
+    Row(Modifier.height(28.dp).clip(outer).background(MibotTokens.tile()).border(0.5.dp, MibotTokens.hairline(), outer).padding(2.dp)) {
+        options.forEach { (label, v) ->
+            val on = v == selected
+            Box(
+                Modifier.fillMaxHeight().width(44.dp).clip(RoundedCornerShape(6.dp))
+                    .background(if (on) MibotTokens.card() else Color.Transparent)
+                    .then(if (on) Modifier.border(0.5.dp, MibotTokens.hairline(), RoundedCornerShape(6.dp)) else Modifier)
+                    .clickable { if (!on) onSelect(v) }
+                    .semantics { contentDescription = "$toolLabel：$label" + if (on) "（当前）" else "" },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, fontSize = MibotType.Caption, fontWeight = if (on) MibotType.Semi else MibotType.Regular, maxLines = 1,
+                    color = when {
+                        !on -> MaterialTheme.colorScheme.onSurfaceVariant
+                        v == DshToolPolicy.Setting.DENY -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurface
+                    })
+            }
+        }
+    }
 }

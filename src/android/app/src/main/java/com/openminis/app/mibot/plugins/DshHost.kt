@@ -26,7 +26,8 @@ import java.net.URL
  *    /root/.mibot/dsh/kit; each plugin is staged as a DSH-style profile
  *    /root/.mibot/dsh/p/<id>/node_modules/<package>.
  *  - One Node process per plugin, JSON-RPC over stdio ([DshHostBridge]).
- *  - Stage-1 services: logger, locale, config, commands. Anything else a plugin injects is
+ *  - Services: logger, locale, config, commands (stage 1), tools (D1; mirrored into
+ *    [DshToolRegistry] for the agent, D2). Anything else a plugin injects is
  *    reported as missing → 「待支持：<services>」.
  *  - Skill-only plugins (rows mounting @deepseek-ai/dsh-skill-filesystem) are imported as Mibot skills.
  *  - Block list ([DshPolicy]) → 「不支持」.
@@ -319,13 +320,22 @@ object DshHostManager {
                             if (params.optString("phase") != "starting") statusLatch.complete(params)
                             val cmds = params.optJSONArray("commands")?.let { a -> List(a.length()) { a.optString(it) } } ?: emptyList()
                             _live.value[fullName]?.let { if (it.phase == Phase.RUNNING) setLive(fullName, it.copy(commands = cmds)) }
+                            // D2: keep the agent-tool mirror's command list in step (descriptions kept by name).
+                            if (bridges.containsKey(fullName) && params.optString("phase") == "loaded") {
+                                val known = DshToolRegistry.commandsOf(fullName).associateBy { it.name }
+                                DshToolRegistry.updateCommands(fullName, cmds.filter { it.isNotBlank() }.map { known[it] ?: DshCommandSpec(it) })
+                            }
+                            Unit
                         } else Unit
+                        // D2: the plugin's tool set changed (register / dispose / restrict).
+                        "tools/change" -> DshToolRegistry.updateTools(fullName, DshToolSpec.listFrom(params?.optJSONArray("tools")))
                         else -> Unit
                     }
                 },
                 onLog = { log(ctx, fullName, it) },
                 onExit = { code ->
                     bridges.remove(fullName)
+                    DshToolRegistry.clear(fullName)
                     log(ctx, fullName, "宿主进程退出（$code）")
                     statusLatch.completeExceptionally(IllegalStateException("宿主进程退出（$code）"))
                     val cur = _live.value[fullName]
@@ -365,11 +375,34 @@ object DshHostManager {
             "BLOCKED" -> { bridge.stop(); bridges.remove(fullName); HostResult("BLOCKED", emptyList(), requested, error, emptyList(), node, now()) }
             else -> { bridge.stop(); bridges.remove(fullName); HostResult("FAILED", missing, requested, error ?: "加载失败（见日志）", imported, node, now()) }
         }
+        if (result.state == "RUNNING") seedTools(fullName, bridge) else DshToolRegistry.clear(fullName)
         finish(ctx, fullName, result, st.optJSONArray("commands").strings())
+    }
+
+    /** D2: initial mirror of a running plugin's tools and commands (later changes arrive as tools/change). */
+    private suspend fun seedTools(fullName: String, bridge: DshHostBridge) {
+        runCatching { DshToolRegistry.updateTools(fullName, DshToolSpec.listFrom(bridge.request("tools.list", timeoutMs = 10_000) as? JSONArray)) }
+            .onFailure { Log.w(TAG, "tools.list $fullName: ${it.message}") }
+        runCatching { DshToolRegistry.updateCommands(fullName, DshCommandSpec.listFrom(bridge.request("commands.list", timeoutMs = 10_000) as? JSONArray)) }
+            .onFailure { Log.w(TAG, "commands.list $fullName: ${it.message}") }
+    }
+
+    /**
+     * D2: run one plugin tool in its host (`tools.execute`). Returns the host's reply
+     * `{ok, output (≤ 64 KB), images?, truncated?, denied?, timeout?}`. Policy, confirmation
+     * and starting a stopped host belong to the caller (D3).
+     */
+    suspend fun executeTool(fullName: String, tool: String, args: JSONObject, callId: String?, timeoutMs: Long = 60_000): JSONObject {
+        val b = bridges[fullName]?.takeIf { it.isAlive } ?: throw IllegalStateException("插件未运行")
+        val params = JSONObject().put("name", tool).put("args", args).put("timeoutMs", timeoutMs)
+        if (callId != null) params.put("callId", callId)
+        return b.request("tools.execute", params, timeoutMs + 5_000) as? JSONObject
+            ?: JSONObject().put("ok", false).put("output", "宿主没有返回结果")
     }
 
     suspend fun stop(ctx: Context, fullName: String) = withContext(Dispatchers.IO) {
         runCatching { bridges.remove(fullName)?.stop() }
+        DshToolRegistry.clear(fullName)
         val p = PluginStore.get(ctx, fullName)
         // Kill switch: imported skills are disabled (kept on disk; removed on uninstall).
         val skills = p?.host?.skills.orEmpty()
@@ -382,11 +415,13 @@ object DshHostManager {
                 host = h?.copy(state = if (h.state == "RUNNING" || h.state == "SKILLS") "STOPPED" else h.state))
         }
         log(ctx, fullName, "已停止")
+        com.openminis.app.mibot.feed.Feed.pluginEvent(ctx, fullName, "stopped")
     }
 
     /** Uninstall hook: stop and delete imported skills + staged profile. */
     suspend fun forget(ctx: Context, fullName: String) = withContext(Dispatchers.IO) {
         runCatching { bridges.remove(fullName)?.stop() }
+        DshToolRegistry.clear(fullName)
         val p = PluginStore.get(ctx, fullName) ?: return@withContext
         p.host?.skills.orEmpty().forEach { id -> runCatching { skillRepo(ctx)?.delete(id) } }
         runCatching {
@@ -397,9 +432,9 @@ object DshHostManager {
         clearLog(ctx, fullName)
     }
 
-    suspend fun runCommand(fullName: String, name: String): String {
+    suspend fun runCommand(fullName: String, name: String, args: JSONObject = JSONObject()): String {
         val b = bridges[fullName] ?: throw IllegalStateException("插件未运行")
-        val r = b.request("commands.run", JSONObject().put("name", name).put("args", JSONObject()), 60_000)
+        val r = b.request("commands.run", JSONObject().put("name", name).put("args", args), 60_000)
         return r?.toString() ?: "（无返回）"
     }
 
@@ -415,6 +450,7 @@ object DshHostManager {
             it.copy(host = r, status = if (phase == Phase.RUNNING) PluginStatus.RUNNING else PluginStatus.IDLE,
                 note = when (r.state) { "SKILLS" -> "运行中 · 已导入 ${r.skills.size} 个技能"; "RUNNING" -> null; else -> null })
         }
+        com.openminis.app.mibot.feed.Feed.pluginHostState(ctx, fullName, r.state, r.error)
         return r
     }
 

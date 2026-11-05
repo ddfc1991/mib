@@ -297,6 +297,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="minis" />
             </intent-filter>
+            <!-- [fork/mibot-autokey-v2] OAuth PKCE callback of the AutoKey recipe flow
+                 (OpenRouter): mibot://openrouter-callback?code=…&state=… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="mibot" android:host="openrouter-callback" />
+            </intent-filter>
         </activity>
 
         <!-- T-android-dynamic-app-icon: launcher-icon aliases. Exactly

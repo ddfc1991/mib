@@ -182,9 +182,26 @@ private fun RecentRow(item: RecentItem, fg: Color, fgMuted: Color, dark: Boolean
             modifier = Modifier.weight(1f),
         )
         if (item is RecentItem.Group) {
-            Spacer(Modifier.width(10.dp))
-            StackedAvatars(item.members, dark)
+            Spacer(Modifier.width(8.dp))
+            GroupBadge(fgMuted, dark)
+            if (item.members.isNotEmpty()) {
+                Spacer(Modifier.width(8.dp))
+                StackedAvatars(item.members, dark)
+            }
         }
+    }
+}
+
+/** [fork/mibot-groups] Small 群聊 pill on group rows in the Recent list. */
+@Composable
+private fun GroupBadge(fgMuted: Color, dark: Boolean) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (dark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.06f))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    ) {
+        Text(com.openminis.app.mibot.design.t("群聊", "Group"), color = fgMuted, fontSize = 10.sp, fontWeight = FontWeight.Medium, maxLines = 1)
     }
 }
 

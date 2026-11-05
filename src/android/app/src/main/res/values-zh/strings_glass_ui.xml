@@ -7,6 +7,7 @@
     <string name="glass_new_chat">新对话</string>
     <string name="glass_tab_chats">对话</string>
     <string name="glass_tab_bots">Bots</string>
+    <string name="glass_tab_groups">群聊</string>
     <string name="glass_tab_feed">动态</string>
     <string name="glass_recent">最近</string>
     <string name="glass_untitled">未命名对话</string>

@@ -16,8 +16,8 @@ sealed class RecentItem {
     ) : RecentItem()
 
     /**
-     * A bot group chat. No persistence exists for these yet (feat/bots); the
-     * type is here so the sidebar already renders them inline with chats.
+     * A bot group chat ([com.openminis.app.mibot.groups.GroupChatStore]),
+     * rendered inline with chats and opened on the group chat route.
      */
     data class Group(
         override val id: String,
