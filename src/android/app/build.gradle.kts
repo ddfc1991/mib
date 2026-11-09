@@ -472,6 +472,11 @@ dependencies {
     // com.mibot.cap.web sources below.
     implementation(project(":core"))
 
+    // [fork/mibot-merge] Mika OCR (PhoneOcr): Google ML Kit text recognition for
+    // reading screen text on the phone-control screen.
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
