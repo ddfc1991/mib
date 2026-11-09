@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import com.openminis.app.R
+import com.mibot.cap.web.WebOwner
 import org.json.JSONObject
 import java.io.File
 import java.util.Date
@@ -26,8 +27,27 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Manages up to 3 browser tabs for the agent, mirroring iOS BrowserTabPool.
  * All tabs share the same cookie store by default on Android.
+ *
+ * [fork/mibot-merge] When [mika] is provided, every [execute] call is
+ * forwarded to the ported Mika CDP browser (real input via
+ * `Input.dispatchMouseEvent` / `Input.dispatchKeyEvent`) instead of the
+ * built-in WebView+JS-injection engine. Callers are unchanged.
  */
-class BrowserTabPool(private val context: Context) : BrowserTabPoolRegistry.RegistryPool {
+class BrowserTabPool(
+    private val context: Context,
+    private val mika: MikaBrowserAdapter? = null,
+) : BrowserTabPoolRegistry.RegistryPool {
+
+    /**
+     * [fork/mibot-merge] The Mika CDP engine, resolved lazily from the
+     * application's WebOwner when the caller did not inject one. This lets the
+     * per-chat / per-session pools switch to the CDP engine without each call
+     * site knowing about [MikaBrowserAdapter]; pass `mika = null` explicitly to
+     * keep the built-in WebView+JS engine (rare; the shared pool already
+     * injects the adapter).
+     */
+    private val mikaEngine: MikaBrowserAdapter? = mika
+        ?: (context.applicationContext as? WebOwner)?.let { MikaBrowserAdapter(context) }
 
     companion object {
         /**
@@ -670,6 +690,8 @@ class BrowserTabPool(private val context: Context) : BrowserTabPoolRegistry.Regi
         singleTab: Boolean = false,
         owner: String? = null,
     ): BrowserActionResult {
+        // [fork/mibot-merge] Mika CDP engine takes over when injected.
+        mikaEngine?.let { return it.execute(input, singleTab, owner) }
         // [T-android-browser-tab-ownership-newtab] The ownership check is
         // PER ACTION, not a blanket pre-check, matching iOS
         // (BrowserTabPool.swift:823-836 handles newTab / listTabs before any

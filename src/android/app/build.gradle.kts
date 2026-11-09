@@ -466,6 +466,12 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")
 
+    // [fork/mibot-merge] Mika browser port: the pure-JVM `core` module that
+    // provides com.mibot.core.cap.web (CDP transport / WebSocket / NetworkLedger
+    // / page scripts) and com.mibot.core.uistate, consumed by the ported
+    // com.mibot.cap.web sources below.
+    implementation(project(":core"))
+
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 

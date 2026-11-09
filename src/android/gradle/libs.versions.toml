@@ -1,0 +1,32 @@
+# [fork/mibot-merge] Version catalog for the `:core` JVM module (Mika browser
+# port). Only aliases referenced by core/build.gradle.kts are declared. The
+# `:app` Android module resolves its dependencies by explicit coordinates, so
+# this catalog does not carry the app/Compose coordinates. kotlin is pinned to
+# 2.1.0 to match the plugin versions in the root build.gradle.kts.
+[versions]
+kotlin = "2.1.0"
+protobuf = "4.36.2"
+junit = "4.13.2"
+okhttp = "4.12.0"
+serializationJson = "1.7.3"
+coroutines = "1.9.0"
+commonsCompress = "1.28.0"
+conscrypt = "2.7.0"
+
+[libraries]
+protobuf-lite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf" }
+otel-proto = { module = "io.opentelemetry.proto:opentelemetry-proto", version = "1.11.1-alpha" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationJson" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
+conscrypt-openjdk-uber = { module = "org.conscrypt:conscrypt-openjdk-uber", version.ref = "conscrypt" }
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+protobuf = { id = "com.google.protobuf", version = "0.9.5" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

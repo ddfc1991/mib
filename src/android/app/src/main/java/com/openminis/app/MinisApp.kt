@@ -15,6 +15,7 @@ import org.acra.data.StringFormat
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.openminis.app.browser.BrowserTabPool
+import com.openminis.app.browser.MikaBrowserAdapter
 import com.openminis.app.data.db.AppDatabase
 import com.openminis.app.data.db.DatabaseVersionGuard
 import com.openminis.app.data.repository.BackgroundSettingsRepository
@@ -56,9 +57,15 @@ import com.openminis.app.sandbox.offload.SpeechOffloadHandler
 import com.openminis.app.sandbox.offload.WeatherOffloadHandler
 import com.openminis.app.service.SessionActivityTracker
 import com.openminis.app.ui.MinisImageFetcher
+import com.mibot.cap.web.PageKeeper
+import com.mibot.cap.web.SiteRegistry
+import com.mibot.cap.web.TabBudget
+import com.mibot.cap.web.WebOwner
+import com.mibot.cap.web.cdp.WebDevtools
 import kotlinx.coroutines.launch
+import java.io.File
 
-class MinisApp : Application(), ImageLoaderFactory {
+class MinisApp : Application(), ImageLoaderFactory, WebOwner {
     /**
      * T-android-safemode-lateinit-crash: true once the heavy subsystem
      * block in [onCreate] has fully run (DB + every repository assigned).
@@ -225,8 +232,24 @@ class MinisApp : Application(), ImageLoaderFactory {
      * within an ish shell doesn't collide with the agent's own tabs.
      */
     val sharedBrowserTabPool: BrowserTabPool by lazy {
-        BrowserTabPool(this).also { it.setSession("minis-browser-use") }
+        BrowserTabPool(this, mikaBrowserAdapter()).also { it.setSession("minis-browser-use") }
     }
+
+    /** Mika CDP engine, built once on the application's WebOwner. */
+    private fun mikaBrowserAdapter(): MikaBrowserAdapter = MikaBrowserAdapter(this)
+
+    // [fork/mibot-merge] Mika browser port: the Application is the WebOwner that
+    // provides the shared DevTools entry, site registry, tab budget and page
+    // keeper to the ported com.mibot.cap.web stack (WebTabPool's defaults
+    // resolve through WebOwner.of(context)).
+    private val mikaSitesDir: File by lazy {
+        File(filesDir, "mika-sites").apply { mkdirs() }
+    }
+
+    override val webDevtools: WebDevtools by lazy { WebDevtools(null) }
+    override val webSites: SiteRegistry by lazy { SiteRegistry(mikaSitesDir) }
+    override val tabBudget: TabBudget by lazy { TabBudget() }
+    override val pageKeeper: PageKeeper by lazy { PageKeeper(this, tabBudget) }
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)

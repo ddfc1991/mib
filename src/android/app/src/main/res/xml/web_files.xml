@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- [fork/mibot-merge] WebFilesProvider paths (Mika browser port).
+     Web uploads only hand over copies staged under the cache dir (webupload/),
+     which the sandbox cannot reach; the workspace itself stays unshared. -->
+<paths>
+    <cache-path name="webupload" path="webupload/" />
+    <files-path name="sandbox-work" path="sandbox/work/" />
+</paths>

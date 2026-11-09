@@ -29,3 +29,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "Minis"
 include(":app")
+// [fork/mibot-merge] Mika browser port: the pure-JVM `core` module that backs
+// com.mibot.core.cap.web (CDP transport, WebSocket, NetworkLedger, page
+// scripts) and com.mibot.core.uistate. The app module's com.mibot.cap.web
+// sources consume it via implementation(project(":core")).
+include(":core")

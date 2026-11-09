@@ -665,6 +665,50 @@
                 android:resource="@xml/file_provider_paths" />
         </provider>
 
+        <!-- [fork/mibot-merge] Mika browser port: the page-takeover activity
+             (hands the same WebView to the user to finish a sign-in / CAPTCHA)
+             and the web file provider for upload staging. Both are declared by
+             fully-qualified name because they live in the ported
+             com.mibot.* packages, not the com.openminis.app namespace. -->
+        <activity
+            android:name="com.mibot.web.WebTakeoverActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|uiMode|density"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:windowSoftInputMode="adjustResize" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.webfiles"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/web_files" />
+        </provider>
+
+        <!-- [fork/mibot-merge] Ported Mika components (com.mibot.* package). -->
+        <service
+            android:name="com.mibot.cap.sandbox.SandboxForeground"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+        <receiver
+            android:name="com.mibot.cap.phone.setup.PairingCodeInput"
+            android:exported="false" />
+        <provider
+            android:name="com.mibot.cap.phone.shell.HandoffProvider"
+            android:authorities="${applicationId}.handoff"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+        <receiver
+            android:name="com.mibot.cap.phone.shell.BootRestoreHandler"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <!-- T323: AccessibilityService backing `android-a11y-cli`. The user
              must enable this manually under Settings → Accessibility; we
              never start it programmatically (Android forbids that). -->
