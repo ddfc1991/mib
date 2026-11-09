@@ -146,6 +146,7 @@ fun SandboxScreen(
             val instT = t("已安装", "Installed"); val notT = t("未安装", "Not installed"); val failT = t("失败", "Failed")
             LinuxDistros.ALL.forEachIndexed { i, d ->
                 val live = distroStatus[d.id]
+                val installingT = t("安装中…", "Installing…")
                 val status = if (live == null) (if (LinuxDistros.installed(ctx, d.id)) instT else notT)
                 else if (live.isBlank()) instT else live
                 val kind = when {
@@ -158,7 +159,7 @@ fun SandboxScreen(
                     d.name, "${d.desc} · ${d.size}", Icons.Outlined.ViewInAr, tint[d.id] ?: MibotTokens.Steel,
                     onClick = {
                         if (!LinuxDistros.installed(ctx, d.id)) {
-                            distroStatus[d.id] = t("安装中…", "Installing…")
+                            distroStatus[d.id] = installingT
                             LinuxDistros.installWithMessage(ctx, d.id) { msg ->
                                 distroStatus[d.id] = if (msg.isBlank()) "" else msg
                             }

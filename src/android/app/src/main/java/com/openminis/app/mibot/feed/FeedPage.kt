@@ -84,6 +84,7 @@ fun FeedPage(
         store.refresh()
         while (true) { delay(60_000); now = System.currentTimeMillis() }
     }
+    val groups = remember(entries) { dayGroups(entries) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -94,7 +95,6 @@ fun FeedPage(
         if (entries.isEmpty()) {
             item { FeedEmpty() }
         } else {
-            val groups = remember(entries) { dayGroups(entries) }
             groups.forEach { (label, list) ->
                 item(key = "h_$label") {
                     Text(

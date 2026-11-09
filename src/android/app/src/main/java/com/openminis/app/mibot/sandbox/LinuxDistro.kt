@@ -624,7 +624,7 @@ object LinuxDistros {
     }
 
     /** 启动交互式终端（cmd=null → 登录 shell）。 */
-    fun start(ctx: Context, id: String, rows: Int, cols: Int): Process =
+    fun start(ctx: Context, id: String, rows: Int, cols: Int): java.lang.Process =
         builder(ctx, id, rows, cols, null).start()
 
     // ---------------------------------------------------------------------
