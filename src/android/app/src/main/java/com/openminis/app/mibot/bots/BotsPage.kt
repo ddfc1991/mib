@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Text
@@ -74,14 +75,19 @@ private fun BotAvatar(ctx: Context, def: SubAgentDefinition, index: Int) {
             BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = 4 })?.asImageBitmap()
         }.getOrNull() else null
     }
-    Box(
-        Modifier.size(36.dp).clip(CircleShape).background(avatarColors[index % avatarColors.size]),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (bmp != null) {
+    if (bmp != null) {
+        Box(
+            Modifier.size(36.dp).clip(CircleShape).background(Color(0xFF181A20)),
+            contentAlignment = Alignment.Center,
+        ) {
             Image(bmp, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        } else {
-            Text(def.displayName(ctx).take(1).uppercase(), color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = com.openminis.app.mibot.design.MibotType.TitleSmall)
+        }
+    } else {
+        Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = 0.08f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            SingleCharacterGlyph(singleCharacterAt(index), size = 30.dp)
         }
     }
 }
@@ -115,8 +121,8 @@ fun BotsPage(onOpen: (String) -> Unit, onNew: () -> Unit, onAgentSettings: () ->
         if (showTitle) item { MibotPageTitle("Bots", t("保存的 AI 角色，主 AI 可以把任务交给它们", "Saved AI profiles the main AI can hand tasks to")) }
         item {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                MibotButton(t("新建 Bot", "New Bot"), enabled = roster.size < SubAgentLimits.MAX_COUNT, modifier = Modifier.weight(1f), onClick = onNew)
-                MibotButton(t("导入人设卡", "Import card"), tonal = true, enabled = roster.size < SubAgentLimits.MAX_COUNT, modifier = Modifier.weight(1f), onClick = {
+                MibotButton(t("新建 Bot", "New Bot"), enabled = true, modifier = Modifier.weight(1f), onClick = onNew)
+                MibotButton(t("导入人设卡", "Import card"), tonal = true, enabled = true, modifier = Modifier.weight(1f), onClick = {
                     importer.launch(arrayOf("application/json", "image/png", "text/plain", "application/octet-stream"))
                 })
             }
@@ -135,7 +141,7 @@ fun BotsPage(onOpen: (String) -> Unit, onNew: () -> Unit, onAgentSettings: () ->
         item {
             val builtInLabel = t("内置", "Built-in")
             val builtInChip: @Composable () -> Unit = { StatusChip(builtInLabel, ChipKind.NEUTRAL) }
-            MibotSectionHeader(t("我的 Bots", "My Bots") + " · ${roster.size}/${SubAgentLimits.MAX_COUNT}")
+            MibotSectionHeader(t("我的 Bots", "My Bots") + " · ${roster.size}")
             MibotCard {
                 roster.forEachIndexed { i, def ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -187,7 +193,6 @@ object PersonaCards {
         val d = root.optJSONObject("data") ?: root
         val name = d.optString("name").ifBlank { error("card has no name") }
         val repo = (ctx.applicationContext as MinisApp).providerRepository
-        if (repo.subAgents.size >= SubAgentLimits.MAX_COUNT) error(tc(ctx, "Bot 数量已达上限", "Bot limit reached"))
         val slug = name.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_').ifBlank { "persona_" + (System.currentTimeMillis() % 100000) }
         val wire = generateSequence(slug) { it + "_" }.first { cand -> repo.subAgents.none { it.name.equals(cand, true) } }.take(SubAgentLimits.NAME_MAX_LENGTH)
         val extras = d.optJSONObject("extensions")?.optJSONObject("mibot")

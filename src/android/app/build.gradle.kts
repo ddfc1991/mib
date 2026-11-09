@@ -524,6 +524,10 @@ dependencies {
     implementation("dev.rikka.shizuku:api:13.1.5")
     implementation("dev.rikka.shizuku:provider:13.1.5")
 
+    // [fork/mibot-linux] Debian rootfs is .tar.xz — needs XZ decompression.
+    // Used reflectively by LinuxDistro.kt (mibot/sandbox); no compile-time coupling.
+    implementation("org.tukaani:xz:1.9")
+
     // Testing — JVM unit tests
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")

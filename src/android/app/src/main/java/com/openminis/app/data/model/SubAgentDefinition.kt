@@ -220,17 +220,8 @@ object SubAgentRoster {
         // is deterministic across devices.
         list.sortWith(compareBy({ it.sortOrder }, { it.id }))
 
-        // Drop anything past the bound (the built-in already holds one slot).
-        val allowedCustom = maxOf(0, SubAgentLimits.MAX_COUNT - 1)
-        var custom: List<SubAgentDefinition> = list
-        if (custom.size > allowedCustom) {
-            val dropped = custom.drop(allowedCustom).map { it.name }
-            log?.invoke(
-                "[SubAgents] roster over the limit — keeping $allowedCustom of ${custom.size} " +
-                    "custom definitions, dropping: ${dropped.joinToString(", ")}",
-            )
-            custom = custom.take(allowedCustom)
-        }
+        // [fork/mibot-destiny] 配额已取消：不再裁剪 Bot 数量（去掉 MAX_COUNT 上限）。
+        val custom: List<SubAgentDefinition> = list
 
         if (builtIn.exceedsLimits || custom.any { it.exceedsLimits }) {
             log?.invoke("[SubAgents] one or more definitions exceeded field limits — truncating")

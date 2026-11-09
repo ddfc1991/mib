@@ -94,15 +94,27 @@ fun FeedPage(
         if (entries.isEmpty()) {
             item { FeedEmpty() }
         } else {
-            items(entries, key = { it.id }) { e ->
-                FeedCard(
-                    e = e,
-                    timeLabel = FeedStore.relativeTime(e.ts, now, zh),
-                    onLike = { store.toggleLike(e.id) },
-                    onDiscuss = { onDiscuss(listOf(e.title, e.body).filter { it.isNotBlank() }.joinToString("\n")) },
-                    onDelete = { confirmDelete = e },
-                    onOpen = sourceOpener(e.sourceRef.orEmpty(), onOpenSession, onOpenGroup),
-                )
+            val groups = remember(entries) { dayGroups(entries) }
+            groups.forEach { (label, list) ->
+                item(key = "h_$label") {
+                    Text(
+                        label,
+                        fontSize = MibotType.Section,
+                        fontWeight = MibotType.Semi,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp, top = 10.dp, bottom = 2.dp),
+                    )
+                }
+                items(list, key = { it.id }) { e ->
+                    FeedCard(
+                        e = e,
+                        timeLabel = FeedStore.relativeTime(e.ts, now, zh),
+                        onLike = { store.toggleLike(e.id) },
+                        onDiscuss = { onDiscuss(listOf(e.title, e.body).filter { it.isNotBlank() }.joinToString("\n")) },
+                        onDelete = { confirmDelete = e },
+                        onOpen = sourceOpener(e.sourceRef.orEmpty(), onOpenSession, onOpenGroup),
+                    )
+                }
             }
         }
     }
@@ -126,6 +138,25 @@ private fun sourceOpener(ref: String, onSession: (String) -> Unit, onGroup: (Str
     ref.startsWith("session:") -> ({ onSession(ref.removePrefix("session:")) })
     ref.startsWith("group:") -> ({ onGroup(ref.removePrefix("group:")) })
     else -> null
+}
+
+private fun dayGroups(entries: List<FeedEntry>): List<Pair<String, List<FeedEntry>>> {
+    val cal = java.util.Calendar.getInstance()
+    val now = System.currentTimeMillis()
+    cal.timeInMillis = now
+    val today = cal.get(java.util.Calendar.YEAR) * 1000 + cal.get(java.util.Calendar.DAY_OF_YEAR)
+    cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
+    val yesterday = cal.get(java.util.Calendar.YEAR) * 1000 + cal.get(java.util.Calendar.DAY_OF_YEAR)
+    val fmt = java.text.SimpleDateFormat("MM月dd日", java.util.Locale.getDefault())
+    return entries.groupBy { e ->
+        val c = java.util.Calendar.getInstance().apply { timeInMillis = e.ts }
+        val day = c.get(java.util.Calendar.YEAR) * 1000 + c.get(java.util.Calendar.DAY_OF_YEAR)
+        when (day) {
+            today -> "今天"
+            yesterday -> "昨天"
+            else -> fmt.format(java.util.Date(e.ts))
+        }
+    }.toList()
 }
 
 @Composable

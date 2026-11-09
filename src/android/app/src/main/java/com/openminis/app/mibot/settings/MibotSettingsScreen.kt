@@ -54,6 +54,7 @@ import com.openminis.app.mibot.design.MibotRow
 import com.openminis.app.mibot.design.MibotSectionHeader
 import com.openminis.app.mibot.design.MibotTokens
 import com.openminis.app.mibot.design.t
+import com.openminis.app.mibot.module.ModuleRegistry
 import com.openminis.app.mibot.vault.VaultStore
 import com.openminis.app.ui.glass.LocalGlassBottomInset
 
@@ -90,6 +91,8 @@ class MibotSettingsActions(
     val mail: () -> Unit = {},
     val aiMail: () -> Unit = {},
     val capabilities: () -> Unit = {},
+    // [fork/mibot-modules] 打开任意已注册模块（按 id），见 mibot/module/Module.kt.
+    val module: (String) -> Unit = {},
 )
 
 /**
@@ -151,7 +154,11 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
                     MibotGridItem(t("后台操控", "BG control"), Icons.Outlined.PhonelinkSetup, MibotTokens.Brick, a.virtualDisplay),
                     MibotGridItem(t("插件市场", "Plugins"), Icons.Outlined.Storefront, MibotTokens.Amber, a.plugins),
                     MibotGridItem(t("诊断", "Diagnose"), Icons.Outlined.MonitorHeart, MibotTokens.Steel, a.diagnostics),
-                ),
+                ) + ModuleRegistry.all().filter { it.showInGrid }.map { m ->
+                    // [fork/mibot-modules] 只有显式 showInGrid=true 的模块才出现在应用网格；
+                    // 其余（如 Mika 能力）只作能力提供者经 CapabilityBus 注入宿主功能，不单独露头.
+                    MibotGridItem(m.name, m.icon, m.color) { a.module(m.id) }
+                },
             )
         }
         item {

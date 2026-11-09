@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -140,16 +141,37 @@ fun SandboxScreen(
 
         MibotSectionHeader(t("发行版", "Distribution"))
         MibotCard {
-            MibotRow("Alpine Linux", t("当前 · 内置，无需下载", "Current · bundled, no download"), Icons.Outlined.ViewInAr, MibotTokens.Teal, chevron = false, showDivider = true,
-                trailing = { StatusChip(t("使用中", "Active"), ChipKind.OK) })
-            MibotRow("Debian", t("按需下载", "Download on demand"), Icons.Outlined.ViewInAr, MibotTokens.Rose, chevron = false, showDivider = true,
-                trailing = { StatusChip(t("即将支持", "Soon"), ChipKind.NEUTRAL) })
-            MibotRow("Ubuntu", t("按需下载", "Download on demand"), Icons.Outlined.ViewInAr, MibotTokens.Brick, chevron = false,
-                trailing = { StatusChip(t("即将支持", "Soon"), ChipKind.NEUTRAL) })
+            val distroStatus = remember { mutableStateMapOf<String, String>() }
+            val tint = mapOf("debian" to MibotTokens.Rose, "ubuntu" to MibotTokens.Brick, "alpine" to MibotTokens.Teal)
+            val instT = t("已安装", "Installed"); val notT = t("未安装", "Not installed"); val failT = t("失败", "Failed")
+            LinuxDistros.ALL.forEachIndexed { i, d ->
+                val live = distroStatus[d.id]
+                val status = if (live == null) (if (LinuxDistros.installed(ctx, d.id)) instT else notT)
+                else if (live.isBlank()) instT else live
+                val kind = when {
+                    live != null && live.isNotBlank() && status != instT && !status.startsWith(failT) -> ChipKind.WARN
+                    status == instT -> ChipKind.OK
+                    status.startsWith(failT) -> ChipKind.ERR
+                    else -> ChipKind.NEUTRAL
+                }
+                MibotRow(
+                    d.name, "${d.desc} · ${d.size}", Icons.Outlined.ViewInAr, tint[d.id] ?: MibotTokens.Steel,
+                    onClick = {
+                        if (!LinuxDistros.installed(ctx, d.id)) {
+                            distroStatus[d.id] = t("安装中…", "Installing…")
+                            LinuxDistros.installWithMessage(ctx, d.id) { msg ->
+                                distroStatus[d.id] = if (msg.isBlank()) "" else msg
+                            }
+                        }
+                    },
+                    chevron = false, showDivider = i < LinuxDistros.ALL.size - 1,
+                    trailing = { StatusChip(status, kind) },
+                )
+            }
         }
         MibotFootnote(t(
-            "AI 的 shell 命令都在这个沙箱里运行。Debian/Ubuntu 需要下载 rootfs 并适配 PRoot 启动脚本，将在后续版本提供。",
-            "The AI's shell commands run in this sandbox. Debian/Ubuntu need a downloaded rootfs and PRoot boot changes; planned for a later version.",
+            "AI 的 shell 命令都在这个沙箱里运行。点击发行版即可一键安装（Debian 约 90 MB、Ubuntu 约 30 MB、Alpine 约 4 MB，无需 root）。",
+            "The AI's shell commands run in this sandbox. Tap a distro to install it with one tap (Debian ~90 MB, Ubuntu ~30 MB, Alpine ~4 MB, no root).",
         ))
     }
 }
