@@ -131,14 +131,14 @@ object VaultServices {
 
     // ----------------------------------------------------------------- health
 
-    enum class Health { OK, WARN, INVALID }
+    enum class Health { OK, WARN, INVALID, RENEW }
 
     fun health(e: VaultEntry): Health {
         val st = e.status
         val err = st?.error.orEmpty()
         return when {
             !e.hasSecret -> Health.WARN
-            err.contains("HTTP 401") || err.contains("HTTP 403") -> Health.INVALID
+            err.contains("HTTP 401") || err.contains("HTTP 403") -> Health.RENEW
             err.isNotEmpty() && err != "no status manifest" -> Health.WARN
             st?.lastCheckinState == "error" || st?.lastCheckinState == "manual" -> Health.WARN
             else -> Health.OK
@@ -149,8 +149,10 @@ object VaultServices {
     data class Group(val service: VaultService?, val key: String, val name: String, val cat: String, val entries: List<VaultEntry>) {
         val warn get() = entries.count { health(it) == Health.WARN }
         val invalid get() = entries.count { health(it) == Health.INVALID }
+        val renew get() = entries.count { health(it) == Health.RENEW }
         val hasWebLogin get() = entries.any { it.kind == "cookie" }
         val worst: Health get() = when {
+            renew > 0 -> Health.RENEW
             invalid > 0 -> Health.INVALID
             warn > 0 -> Health.WARN
             else -> Health.OK

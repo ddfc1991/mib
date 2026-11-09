@@ -85,6 +85,10 @@ data class VaultEntry(
     val serviceId: String? = null,
     /** [fork/mibot-v4] What the secret is: api_key / cookie / oauth / password. */
     val kind: String? = null,
+    /** [fork/destiny] 成员身份分类：mine（我的）/ cue（待定）/ hark（harkbox 源）; null=未分类。 */
+    val member: String? = null,
+    /** [fork/destiny] 多号管理的账号归属身份（如 dl1991/ddfc1991），用于标注哪个能写哪个仓库。 */
+    val identity: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
 ) {
@@ -102,6 +106,8 @@ data class VaultEntry(
         status?.let { put("status", it.toJson()) }
         serviceId?.let { put("serviceId", it) }
         kind?.let { put("kind", it) }
+        member?.let { put("member", it) }
+        identity?.let { put("identity", it) }
         put("createdAt", createdAt)
         put("updatedAt", updatedAt)
     }
@@ -117,6 +123,8 @@ data class VaultEntry(
         if (notes.isNotBlank()) put("notes", notes)
         serviceId?.let { put("service", it) }
         kind?.let { put("kind", it) }
+        member?.let { put("member", it) }
+        identity?.let { put("identity", it) }
         status?.let { put("status", it.toJson()) }
     }
 
@@ -133,6 +141,8 @@ data class VaultEntry(
             status = VaultStatus.fromJson(o.optJSONObject("status")),
             serviceId = o.optStringOrNull("serviceId"),
             kind = o.optStringOrNull("kind"),
+            member = o.optStringOrNull("member"),
+            identity = o.optStringOrNull("identity"),
             createdAt = o.optLong("createdAt", System.currentTimeMillis()),
             updatedAt = o.optLong("updatedAt", System.currentTimeMillis()),
         )

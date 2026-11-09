@@ -96,6 +96,7 @@ private fun healthChip(g: VaultServices.Group) {
         VaultServices.Health.OK -> StatusChip(t("正常", "OK"), ChipKind.OK)
         VaultServices.Health.WARN -> StatusChip(t("要注意", "Check"), ChipKind.WARN)
         VaultServices.Health.INVALID -> StatusChip(t("key 无效", "Key invalid"), ChipKind.ERR)
+        VaultServices.Health.RENEW -> StatusChip(t("需重授", "Renew"), ChipKind.WARN)
     }
 }
 
@@ -109,6 +110,7 @@ private fun groupSubtitle(g: VaultServices.Group, masked: Boolean): String {
             VaultServices.Health.OK -> t("正常", "OK")
             VaultServices.Health.WARN -> t("要注意", "Needs attention")
             VaultServices.Health.INVALID -> t("key 无效", "Key invalid")
+            VaultServices.Health.RENEW -> t("需重授", "Renew")
         }
         val bal = e.status?.let { listOfNotNull(it.balance, it.credits, it.points).firstOrNull() }?.let { " · $it" } ?: ""
         val user = e.username.takeIf { it.isNotBlank() }?.let { " · " + if (masked) VaultServices.mask(it) else it } ?: ""
@@ -302,7 +304,7 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
                 inCat.forEachIndexed { i, g ->
                     ServiceRow(
                         g.service?.logo, g.service?.color, g.name, groupSubtitle(g, masked),
-                        subtitleWarn = g.worst == VaultServices.Health.INVALID,
+                        subtitleWarn = g.worst == VaultServices.Health.INVALID || g.worst == VaultServices.Health.RENEW,
                         trailing = { healthChip(g) }, chevron = true,
                         onClick = { if (g.entries.size == 1) onOpen(g.entries.first().id) else onService(g.key) },
                         showDivider = i < inCat.lastIndex,
@@ -388,6 +390,7 @@ fun VaultServiceScreen(key: String, onBack: () -> Unit, onOpen: (String) -> Unit
                             VaultServices.Health.OK -> StatusChip(t("正常", "OK"), ChipKind.OK)
                             VaultServices.Health.WARN -> StatusChip(t("要注意", "Check"), ChipKind.WARN)
                             VaultServices.Health.INVALID -> StatusChip(t("key 无效", "Key invalid"), ChipKind.ERR)
+                            VaultServices.Health.RENEW -> StatusChip(t("需重授", "Renew"), ChipKind.WARN)
                         }
                     },
                     chevron = true, onClick = { onOpen(e.id) }, showDivider = i < g.entries.lastIndex,

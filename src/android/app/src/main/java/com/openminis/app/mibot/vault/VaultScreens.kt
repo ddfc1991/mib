@@ -117,6 +117,8 @@ fun VaultEditScreen(id: String, onBack: () -> Unit) {
     var showSecret by remember { mutableStateOf(false) }
     var notes by remember { mutableStateOf(existing?.notes ?: "") }
     var permission by remember { mutableStateOf(existing?.permission ?: VaultPermission.ASK) }
+    var member by remember { mutableStateOf(existing?.member) }
+    var identity by remember { mutableStateOf(existing?.identity) }
     var manifestId by remember { mutableStateOf(existing?.manifestId) }
     var confirmDelete by remember { mutableStateOf(false) }
     val manifests = remember { VaultSites.all(ctx) }
@@ -132,7 +134,7 @@ fun VaultEditScreen(id: String, onBack: () -> Unit) {
         return VaultStore.upsert(
             ctx,
             base.copy(site = site.trim(), username = username.trim(), category = category.trim().ifEmpty { "其他" },
-                notes = notes, permission = permission, manifestId = manifestId),
+                notes = notes, permission = permission, member = member, identity = identity, manifestId = manifestId),
             newSecret = secret.ifEmpty { null },
         ).also { VaultStore.log(ctx, it, "user", if (existing == null) "create" else "edit", "ok") }
     }
@@ -171,6 +173,22 @@ fun VaultEditScreen(id: String, onBack: () -> Unit) {
                 }
                 com.openminis.app.mibot.design.MibotRadioRow(title, desc, selected = permission == p, onClick = { permission = p }, showDivider = i < 2)
             }
+        }
+
+        // [fork/destiny] 成员身份分类 + 多号管理：标记账号归属来源与所属身份。
+        MibotSectionHeader(t("成员身份", "Member"), actionLabel = if (member != null) t("清除", "Clear") else null, onAction = if (member != null) { { member = null } } else null)
+        MibotCard {
+            val members = listOf("mine" to (t("我的", "Mine") to t("本人所有账号", "My own accounts")),
+                "cue" to (t("待定", "Cue") to t("尚未归属，待确认", "Unassigned, pending")),
+                "hark" to (t("Hark", "Hark") to t("harkbox 来源账号", "Accounts from harkbox")))
+            members.forEachIndexed { i, (v, pair) ->
+                com.openminis.app.mibot.design.MibotRadioRow(pair.first, pair.second, selected = member == v, onClick = { member = v }, showDivider = i < members.lastIndex)
+            }
+        }
+
+        MibotSectionHeader(t("账号归属身份", "Identity"), actionLabel = if (identity != null) t("清除", "Clear") else null, onAction = if (identity != null) { { identity = null } } else null)
+        MibotCard {
+            com.openminis.app.mibot.design.GlassField(identity ?: "", { identity = it }, t("如 dl1991 / ddfc1991（多号标注）", "e.g. dl1991 / ddfc1991 (multi-account)"))
         }
 
         MibotSectionHeader(t("状态与签到", "Status & check-in"))
