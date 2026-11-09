@@ -168,7 +168,7 @@ object PairingNotifier {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val b = Notification.Builder(context, channel)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification_hourglass)
             .setCategory(Notification.CATEGORY_STATUS)
             .setContentIntent(open)
         when (notice) {

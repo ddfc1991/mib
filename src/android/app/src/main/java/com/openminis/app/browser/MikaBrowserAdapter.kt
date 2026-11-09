@@ -3,6 +3,7 @@ package com.openminis.app.browser
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Base64
 import com.mibot.cap.web.WebHost
 import com.mibot.cap.web.WebScreen
@@ -231,9 +232,11 @@ class MikaBrowserAdapter(
     private suspend fun screenshot(port: WebPort): BrowserActionResult {
         val png = port.screenshotPng()
             ?: return BrowserActionResult.error("no frame available (host may be detached)")
-        val jpg = toJpeg(png)
+        val bmp = BitmapFactory.decodeByteArray(png, 0, png.size)
+            ?: return BrowserActionResult.error("could not decode frame")
+        val jpg = toJpeg(bmp)
         return BrowserActionResult(
-            text = "Screenshot captured (${png.width}x${png.height})",
+            text = "Screenshot captured (${bmp.width}x${bmp.height})",
             base64Image = Base64.encodeToString(jpg, Base64.NO_WRAP),
         )
     }

@@ -66,7 +66,7 @@ open class SandboxForeground : Service() {
     }
 
     private fun notification(percent: Int?): Notification = Notification.Builder(this, CHANNEL)
-        .setSmallIcon(R.drawable.ic_notification)
+        .setSmallIcon(R.drawable.ic_notification_hourglass)
         .setContentTitle(tr(R.string.notif_preparing))
         .apply { if (percent != null) setProgress(100, percent, false) }
         .setOngoing(true)
