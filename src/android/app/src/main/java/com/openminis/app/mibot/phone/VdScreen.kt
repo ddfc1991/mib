@@ -62,6 +62,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.mibot.core.cap.phone.OperatingPace
 import com.openminis.app.accessibility.MinisAccessibilityService
 import com.openminis.app.mibot.design.ChipKind
 import com.openminis.app.mibot.design.PermState
@@ -233,6 +234,33 @@ fun VdScreen(onBack: () -> Unit) {
                 }
             }
         }
+
+        // ---------------------------------------------------------- operating pace
+        // [fork/mibot-destiny] 丝滑引擎节奏:FAST 默认(反应快),STANDARD/HUMAN 像人(防风控)。
+        MibotSectionHeader(t("操作节奏", "Operating pace"))
+        MibotCard {
+            var pace by remember { mutableStateOf(VdController.currentOperatingPace()) }
+            Row(horizontalArrangement = Arrangement.spacedBy(MibotSpace.S)) {
+                OperatingPace.entries.forEach { p ->
+                    val sel = p == pace
+                    MibotButton(
+                        when (p) {
+                            OperatingPace.FAST -> t("快", "Fast")
+                            OperatingPace.STANDARD -> t("标准", "Standard")
+                            OperatingPace.HUMAN -> t("像人", "Human")
+                        },
+                        { VdController.setOperatingPace(p); pace = p },
+                        tonal = !sel, compact = true,
+                    )
+                }
+            }
+            Spacer(Modifier.height(MibotSpace.XS))
+            Text(
+                t("FAST 步间不停(反应快) · STANDARD 像人稍停 · HUMAN 所有 App 放慢(防风控)", "FAST no pause · STANDARD human-like · HUMAN slow everywhere"),
+                fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        com.openminis.app.mibot.design.MibotSpacer(6.dp)
 
         // ---------------------------------------------------------- status
         // [fork/mibot-v4] Every row states clearly whether it is on; the
