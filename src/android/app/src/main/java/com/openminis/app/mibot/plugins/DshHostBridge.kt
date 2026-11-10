@@ -95,14 +95,20 @@ class DshHostBridge private constructor(
          * the sandbox shell uses (see ShellExecutor.runOnce), but with separate
          * stdout (RPC) and stderr (log) pipes, kept open for the process lifetime.
          */
-        fun spawn(
+        suspend fun spawn(
             ctx: Context,
             shellCommand: String,
             onNotify: (String, JSONObject?) -> Unit,
             onLog: (String) -> Unit,
             onExit: (Int) -> Unit,
         ): DshHostBridge {
-            check(PRootKernel.isBooted) { "PRootKernel must be booted" }
+            // [fork/mibot-destiny] Auto-boot the PRoot sandbox if the DSH host
+            // starts before the user opened the shell: the sandbox rootfs is
+            // already installed, boot is idempotent, and DSH plugins must not
+            // die with "PRootKernel must be booted".
+            if (!PRootKernel.isBooted) {
+                kotlinx.coroutines.runBlocking { PRootKernel.boot(ctx) }
+            }
             val pb = ProcessBuilder(PRootKernel.buildProotCommand(shellCommand))
             pb.redirectErrorStream(false)
             val env = pb.environment()
