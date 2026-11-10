@@ -6,10 +6,13 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.Display
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.mibot.core.cap.phone.AppPacing
+import com.mibot.core.cap.phone.OperatingPace
 import com.openminis.app.accessibility.MinisAccessibilityService
 import com.openminis.app.mibot.design.tc
 import com.openminis.app.mibot.vault.VaultConfirmBus
@@ -56,6 +59,27 @@ object VdController {
 
     private val _log = MutableStateFlow<List<String>>(emptyList())
     val log: StateFlow<List<String>> = _log.asStateFlow()
+
+    // [fork/mibot-destiny] 丝滑引擎:操作节奏(OperatingPace/AppPacing)。FAST 默认(反应快),
+    // STANDARD/HUMAN 像人(步间延迟、限屏数,防风控)。设置页可调。
+    @Volatile private var operatingPace: OperatingPace = OperatingPace.FAST
+    @Volatile private var _appPacing: AppPacing = OperatingPace.FAST.appPacing()
+    private val appPacing: AppPacing get() = _appPacing
+
+    /** 设置操作节奏(设置页调用):重建节奏器(状态重置)。 */
+    fun setOperatingPace(p: OperatingPace) { operatingPace = p; _appPacing = p.appPacing() }
+    fun currentOperatingPace(): OperatingPace = operatingPace
+
+    /** 按节奏等上一个动作停够(FAST 恒 0,不改当前响应速度)。 */
+    private suspend fun paceWait() {
+        val w = appPacing.waitBefore(SystemClock.elapsedRealtime())
+        if (w > 0) delay(w)
+    }
+
+    /** 记下一个动作完成(节奏据此定下一步的停留)。 */
+    private fun paceNote(newScreen: Boolean) {
+        appPacing.noteAction(_state.value.app, SystemClock.elapsedRealtime(), newScreen = newScreen)
+    }
 
     @Volatile private var display: AgentDisplay? = null
     // [fork/mibot-destiny] Multi-display pool: several hidden virtual displays may
@@ -300,7 +324,7 @@ object VdController {
                     ShellService.START_IN_USE_BY_OTHER -> "already on another agent display"
                     else -> "start failed ($r)"
                 }
-                if (r == ShellService.START_OK) _state.value = s.copy(app = packageName)
+                if (r == ShellService.START_OK) { _state.value = s.copy(app = packageName); paceNote(true) }
                 log("vd_launch_app $packageName -> $msg")
                 msg
             }
@@ -309,6 +333,7 @@ object VdController {
                     ?: return@withContext "no launcher activity for $packageName"
                 app.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 _state.value = s.copy(app = packageName)
+                paceNote(true)
                 log("vd_launch_app (main screen) $packageName")
                 "started $packageName on the main screen (accessibility mode)"
             }
@@ -357,6 +382,7 @@ object VdController {
     private fun a11yOn(): Boolean = VdA11y.service()?.also { VdA11y.ensureFlags(it) } != null
 
     suspend fun tap(context: Context, x: Int, y: Int): String = withContext(Dispatchers.IO) {
+        paceWait()
         val s = requireActive()
         val app = context.applicationContext
         if (x < 0 || y < 0 || x >= s.width || y >= s.height) return@withContext "tap failed: ($x,$y) is outside the display (${s.width}x${s.height})"
@@ -369,10 +395,11 @@ object VdController {
             VdInputOrder.Step(VdInputOrder.SHELL) { sh?.injectTap(s.displayId, x, y) == true },
         ))
         log("vd_tap $x,$y -> ${r.describe()}")
-        if (r.ok) "tapped ($x,$y) via ${r.describe()}" else "tap failed (${r.describe()})"
+        if (r.ok) { paceNote(false); "tapped ($x,$y) via ${r.describe()}" } else "tap failed (${r.describe()})"
     }
 
     suspend fun swipe(context: Context, x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Int): String = withContext(Dispatchers.IO) {
+        paceWait()
         val s = requireActive()
         val dur = durationMs.coerceIn(80, 3_000).toLong()
         val sh = if (s.mode == Mode.HELPER) helper(context) else null
@@ -388,10 +415,11 @@ object VdController {
             },
         ))
         log("vd_swipe $x1,$y1→$x2,$y2 ${dur}ms -> ${r.describe()}")
-        if (r.ok) "swiped via ${r.describe()}" else "swipe failed (${r.describe()})"
+        if (r.ok) { paceNote(false); "swiped via ${r.describe()}" } else "swipe failed (${r.describe()})"
     }
 
     suspend fun type(context: Context, text: String, submit: Boolean): String = withContext(Dispatchers.IO) {
+        paceWait()
         val s = requireActive()
         val app = context.applicationContext
         askIfSensitive(app, s, null, null, text)?.let { return@withContext it }
@@ -413,7 +441,7 @@ object VdController {
         ))
         var msg = if (r.ok) "typed ${text.length} chars via ${r.describe()}" else
             "type failed (${r.describe()}${if (field == null) "; no focused input field on the display — tap the field first" else ""})"
-        if (r.ok && submit) msg += "; " + key(app, "ENTER")
+        if (r.ok) { paceNote(false); if (submit) msg += "; " + key(app, "ENTER") }
         log("vd_type (${text.length} chars) -> ${r.describe()}")
         msg
     }
@@ -442,6 +470,7 @@ object VdController {
     }
 
     suspend fun key(context: Context, name: String): String = withContext(Dispatchers.IO) {
+        paceWait()
         val s = requireActive()
         val code = KEYS[name.uppercase().removePrefix("KEYCODE_")] ?: name.toIntOrNull()
             ?: return@withContext "unknown key '$name' (allowed: ${KEYS.keys.joinToString()})"
@@ -459,7 +488,7 @@ object VdController {
             VdInputOrder.Step(VdInputOrder.SHELL) { sh?.injectKey(s.displayId, code) == true },
         ))
         log("vd_key $name -> ${r.describe()}")
-        if (r.ok) "pressed $name via ${r.describe()}" else "key failed (${r.describe()})"
+        if (r.ok) { paceNote(code == KeyEvent.KEYCODE_BACK); "pressed $name via ${r.describe()}" } else "key failed (${r.describe()})"
     }
 
     /** Compact accessibility tree of the agent display (needs Mibot's accessibility service). */
