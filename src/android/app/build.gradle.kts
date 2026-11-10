@@ -40,8 +40,8 @@ android {
         applicationId = "com.destiny.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 45
-        versionName = "1.23"
+        versionCode = 46
+        versionName = "1.24"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
