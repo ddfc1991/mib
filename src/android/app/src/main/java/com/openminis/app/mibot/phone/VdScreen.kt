@@ -202,7 +202,28 @@ fun VdScreen(onBack: () -> Unit) {
                         Spacer(Modifier.height(MibotSpace.S))
                         Row(horizontalArrangement = Arrangement.spacedBy(MibotSpace.S)) {
                             MibotButton(t("打开", "Open"), { scope.launch { VdController.launch(ctx, pkg.trim()) } }, tonal = true)
+                            MibotButton(t("新建额外屏", "New display"), {
+                                scope.launch { VdController.createExtra(ctx).onFailure { VdController.log(it.message ?: "failed") } }
+                            }, tonal = true)
                             MibotButton(t("停止", "Stop"), { VdController.close(ctx) })
+                        }
+                        // [fork/mibot-destiny] Multi-display list: switch between / close individual displays.
+                        if (VdController.displayCount > 1) {
+                            Spacer(Modifier.height(MibotSpace.S))
+                            VdController.displayIds.forEach { id ->
+                                val active = id == VdController.activeDisplay
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    StatusChip(
+                                        if (active) t("屏 #$id · 活动", "Display #$id · active") else t("屏 #$id", "Display #$id"),
+                                        if (active) ChipKind.OK else ChipKind.NEUTRAL,
+                                    )
+                                    Spacer(Modifier.weight(1f))
+                                    if (!active) MibotButton(t("切换", "Switch"), { VdController.switchTo(id) }, tonal = true, compact = true)
+                                    Spacer(Modifier.width(MibotSpace.XS))
+                                    MibotButton(t("关", "Close"), { VdController.closeDisplay(ctx, id) }, tonal = true, compact = true)
+                                }
+                                Spacer(Modifier.height(MibotSpace.XS))
+                            }
                         }
                     } else {
                         MibotButton(t("新建虚拟屏", "Create display"), {
