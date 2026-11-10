@@ -163,7 +163,7 @@ fun VdScreen(onBack: () -> Unit) {
             Row(verticalAlignment = Alignment.Top) {
                 Box(
                     Modifier
-                        .width(108.dp)
+                        .weight(0.62f)
                         .aspectRatio(if (vd.width > 0 && vd.height > 0) vd.width.toFloat() / vd.height else 9f / 19.5f)
                         .clip(RoundedCorner)
                         .background(Color.Black.copy(alpha = 0.82f))
@@ -181,7 +181,7 @@ fun VdScreen(onBack: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.width(MibotSpace.M))
-                Column(Modifier.weight(1f)) {
+                Column(Modifier.weight(0.38f)) {
                     val (label, kind) = when (vd.mode) {
                         VdController.Mode.HELPER -> t("运行中 · 屏 #${vd.displayId}", "Running · display #${vd.displayId}") to ChipKind.OK
                         VdController.Mode.A11Y -> t("主屏无障碍模式", "Main-screen accessibility") to ChipKind.WARN
