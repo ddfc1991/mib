@@ -58,10 +58,32 @@ object VdController {
     val log: StateFlow<List<String>> = _log.asStateFlow()
 
     @Volatile private var display: AgentDisplay? = null
+    // [fork/mibot-destiny] Multi-display pool: several hidden virtual displays may
+    // run at once (vd_create → first display; createExtra → more). `display` stays
+    // as the ACTIVE one for backwards-compatible callers; `displays` holds every live
+    // AgentDisplay keyed by its displayId, and `activeDisplayId` names the one all
+    // tools operate on.
+    private val displays = LinkedHashMap<Int, AgentDisplay>()
+    @Volatile private var activeDisplayId: Int = -1
     private val emptyFrames = MutableStateFlow<Bitmap?>(null)
     private val _framesFlow = MutableStateFlow<StateFlow<Bitmap?>>(emptyFrames)
-    /** The current display's preview frames (switches when a display is created/closed). */
+    /** The active display's preview frames (switches when the active display changes). */
     val previewSource: StateFlow<StateFlow<Bitmap?>> = _framesFlow.asStateFlow()
+
+    /** Ids of every live hidden display, insertion order. */
+    val displayIds: List<Int> get() = synchronized(displays) { displays.keys.toList() }
+    /** The active display id, or -1 when none. */
+    val activeDisplay: Int get() = activeDisplayId
+    /** Number of live hidden displays. */
+    val displayCount: Int get() = synchronized(displays) { displays.size }
+
+    private fun currentDisplay(): AgentDisplay? = synchronized(displays) { displays[activeDisplayId] ?: displays.values.firstOrNull() }
+
+    private fun setActive(id: Int) {
+        synchronized(displays) {
+            if (displays.containsKey(id)) { activeDisplayId = id; display = displays[id]; _framesFlow.value = display!!.frames }
+        }
+    }
 
     @Volatile private var a11yConfirmed = false
 
@@ -79,7 +101,9 @@ object VdController {
         val app = context.applicationContext
         val phone = MibotPhone.get(app)
         val current = _state.value
-        if (current.mode != Mode.NONE) return@withContext Result.success(current)
+        // [fork/mibot-destiny] Multi-display: create() is the FIRST display (or returns it
+        // when already up). Extra displays go through createExtra(). Kept for compat.
+        if (current.mode != Mode.NONE && display != null) return@withContext Result.success(current)
         var shell = phone.hub.shell.value
         if (shell == null && phone.supported) {
             // Wake the watchdog (paired) or try Shizuku when it is ready.
@@ -98,6 +122,8 @@ object VdController {
             val dmgr = app.getSystemService(DisplayManager::class.java)
             return@withContext runCatching {
                 val d = AgentDisplay(shell, w, h, dpi, dmgr)
+                synchronized(displays) { displays[d.displayId] = d }
+                activeDisplayId = d.displayId
                 display = d
                 _framesFlow.value = d.frames
                 val s = State(Mode.HELPER, d.displayId, d.width, d.height)
@@ -137,10 +163,79 @@ object VdController {
         Result.success(s)
     }
 
+    /**
+     * [fork/mibot-destiny] Create an ADDITIONAL hidden display (the first one uses
+     * [create]). Each extra display runs its own AgentDisplay with its own frames
+     * and app. Returns the new display's state; the new display becomes active.
+     */
+    suspend fun createExtra(context: Context, width: Int = 0, height: Int = 0): Result<State> = withContext(Dispatchers.Default) {
+        val app = context.applicationContext
+        val phone = MibotPhone.get(app)
+        if (_state.value.mode != Mode.HELPER) {
+            // No helper session yet — the first display must be up (HELPER mode).
+            val first = create(context, width, height).getOrNull()
+            if (first == null || first.mode != Mode.HELPER) {
+                return@withContext Result.failure(IllegalStateException("multi-display needs the helper session; create the first display first"))
+            }
+        }
+        val shell = phone.hub.shell.value ?: return@withContext Result.failure(IllegalStateException("helper not connected"))
+        return@withContext runCatching {
+            val (w, h, dpi) = displaySpec(app, width, height)
+            val dmgr = app.getSystemService(DisplayManager::class.java)
+            val d = AgentDisplay(shell, w, h, dpi, dmgr)
+            synchronized(displays) { displays[d.displayId] = d }
+            setActive(d.displayId)
+            val s = State(Mode.HELPER, d.displayId, d.width, d.height)
+            // Keep the session mode; the state's app/display reflect the active one.
+            _state.value = _state.value.copy(mode = Mode.HELPER, displayId = d.displayId, width = d.width, height = d.height)
+            log("vd_createExtra: display ${d.displayId} ${w}x$h@$dpi (${displays.size} live)")
+            VdForegroundService.start(app)
+            s
+        }.onFailure { log("vd_createExtra failed: ${it.message}") }
+    }
+
+    /** [fork/mibot-destiny] Switch the ACTIVE display (all tools operate on it). */
+    fun switchTo(displayId: Int): Boolean {
+        synchronized(displays) {
+            if (!displays.containsKey(displayId)) return false
+            setActive(displayId)
+            val d = displays[displayId]!!
+            _state.value = _state.value.copy(mode = Mode.HELPER, displayId = displayId, width = d.width, height = d.height)
+        }
+        log("vd_switchTo: display $displayId (active; ${displays.size} live)")
+        return true
+    }
+
+    /** [fork/mibot-destiny] Close ONE display; the last one also ends the session. */
+    fun closeDisplay(context: Context, displayId: Int): Boolean {
+        val d = synchronized(displays) { displays.remove(displayId) } ?: return false
+        runCatching { d.release() }
+        if (activeDisplayId == displayId) {
+            val next = synchronized(displays) { displays.keys.firstOrNull() }
+            if (next != null) setActive(next)
+            else { activeDisplayId = -1; display = null; _framesFlow.value = emptyFrames }
+        }
+        if (synchronized(displays) { displays.isEmpty() }) {
+            val was = _state.value.mode
+            _state.value = State()
+            a11yConfirmed = false
+            if (was != Mode.NONE) log("vd_close (last display)")
+            VdOverlay.hide(context.applicationContext)
+            VdForegroundService.stop(context.applicationContext)
+        } else {
+            log("vd_closeDisplay: display $displayId closed (${synchronized(displays) { displays.size }} live)")
+        }
+        return true
+    }
+
     fun close(context: Context) {
         val app = context.applicationContext
-        display?.let { runCatching { it.release() } }
+        // [fork/mibot-destiny] Close every live display.
+        val all = synchronized(displays) { displays.values.toList() }
+        all.forEach { runCatching { it.release() } }
+        synchronized(displays) { displays.clear() }
         display = null
+        activeDisplayId = -1
         _framesFlow.value = emptyFrames
         val was = _state.value.mode
         _state.value = State()
@@ -164,7 +259,7 @@ object VdController {
     private fun requireActive(): State {
         val s = _state.value
         check(s.mode != Mode.NONE) { "No virtual display. Call vd_create first." }
-        val d = display
+        val d = currentDisplay()
         if (s.mode == Mode.HELPER && d != null) {
             val w = d.width
             val h = d.height
@@ -230,9 +325,10 @@ object VdController {
         val s = requireActive()
         val bmp: Bitmap? = when (s.mode) {
             Mode.HELPER -> {
-                var b = display?.latestFrameBitmap()
+                val d = currentDisplay()
+                var b = d?.latestFrameBitmap()
                 var tries = 0
-                while (b == null && tries++ < 10) { delay(150); b = display?.latestFrameBitmap() }
+                while (b == null && tries++ < 10) { delay(150); b = d?.latestFrameBitmap() }
                 b
             }
             Mode.A11Y -> {
