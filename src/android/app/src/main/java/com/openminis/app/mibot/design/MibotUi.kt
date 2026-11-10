@@ -479,7 +479,7 @@ fun StatusChip(text: String, kind: ChipKind) {
  * and ink text (high contrast in both themes, no tinted text on tinted fill).
  */
 @Composable
-fun MibotButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, tonal: Boolean = false) {
+fun MibotButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, tonal: Boolean = false, compact: Boolean = false) {
     val accent = MibotTokens.accent()
     val bg = when {
         !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
@@ -493,16 +493,16 @@ fun MibotButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
     }
     Box(
         modifier
-            .heightIn(min = MibotSpace.ButtonMin)
+            .heightIn(min = if (compact) MibotSpace.S else MibotSpace.ButtonMin)
             .then(
                 if (tonal && enabled) Modifier.frosted(MibotRadius.Pill)
                 else Modifier.clip(MibotRadius.Pill).background(bg),
             )
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = MibotSpace.L, vertical = MibotSpace.S),
+            .padding(horizontal = if (compact) MibotSpace.M else MibotSpace.L, vertical = if (compact) MibotSpace.XS else MibotSpace.S),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, color = fg, fontSize = MibotType.Button, fontWeight = MibotType.Semi, maxLines = 1)
+        Text(text, color = fg, fontSize = if (compact) MibotType.Caption else MibotType.Button, fontWeight = MibotType.Semi, maxLines = 1)
     }
 }
 
