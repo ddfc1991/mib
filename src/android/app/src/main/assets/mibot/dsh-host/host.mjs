@@ -404,12 +404,11 @@ class ToolsService extends Service {
         return { ok: true, output: c.text, ...(images.length ? { images } : {}), ...(c.truncated ? { truncated: true } : {}) }
       }
       const runP = run()
-      const raceP = Promise.race([
+      runP.catch(() => {})   // [fork/mibot-destiny] late reject after timeout must not become unhandled
+      return await Promise.race([
         runP,
         new Promise((resolve) => { timer = setTimeout(() => { ac.abort(new Error('timeout')); resolve({ ok: false, timeout: true, output: `tool ${entry.name} timed out after ${limit} ms` }) }, limit) }),
       ])
-      runP.catch(() => {})   // [fork/mibot-destiny] late reject after timeout must not become unhandled
-      return raceP
     } catch (e) {
       try { await root.parallel('tools/post-execute', exec, { ok: false, error: e }) } catch {}
       return { ok: false, output: clipOutput(String(e?.message || e)).text }
