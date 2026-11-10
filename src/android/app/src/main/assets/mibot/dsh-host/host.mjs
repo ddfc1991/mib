@@ -403,10 +403,13 @@ class ToolsService extends Service {
         const c = clipOutput(output)
         return { ok: true, output: c.text, ...(images.length ? { images } : {}), ...(c.truncated ? { truncated: true } : {}) }
       }
-      return await Promise.race([
-        run(),
+      const runP = run()
+      const raceP = Promise.race([
+        runP,
         new Promise((resolve) => { timer = setTimeout(() => { ac.abort(new Error('timeout')); resolve({ ok: false, timeout: true, output: `tool ${entry.name} timed out after ${limit} ms` }) }, limit) }),
       ])
+      runP.catch(() => {})   // [fork/mibot-destiny] late reject after timeout must not become unhandled
+      return raceP
     } catch (e) {
       try { await root.parallel('tools/post-execute', exec, { ok: false, error: e }) } catch {}
       return { ok: false, output: clipOutput(String(e?.message || e)).text }
@@ -557,7 +560,9 @@ async function loadRow(entry, rowInject) {
   }
   row.fiber = fiber
   if (row.missing.length === 0) {
-    try { await Promise.race([fiber.await(), new Promise((r) => setTimeout(r, 20_000))]) } catch (e) { row.error = String(e?.stack || e) }
+    const awaitP = fiber.await()
+    awaitP.catch(() => {})   // [fork/mibot-destiny] late settle after the 20s race must not be unhandled
+    try { await Promise.race([awaitP, new Promise((r) => setTimeout(r, 20_000))]) } catch (e) { row.error = String(e?.stack || e) }
   } else {
     await new Promise((r) => setTimeout(r, 50))
   }
