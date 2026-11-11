@@ -2,19 +2,19 @@
 <!--
   destiny — launcher icon, pinned DARK
 
-  Champagne-to-bronze sheet on an ink ground; the D is punched out to
-  ink. Same geometry as the light variant, only the ramp and the
-  background colour change. Non-night resources so a pinned Dark icon
-  stays dark while the system is in light mode.
+  The cloud character in its cream colourway on an ink ground. Same
+  geometry as the light variant, only the body/face colours change.
+  Non-night resources so a pinned Dark icon stays dark while the system
+  is in light mode.
 
-  Layer contract for this icon: the FOREGROUND drawable is a full-bleed
-  108dp sheet with the letter D punched out of it (fillType="evenOdd",
-  see res/drawable/ic_launcher_fg_destiny_*.xml). The background colour
-  below is what shows through that hole, so the two must always be
-  changed together — background here == the ink/cream inside the D.
+  Layer contract (changed with the cloud mark): the FOREGROUND drawable
+  is the cloud character only, transparent elsewhere and centred in the
+  safe circle; the background below is a flat ink ground. Nothing is
+  punched out of the foreground, so the ground colour can change on its
+  own without editing the character.
 
-  No <inset> wrapper: the sheet must reach the layer edges, otherwise
-  the adaptive-icon mask would expose a ring of background around it.
+  No <inset> wrapper: the character is already drawn inside the 72dp
+  safe zone of its own 108dp canvas.
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_bg_force_dark" />
