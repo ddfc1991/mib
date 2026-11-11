@@ -106,10 +106,36 @@ shot 01-chats 2
 tap desc "Open sidebar" && shot 02-sidebar 3 || { echo "::warning::sidebar button not found"; fail=1; }
 adb shell input keyevent KEYCODE_BACK; sleep 2
 
-for t in Feed:03-feed Ideas:04-ideas "Group chats":05-groups Settings:06-settings; do
+# [destiny/v7] Four tabs now: Chats / Feed / Group chats / Settings.
+# Ideas is NOT a tab any more — it is the second state inside Feed.
+# Keep the old assertion and the job would fail trying to tap a tab we removed.
+if tap desc "Feed"; then
+  shot 03-feed 3
+  # Prove the tri-state is real, not a picture: tap both extra modes and shoot.
+  if tap text "想到的"; then shot 03b-feed-ideas 3; else echo "::warning::feed mode 想到的 not found"; fi
+  if tap text "能领的"; then shot 03c-feed-quotas 3; else echo "::warning::feed mode 能领的 not found"; fi
+  tap text "在看" >/dev/null 2>&1 || true
+else
+  echo "::warning::tab Feed not found"; fail=1
+fi
+for t in "Group chats":05-groups Settings:06-settings; do
   name="${t%%:*}"; file="${t##*:}"
   if tap desc "$name"; then shot "$file" 3; else echo "::warning::tab $name not found"; fail=1; fi
 done
+# [destiny/v7] 服务器 sits in Settings › Network right below Tailscale.
+# Scroll a little if the row is below the fold; a miss is a warning, not a
+# verdict on the app.
+SERVERS_OK=0
+for i in 1 2 3; do
+  if tap text "Servers" || tap text "服务器"; then SERVERS_OK=1; break; fi
+  adb shell input swipe 540 1600 540 700 400; sleep 1
+done
+if [ "$SERVERS_OK" -eq 1 ]; then
+  shot 06b-servers 3
+  adb shell input keyevent KEYCODE_BACK; sleep 2
+else
+  echo "::warning::Servers row not found in Settings"
+fi
 # Settings page scrolled to the Appearance / Feedback rows.
 adb shell input swipe 540 1700 540 900 400; shot 07-settings-scrolled 2
 
