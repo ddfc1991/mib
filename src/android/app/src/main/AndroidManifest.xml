@@ -307,16 +307,36 @@
             </intent-filter>
         </activity>
 
+        <!-- destiny · the WebView shell that renders the product UI.
+             The three launcher aliases below target THIS activity, so the
+             icon the user taps opens the redesigned interface rather than
+             the Compose one. MainActivity stays exported and enabled: every
+             action that has to actually do something (chat, terminal,
+             providers, MCP) is handed back to it through the
+             DestinyNative.openNative() bridge, and internal
+             Intent(this, MainActivity::class) calls keep working unchanged.
+
+             Theme is a platform one on purpose: this activity hosts no
+             Compose content, so it does not need Theme.Minis and should not
+             inherit its window insets behaviour. -->
+        <activity
+            android:name=".DestinyWebActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- T-android-dynamic-app-icon: launcher-icon aliases. Exactly
              ONE of these three is enabled at any time; AppIconRepository
              flips the enabled state in response to a Settings → App Icon
-             tap. All three target MainActivity, so the user-visible
-             launcher entry just swaps icon + label, no actual activity
-             change. Pre-install state: "auto" is enabled in the manifest
-             (android:enabled="true"), the other two are disabled. -->
+             tap. All three target DestinyWebActivity (the UI shell), so the
+             user-visible launcher entry just swaps icon + label, no actual
+             activity change. Pre-install state: "auto" is enabled in the
+             manifest (android:enabled="true"), the other two are disabled. -->
         <activity-alias
             android:name=".MainActivityIconAuto"
-            android:targetActivity=".MainActivity"
+            android:targetActivity=".DestinyWebActivity"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
@@ -338,7 +358,7 @@
 
         <activity-alias
             android:name=".MainActivityIconLight"
-            android:targetActivity=".MainActivity"
+            android:targetActivity=".DestinyWebActivity"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_classic_light"
@@ -354,7 +374,7 @@
 
         <activity-alias
             android:name=".MainActivityIconDark"
-            android:targetActivity=".MainActivity"
+            android:targetActivity=".DestinyWebActivity"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_classic_dark"
