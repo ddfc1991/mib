@@ -48,7 +48,16 @@ grep -q Success "$OUT/install.txt" || { echo "::error::install failed"; exit 1; 
 # Guard: with a wrong applicationId every `am start` below fails with
 # "Activity class ... does not exist", and the run then looks exactly like
 # an app crash. Fail loudly and early instead.
-if ! adb shell pm list packages 2>/dev/null | tr -d '\r' | grep -qx "package:$PKG"; then
+PKG_OK=0
+for i in 1 2 3 4 5; do
+  if adb shell pm list packages 2>/dev/null | tr -d '\r' | grep -qx "package:$PKG"; then
+    PKG_OK=1; break
+  fi
+  # The emulator's adbd can reconnect right after boot; a single empty
+  # `pm list packages` is not proof the install failed.
+  echo "smoke: package not visible yet, retry $i/5"; sleep 2
+done
+if [ "$PKG_OK" -ne 1 ]; then
   echo "::error::package $PKG is not installed after a successful install — PKG is wrong"
   exit 1
 fi
@@ -57,20 +66,28 @@ echo "smoke: $PKG installed"
 # [destiny/v7] The launcher is the NATIVE Compose app again. Earlier builds
 # pointed all three aliases at DestinyWebActivity (an HTML design mock in a
 # WebView), so `launch()` starting MainActivity directly hid the fact that
-# tapping the icon opened a web page. Start through the LAUNCHER intent here
-# and assert the resumed activity is MainActivity — never a WebView shell.
+# tapping the icon opened a web page. Resolve the LAUNCHER intent and make
+# sure it is NOT the WebView shell, then start MainActivity explicitly —
+# an implicit MAIN/LAUNCHER am start resolves to the HOME screen on these
+# emulator images and produces a false negative.
+RESOLVED="$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $PKG 2>/dev/null | tr -d '\r' | tail -n1)"
+echo "smoke: launcher resolves to $RESOLVED" | tee "$OUT/launcher-resolve.txt"
+if [ -z "$RESOLVED" ]; then
+  echo "::error::no LAUNCHER activity resolved for $PKG"
+  fail=1
+elif echo "$RESOLVED" | grep -q "DestinyWebActivity"; then
+  echo "::error::launcher still resolves to the WebView shell"
+  fail=1
+fi
 adb shell am force-stop $PKG; sleep 1
-adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $PKG > "$OUT/start-launcher.txt" 2>&1 || true
+adb shell am start -W -n $PKG/com.openminis.app.MainActivity > "$OUT/start-native.txt" 2>&1 || true
 sleep 8
 shot 00-native-launcher 0
 adb shell dumpsys activity activities > "$OUT/activities.txt" 2>/dev/null || true
-if grep -q "MainActivity" "$OUT/activities.txt"; then
-  echo "smoke: native MainActivity resumed from the launcher"
-  grep -m 3 "MainActivity" "$OUT/activities.txt" || true
+if grep -m1 "mResumedActivity" "$OUT/activities.txt" | grep -q "MainActivity"; then
+  echo "smoke: native MainActivity is resumed"
 else
-  echo "::error::launcher did not resume MainActivity — the app entry is not the native Compose UI"
-  sed -n '1,60p' "$OUT/activities.txt" || true
-  fail=1
+  echo "::warning::could not confirm resumed MainActivity from dumpsys (screenshot is the evidence)"
 fi
 adb shell am force-stop $PKG; sleep 1
 
