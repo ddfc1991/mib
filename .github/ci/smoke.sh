@@ -54,49 +54,23 @@ if ! adb shell pm list packages 2>/dev/null | tr -d '\r' | grep -qx "package:$PK
 fi
 echo "smoke: $PKG installed"
 
-# destiny UI shell — the actual launcher entry, and the thing this smoke run
-# used to miss entirely: `launch()` starts MainActivity directly, so every
-# screenshot below shows the COMPOSE app no matter what the launcher opens.
-# Boot the shell on its own, prove the page and the JS bridge really came up
-# (the bridge logs one line per screen change), and capture it. A blank or
-# crashed WebView then fails the run instead of shipping as a silent dark
-# rectangle.
+# [destiny/v7] The launcher is the NATIVE Compose app again. Earlier builds
+# pointed all three aliases at DestinyWebActivity (an HTML design mock in a
+# WebView), so `launch()` starting MainActivity directly hid the fact that
+# tapping the icon opened a web page. Start through the LAUNCHER intent here
+# and assert the resumed activity is MainActivity — never a WebView shell.
 adb shell am force-stop $PKG; sleep 1
-adb shell am start -W -n $PKG/com.openminis.app.DestinyWebActivity > "$OUT/start-destiny.txt" 2>&1 || true
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $PKG > "$OUT/start-launcher.txt" 2>&1 || true
 sleep 8
-shot 00-destiny-shell 0
-adb logcat -d -s DestinyWeb > "$OUT/destiny-log.txt" 2>/dev/null || true
-if grep -q "screen=" "$OUT/destiny-log.txt"; then
-  echo "smoke: destiny shell reported a screen"
-  grep "screen=" "$OUT/destiny-log.txt" | tail -n 2
+shot 00-native-launcher 0
+adb shell dumpsys activity activities > "$OUT/activities.txt" 2>/dev/null || true
+if grep -q "MainActivity" "$OUT/activities.txt"; then
+  echo "smoke: native MainActivity resumed from the launcher"
+  grep -m 3 "MainActivity" "$OUT/activities.txt" || true
 else
-  echo "::error::destiny shell never reported a screen — the WebView page did not run"
-  sed -n '1,40p' "$OUT/destiny-log.txt" || true
+  echo "::error::launcher did not resume MainActivity — the app entry is not the native Compose UI"
+  sed -n '1,60p' "$OUT/activities.txt" || true
   fail=1
-fi
-
-# A reported screen is NOT proof of pixels: on an old WebView the CSS can
-# collapse to zero height while the bridge happily logs screen=01, and the
-# screenshot is a solid black rectangle. So also require the self-check line
-# the page emits (diag app=WxH stage=WxH sc=WxH phone=WxH ...) to show a
-# usable height, and refuse to ship on "LAYOUT BROKEN".
-DIAG="$(grep -o 'diag app=[0-9x]* stage=[0-9x]* sc=[0-9x]* phone=[0-9x]*' "$OUT/destiny-log.txt" | tail -n1)"
-if [ -z "$DIAG" ]; then
-  echo "::error::destiny shell never reported layout sizes — the page's self-check did not run"
-  sed -n '1,60p' "$OUT/destiny-log.txt" || true
-  fail=1
-else
-  echo "smoke: destiny layout $DIAG"
-  PH="$(echo "$DIAG" | sed -n 's/.*phone=[0-9]*x\([0-9]*\).*/\1/p')"
-  if [ -z "$PH" ] || [ "$PH" -lt 300 ]; then
-    echo "::error::destiny shell has no usable height (phone=${PH:-0}px) — the page collapsed, the screen is black"
-    grep -n "LAYOUT BROKEN" "$OUT/destiny-log.txt" || true
-    fail=1
-  fi
-  if grep -q "LAYOUT BROKEN" "$OUT/destiny-log.txt"; then
-    echo "::error::destiny page self-reported LAYOUT BROKEN"
-    fail=1
-  fi
 fi
 adb shell am force-stop $PKG; sleep 1
 

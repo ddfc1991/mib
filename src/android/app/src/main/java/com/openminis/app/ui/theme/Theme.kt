@@ -142,14 +142,15 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun minisFabColor(): Color = LocalChatPalette.current.fabAccent
 
-// App-wide shape system — larger corners for a modern, friendly feel
-// DropdownMenu uses extraSmall, Dialog uses extraLarge, BottomSheet uses extraLarge
+// [destiny/v7] Editorial Minimalism shape scale. The V7 design uses hairline
+// dividers and flat sections instead of stacked rounded cards, so the global
+// M3 shapes are pulled in — only sheets/dialogs keep a visible corner.
 private val MinisShapes = Shapes(
-    extraSmall = RoundedCornerShape(12.dp),   // DropdownMenu, Tooltip, OutlinedTextField default
-    small = RoundedCornerShape(12.dp),        // Chip, TextField
-    medium = RoundedCornerShape(20.dp),       // Card, Snackbar
-    large = RoundedCornerShape(24.dp),        // NavigationDrawer
-    extraLarge = RoundedCornerShape(28.dp),   // Dialog, BottomSheet
+    extraSmall = RoundedCornerShape(4.dp),    // DropdownMenu, Tooltip, OutlinedTextField default
+    small = RoundedCornerShape(8.dp),         // Chip, TextField
+    medium = RoundedCornerShape(10.dp),       // Card, Snackbar
+    large = RoundedCornerShape(12.dp),        // NavigationDrawer
+    extraLarge = RoundedCornerShape(14.dp),   // Dialog, BottomSheet
 )
 
 @Composable
@@ -205,24 +206,23 @@ val LocalMibotActive = androidx.compose.runtime.staticCompositionLocalOf { false
 /** [fork/mibot-v2] Whether the app is currently rendering its dark variant. */
 val LocalMibotDark = androidx.compose.runtime.staticCompositionLocalOf { false }
 
-// [fork/mibot-v5] Mibot palettes — refined, restrained system.
-// Dark = neutral cool graphite (#0E1014 base, layered glass at 6–10 % white);
-// light = warm porcelain. ONE accent (deep cinnabar), used sparingly; every
-// other role is neutral. Contrast (WCAG AA, checked on the frosted card fill):
-//   light accent #AE4530 on card 5.5, white on accent 5.7, on tonal 4.8
-//   dark  accent #E07E66 on glass 5.5, #1A0F0B on accent 6.6
-//   onSurfaceVariant: light #5C606A 6.1, dark #9EA3AD 6.2
-// `background` stays transparent so every stock Scaffold shows the shared
-// backdrop; cards/sheets are frosted and dialogs stay opaque.
+// [destiny/v7] Native port of the V7 design source (mibot-v7.html).
+// Editorial Minimalism: near-black #0A0A0B / ivory #F2F0EB / one copper
+// accent #C8926A, hairline dividers, flat sections, no frosted cards.
+// Light is warm porcelain #FAF9F5 with the copper pressed darker so text
+// still clears WCAG AA. Semantic colours stay muted — a status is a dot plus
+// a sentence, never a coloured badge.
 object MibotPalette {
-    val AccentLight = Color(0xFFAE4530)
-    val AccentDark = Color(0xFFE07E66)
+    val AccentLight = Color(0xFF9C6B45)
+    val AccentDark = Color(0xFFC8926A)
     val InkLight = Color(0xFF1B1D22)
     val InkMutedLight = Color(0xFF5C606A)
-    val InkDark = Color(0xFFE8EAEE)
-    val InkMutedDark = Color(0xFF9EA3AD)
-    val Porcelain = Color(0xFFF3F0EA)
-    val Graphite = Color(0xFF0E1014)
+    val InkDark = Color(0xFFF2F0EB)
+    val InkMutedDark = Color(0xFFA3A099)
+    val Porcelain = Color(0xFFFAF9F5)
+    val Graphite = Color(0xFF0A0A0B)
+    val HairlineDark = Color(0xFF26262C)
+    val HairlineLight = Color(0xFFD8D3C9)
     // Muted semantic colours (text-safe on the card fill in each theme).
     val SuccessLight = Color(0xFF456E53)
     val WarnLight = Color(0xFF87591A)
@@ -245,21 +245,19 @@ val MibotLightColorScheme = lightColorScheme(
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFE2E7EC),
     onTertiaryContainer = Color(0xFF17232D),
-    background = Color.Transparent,
+    background = MibotPalette.Porcelain,
     onBackground = MibotPalette.InkLight,
-    // [fork/frost] was 0x8C (0.55): stock Surfaces / sheets / pills read as
-    // see-through over the sky; now ≥ the frost scrim so text stays legible.
-    surface = Color(0xC7FFFFFF),
+    surface = MibotPalette.Porcelain,
     onSurface = MibotPalette.InkLight,
-    surfaceVariant = Color(0xD9FFFFFF),
+    surfaceVariant = Color(0xFFF3F1EB),
     onSurfaceVariant = MibotPalette.InkMutedLight,
-    surfaceContainerLowest = Color(0xC7FFFFFF),
-    surfaceContainerLow = Color(0xE0FCFBF9),
-    surfaceContainer = Color(0xEDFAF9F6),
-    surfaceContainerHigh = Color(0xF5F7F5F1),
-    surfaceContainerHighest = Color(0xFFF1EEE9),
-    outline = Color(0xFF9EA1A8),
-    outlineVariant = Color(0x2E1B1D22),
+    surfaceContainerLowest = MibotPalette.Porcelain,
+    surfaceContainerLow = Color(0xFFF6F4EF),
+    surfaceContainer = Color(0xFFF3F1EB),
+    surfaceContainerHigh = Color(0xFFEDEAE3),
+    surfaceContainerHighest = Color(0xFFE7E3DA),
+    outline = MibotPalette.HairlineLight,
+    outlineVariant = MibotPalette.HairlineLight,
     inverseSurface = Color(0xFF26282D),
     inverseOnSurface = Color(0xFFF1EFEB),
     error = MibotPalette.ErrorLight,
@@ -278,19 +276,19 @@ val MibotDarkColorScheme = darkColorScheme(
     onTertiary = Color(0xFF15202A),
     tertiaryContainer = Color(0xFF243039),
     onTertiaryContainer = Color(0xFFDCE5EC),
-    background = Color.Transparent,
+    background = MibotPalette.Graphite,
     onBackground = MibotPalette.InkDark,
-    surface = Color(0xB80E1014), // [fork/frost] was 0x8C
+    surface = Color(0xFF131316),
     onSurface = MibotPalette.InkDark,
-    surfaceVariant = Color(0xCC1A1C21),
+    surfaceVariant = Color(0xFF1A1A1E),
     onSurfaceVariant = MibotPalette.InkMutedDark,
-    surfaceContainerLowest = Color(0xB80B0C10),
-    surfaceContainerLow = Color(0xE0181A1F),
-    surfaceContainer = Color(0xEB1B1D22),
-    surfaceContainerHigh = Color(0xF2212328),
-    surfaceContainerHighest = Color(0xFF282A30),
-    outline = Color(0xFF7E838D),
-    outlineVariant = Color(0x29FFFFFF),
+    surfaceContainerLowest = MibotPalette.Graphite,
+    surfaceContainerLow = Color(0xFF101013),
+    surfaceContainer = Color(0xFF131316),
+    surfaceContainerHigh = Color(0xFF1A1A1E),
+    surfaceContainerHighest = Color(0xFF222226),
+    outline = MibotPalette.HairlineDark,
+    outlineVariant = MibotPalette.HairlineDark,
     inverseSurface = MibotPalette.InkDark,
     inverseOnSurface = Color(0xFF1A1C21),
     error = MibotPalette.ErrorDark,
@@ -335,10 +333,10 @@ private fun TextStyle.bidi(): TextStyle =
     copy(textDirection = TextDirection.Content, textAlign = TextAlign.Left)
 
 /**
- * [fork/mibot-v3] Compact Mibot type scale (see MibotType): body 14–14.5sp,
- * secondary 12–12.5sp, titles 15–18sp, headlines 20–24sp. One family (system
- * sans → Roboto / Noto Sans CJK SC), weights 400/500/600. The user's font-size
- * setting still scales it.
+ * [destiny/v7] Native port of the V7 type scale. Hierarchy comes from a wide
+ * weight spread (29/700, 21/650, 16/600, 14/400, 10/650) rather than from
+ * eleven nearly identical font sizes. The user's font-size setting still
+ * scales it and MIBOT_MAX_FONT_SCALE still caps it.
  */
 private fun mibotTypography(factor: Float): Typography {
     val base = Typography()
@@ -348,23 +346,24 @@ private fun mibotTypography(factor: Float): Typography {
     ).scale(factor).bidi()
     val n = androidx.compose.ui.text.font.FontWeight.Normal
     val md = androidx.compose.ui.text.font.FontWeight.Medium
-    val sb = androidx.compose.ui.text.font.FontWeight.SemiBold
+    val sb = androidx.compose.ui.text.font.FontWeight(650)
+    val b = androidx.compose.ui.text.font.FontWeight.Bold
     return Typography(
-        displayLarge = base.displayLarge.m(34f, 40f, n),
-        displayMedium = base.displayMedium.m(30f, 36f, n),
-        displaySmall = base.displaySmall.m(26f, 32f, n),
-        headlineLarge = base.headlineLarge.m(24f, 30f, sb),
-        headlineMedium = base.headlineMedium.m(22f, 28f, sb),
-        headlineSmall = base.headlineSmall.m(20f, 26f, sb),
-        titleLarge = base.titleLarge.m(17f, 23f, sb),
+        displayLarge = base.displayLarge.m(29f, 36f, b),
+        displayMedium = base.displayMedium.m(26f, 33f, b),
+        displaySmall = base.displaySmall.m(23f, 30f, sb),
+        headlineLarge = base.headlineLarge.m(21f, 28f, sb),
+        headlineMedium = base.headlineMedium.m(19f, 26f, sb),
+        headlineSmall = base.headlineSmall.m(17f, 24f, sb),
+        titleLarge = base.titleLarge.m(16f, 22f, md),
         titleMedium = base.titleMedium.m(14.5f, 20f, md),
         titleSmall = base.titleSmall.m(13.5f, 19f, md),
         bodyLarge = base.bodyLarge.m(14f, 20f, n),
         bodyMedium = base.bodyMedium.m(14f, 20f, n),
-        bodySmall = base.bodySmall.m(12f, 17f, n),
-        labelLarge = base.labelLarge.m(13.5f, 18f, md),
-        labelMedium = base.labelMedium.m(12f, 16f, md),
-        labelSmall = base.labelSmall.m(11f, 15f, md),
+        bodySmall = base.bodySmall.m(12.5f, 17f, n),
+        labelLarge = base.labelLarge.m(13f, 18f, md),
+        labelMedium = base.labelMedium.m(11.5f, 16f, md),
+        labelSmall = base.labelSmall.m(10f, 14f, sb),
     )
 }
 
