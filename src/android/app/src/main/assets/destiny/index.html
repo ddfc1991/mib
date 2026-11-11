@@ -310,6 +310,18 @@ body{color:#F2F0EB}
 .hg-i b{font:600 9.5px/1 ui-monospace,monospace;color:#C8926A;letter-spacing:.02em}
 .hg-i span{color:#9E9C97;font-size:11.5px}
 
+/* 目录顶部的「回原生」入口 —— 页面做不了的事都在那边 */
+.hg-native{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+  border:0;background:linear-gradient(100deg,#221A14,#151517);border-radius:13px;
+  padding:13px 14px;margin-bottom:20px;color:#F2F0EB;
+  box-shadow:inset 0 0 0 .5px rgba(200,146,106,.28);
+  -webkit-tap-highlight-color:transparent;cursor:pointer}
+.hg-native:active{background:#1C1C20}
+.hg-native svg{width:19px;height:19px;color:#C8926A;flex:none}
+.hg-native span{display:flex;flex-direction:column;gap:3px}
+.hg-native b{font:600 12.5px/1.2 system-ui,-apple-system,sans-serif}
+.hg-native em{font-style:normal;font-size:11px;color:#9E9C97;line-height:1.4}
+
 /* ================= 返回条（目录打开时） ================= */
 #homeBar{position:sticky;top:0;display:flex;justify-content:flex-end}
 #homeBar button{border:0;background:#1C1C20;color:#F2F0EB;border-radius:9px;
@@ -4508,7 +4520,7 @@ FROM 体检 WHERE 偏差 &gt; 40;</pre>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn qk" style="flex:1">打开终端</button>
+      <button class="btn qk" style="flex:1" data-native="terminal">打开终端</button>
       <button class="btn qk" style="flex:1;background:var(--cu);color:#0B0B0E">让 Agent 巡检</button>
     </div>
     <div class="mt" style="margin-top:9px">读操作它自己跑；写操作逐条列给你点确认，一次点一条。</div>
@@ -5136,6 +5148,10 @@ FROM 体检 WHERE 偏差 &gt; 40;</pre>
   <div id="homeBar"><button onclick="document.getElementById('home').classList.remove('on')">关闭</button></div>
   <h1>全部 56 屏</h1>
   <p class="sub">按组排列，点哪屏进哪屏。任意一屏右上角的「…」都能再打开这个目录，左上角箭头返回。</p>
+<button class="hg-native" data-native="main">
+  <svg class="i s"><use href="#i-layers"/></svg>
+  <span><b>原生界面</b><em>终端 · 对话 · 提供方 · MCP · 插件，都在那边</em></span>
+</button>
 <div class="hgrp"><div class="hg-t"><span>01</span>入口 · 对话回到拇指区</div>
 <div class="hg-l"><button class="hg-i" data-go="01"><b>01</b><span>会话列表</span></button><button class="hg-i" data-go="02"><b>02</b><span>对话</span></button></div></div>
 <div class="hgrp"><div class="hg-t"><span>02</span>动态 · 关注流 / 想到的 / 能领的钱</div>
@@ -5204,6 +5220,18 @@ FROM 体检 WHERE 偏差 &gt; 40;</pre>
   window.__stackLen=function(){ return stack.length; };
 
   document.addEventListener('click', function(e){
+
+    /* 0. 页面做不了的动作 → 交回原生 */
+    var nat=e.target.closest('[data-native]');
+    if(nat){
+      e.preventDefault();
+      try{
+        if(window.DestinyNative && DestinyNative.openNative)
+          DestinyNative.openNative(nat.dataset.native||'main');
+        else if(window.console) console.log('native action:', nat.dataset.native);
+      }catch(err){}
+      return;
+    }
 
     /* 1. 目录项：替换栈而不是压栈，避免目录越点越深 */
     var g=e.target.closest('[data-go]');
