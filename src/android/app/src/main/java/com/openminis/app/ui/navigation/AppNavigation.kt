@@ -551,8 +551,23 @@ fun AppNavigation(
             Routes.chat(htmlShortcut.sessionId)
         }
         quickActionStart != null -> quickActionStart
-        else -> Routes.SESSION_LIST
+        // [destiny/v7-full] The 56-screen design spec IS the app UI now.
+        // The original native chat scaffold stays reachable as 「原功能」.
+        else -> "destiny_v7_home"
     }
+    // [destiny/v7-full] One action bundle shared by every V7 screen, so each
+    // design screen can reach the real chat / voice / servers / MCP features.
+    val v7Actions = com.openminis.app.mibot.v7.V7Actions(
+        onAction = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+        onVoice = { navController.safeNavigate("destiny_voice") },
+        onServers = { navController.safeNavigate("destiny_servers") },
+        onNewChat = { navController.safeNavigate(Routes.chat("__new__${java.util.UUID.randomUUID()}")) },
+        onFeed = { navController.safeNavigate(com.openminis.app.ui.glass.GlassRoutes.FEED) },
+        onAgents = { navController.safeNavigate(Routes.AGENTS) },
+        onMcp = { navController.safeNavigate(Routes.MCP) },
+        onLegacy = { navController.safeNavigate(Routes.SESSION_LIST) },
+        onIndex = { navController.safeNavigate("destiny_spec") },
+    )
     // [fork/mibot-v2] One shared backdrop behind every screen; the Mibot
     // scheme makes Scaffold containers transparent so it shows through.
     val mibotOn = com.openminis.app.ui.theme.LocalMibotActive.current
@@ -819,36 +834,50 @@ fun AppNavigation(
         // [destiny/v7] 远程接入 · 服务器 (design screens 45b / 45c).
         // Reached from Settings › Network, right below Tailscale.
         composable("destiny_servers") {
-            com.openminis.app.mibot.servers.ServerVaultPage(
-                onBack = { navController.safePopBackStack() },
-                onDiscuss = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
-            )
+            com.openminis.app.mibot.v7.V7MaterialWrap {
+                com.openminis.app.mibot.servers.ServerVaultPage(
+                    onBack = { navController.safePopBackStack() },
+                    onDiscuss = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+                )
+            }
         }
 
         // [destiny/v7] Screen 34 语音: real press-and-hold ASR + TTS.
         composable("destiny_voice") {
-            com.openminis.app.mibot.voice.DestinyVoiceScreen(
-                onBack = { navController.safePopBackStack() },
-                onSend = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
-            )
+            com.openminis.app.mibot.v7.V7MaterialWrap {
+                com.openminis.app.mibot.voice.DestinyVoiceScreen(
+                    onBack = { navController.safePopBackStack() },
+                    onSend = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+                )
+            }
         }
 
-        // [destiny/v7] All 56 spec screens, rendered as native Compose pages.
-        composable("destiny_spec") {
-            com.openminis.app.mibot.spec.DestinySpecIndexPage(
-                onBack = { navController.safePopBackStack() },
-                onOpenScreen = { id -> navController.safeNavigate("destiny_spec/$id") },
-                onOpenVoice = { navController.safeNavigate("destiny_voice") },
+        // [destiny/v7-full] The 56-screen design spec, rendered as the app's
+        // REAL interface: structured V7 elements, dark palette, four tabs.
+        composable("destiny_v7_home") {
+            com.openminis.app.mibot.v7.DestinyV7Home(v7Actions)
+        }
+        composable(
+            route = "destiny_v7_screen/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.StringType }),
+        ) { entry ->
+            com.openminis.app.mibot.v7.DestinyV7Home(
+                actions = v7Actions,
+                initialScreen = entry.arguments?.getString("id") ?: "01",
             )
+        }
+        // Legacy routes now show the V7 UI too, so every entry point is the
+        // design spec — no path lands on the old text-only spec list any more.
+        composable("destiny_spec") {
+            com.openminis.app.mibot.v7.DestinyV7Home(v7Actions, initialIndex = true)
         }
         composable(
             route = "destiny_spec/{id}",
             arguments = listOf(navArgument("id") { type = NavType.StringType }),
         ) { entry ->
-            com.openminis.app.mibot.spec.DestinySpecPage(
-                specId = entry.arguments?.getString("id") ?: "01",
-                onBack = { navController.safePopBackStack() },
-                onAction = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+            com.openminis.app.mibot.v7.DestinyV7Home(
+                actions = v7Actions,
+                initialScreen = entry.arguments?.getString("id") ?: "01",
             )
         }
 

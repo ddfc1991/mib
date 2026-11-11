@@ -1,0 +1,533 @@
+package com.openminis.app.mibot.v7
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+/**
+ * [destiny/v7-full] The 56-screen design spec, rendered as NATIVE Compose UI.
+ *
+ * This is the app's real interface, not a WebView, not a screenshot and not a
+ * list of spec sentences. Colours/sizes are pinned to the design tokens so the
+ * screens look like the HTML spec regardless of the app's own theme switch.
+ */
+object V7 {
+    val Bg = Color(0xFF0A0A0B)
+    val Bg2 = Color(0xFF0F0F11)
+    val Sf = Color(0xFF17171A)
+    val Sf2 = Color(0xFF1F1F23)
+    val Ln = Color(0x15FFFFFF)
+    val Tx = Color(0xFFF2F0EB)
+    val Tx2 = Color(0xFF9E9C97)
+    val Tx3 = Color(0xFF67655F)
+    val Cu = Color(0xFFC8926A)
+    val Ok = Color(0xFF63B87F)
+    val Wa = Color(0xFFC9A24D)
+    val Er = Color(0xFFD2604F)
+
+    private val Tones = listOf(
+        Color(0xFF2B2A33), Color(0xFF26332F), Color(0xFF3A2E25),
+        Color(0xFF252F3A), Color(0xFF332C39), Color(0xFF2E3327),
+        Color(0xFF3A2B2B), Color(0xFF293238),
+    )
+
+    fun tone(key: String): Color {
+        val n = key.removePrefix("c").toIntOrNull() ?: 0
+        return if (n in 1..Tones.size) Tones[n - 1] else Sf2
+    }
+}
+
+/**
+ * Wrap an existing real feature screen in the V7 dark palette without touching
+ * its implementation — its MaterialTheme reads are re-bound to design tokens.
+ */
+@Composable
+fun V7MaterialWrap(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = darkColorScheme(
+            background = V7.Bg,
+            surface = V7.Sf,
+            surfaceVariant = V7.Sf2,
+            primary = V7.Cu,
+            onPrimary = V7.Bg,
+            onBackground = V7.Tx,
+            onSurface = V7.Tx,
+            onSurfaceVariant = V7.Tx2,
+            outlineVariant = V7.Ln,
+            error = V7.Er,
+        ),
+    ) {
+        Box(Modifier.fillMaxSize().background(V7.Bg)) { content() }
+    }
+}
+
+/** All real feature hooks, so every design screen can reach real app functions. */
+data class V7Actions(
+    val onAction: (String) -> Unit = {},
+    val onVoice: () -> Unit = {},
+    val onServers: () -> Unit = {},
+    val onNewChat: () -> Unit = {},
+    val onFeed: () -> Unit = {},
+    val onAgents: () -> Unit = {},
+    val onMcp: () -> Unit = {},
+    val onLegacy: () -> Unit = {},
+    val onIndex: () -> Unit = {},
+)
+
+@Composable
+fun DestinyV7Home(
+    actions: V7Actions,
+    initialScreen: String? = null,
+    initialIndex: Boolean = false,
+) {
+    var tab by remember { mutableStateOf(0) }
+    var screenId by remember { mutableStateOf(initialScreen ?: V7_TAB_SCREENS[0]) }
+    var showIndex by remember { mutableStateOf(initialIndex) }
+
+    if (showIndex) {
+        DestinyV7Index(
+            onBack = { showIndex = false },
+            onOpen = { id -> screenId = id; showIndex = false },
+            actions = actions,
+        )
+        return
+    }
+
+    val screen = v7Screen(screenId) ?: v7Screen(V7_TAB_SCREENS[tab]) ?: return
+    val header = screen.elems.firstOrNull { it.kind == "H" }?.a ?: screen.title
+    val draft = { s: String -> actions.onAction("【${screen.title}】$s\n按这一条执行；需要先确认的先列给我。") }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(V7.Bg)
+            .statusBarsPadding(),
+    ) {
+        // Top bar: big V7 title + 「all screens」 + 「real functions」 entries.
+        Row(
+            Modifier.fillMaxWidth().padding(start = 22.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                header,
+                fontSize = 25.sp,
+                fontWeight = FontWeight.Bold,
+                color = V7.Tx,
+                letterSpacing = (-0.8).sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            // The spec's own top-bar icon actions (search / plus / …).
+            screen.elems.filter { it.kind == "I" }.take(2).forEach { ic ->
+                IconButton(onClick = { draft(ic.a) }) {
+                    Icon(
+                        if (ic.a.contains("search")) Icons.Filled.Search else Icons.Filled.Add,
+                        contentDescription = ic.a,
+                        tint = V7.Tx2,
+                    )
+                }
+            }
+            IconButton(onClick = { showIndex = true }) {
+                Icon(Icons.Filled.Menu, contentDescription = "全部 56 屏", tint = V7.Tx2)
+            }
+            IconButton(onClick = actions.onLegacy) {
+                Icon(Icons.Filled.Settings, contentDescription = "原功能", tint = V7.Tx2)
+            }
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+
+        LazyColumn(
+            Modifier.weight(1f),
+            contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 6.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            // If the spec had no big header, show the screen title + copper rule.
+            if (screen.elems.none { it.kind == "H" }) {
+                item {
+                    Text(
+                        screen.title,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = V7.Tx,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 6.dp),
+                    )
+                    Box(Modifier.width(28.dp).height(2.dp).background(V7.Cu))
+                    Spacer(Modifier.height(10.dp))
+                }
+            }
+            items(screen.elems.size) { i ->
+                V7Element(screen.elems[i], screen, draft, actions)
+            }
+            item {
+                Spacer(Modifier.height(20.dp))
+                V7FeatureLinks(screen, actions)
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "第 ${screen.group} 组 · ${screen.id} 屏 · ${screen.elems.size} 个元素 · 点任一行交给 Agent",
+                    fontSize = 10.sp,
+                    color = V7.Tx3,
+                )
+            }
+        }
+
+        V7TabBar(tab) { i -> tab = i; screenId = V7_TAB_SCREENS[i] }
+    }
+}
+
+@Composable
+private fun V7TabBar(tab: Int, onTab: (Int) -> Unit) {
+    val labels = listOf("对话", "动态", "群聊", "设置")
+    val icons = listOf(Icons.Filled.Chat, Icons.Filled.List, Icons.Filled.People, Icons.Filled.Settings)
+    Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(V7.Bg)
+            .navigationBarsPadding()
+            .padding(vertical = 9.dp),
+    ) {
+        labels.forEachIndexed { i, label ->
+            val on = i == tab
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clickable { onTab(i) }
+                    .padding(vertical = 3.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    icons[i], contentDescription = label,
+                    tint = if (on) V7.Cu else V7.Tx3,
+                    modifier = Modifier.size(21.dp),
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(label, fontSize = 10.sp, color = if (on) V7.Cu else V7.Tx3)
+            }
+        }
+    }
+}
+
+@Composable
+private fun V7Element(
+    e: V7Elem,
+    screen: V7Screen,
+    draft: (String) -> Unit,
+    actions: V7Actions,
+) {
+    when (e.kind) {
+        "H", "I" -> Unit // header and its icon actions are drawn in the top bar
+        "D" -> Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln).padding(vertical = 6.dp))
+        "Q" -> V7Search(e.a) { draft("搜索：「${e.a}」") }
+        "S" -> V7Section(e.a, e.b)
+        "R" -> V7Row(e) { draft(listOf(e.a, e.b).filter { it.isNotBlank() }.joinToString(" · ")) }
+        "P" -> V7Chip(e.a, e.c)
+        "B" -> V7Button(e.a) { draft(e.a) }
+        "G" -> V7Toggle(e.a, e.b == "1") { draft("切换：「${e.a}」") }
+        "N" -> Text(
+            e.a, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = V7.Tx,
+            modifier = Modifier.padding(vertical = 5.dp).clickable { draft(e.a) },
+        )
+        else -> V7Text(e.a, e.c) { draft(e.a) }
+    }
+}
+
+@Composable
+private fun V7Search(placeholder: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clip(RoundedCornerShape(23.dp))
+            .background(V7.Sf)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Filled.Search, contentDescription = null, tint = V7.Tx3, modifier = Modifier.size(15.dp))
+        Spacer(Modifier.width(9.dp))
+        Text(placeholder, fontSize = 13.sp, color = V7.Tx3)
+    }
+}
+
+@Composable
+private fun V7Section(label: String, meta: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = V7.Tx3, letterSpacing = 1.2.sp)
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
+        if (meta.isNotBlank()) {
+            Spacer(Modifier.width(8.dp))
+            Text(meta, fontSize = 10.5.sp, color = V7.Tx3)
+        }
+    }
+}
+
+@Composable
+private fun V7Row(e: V7Elem, onClick: () -> Unit) {
+    val bits = e.d.split("|")
+    val avatar = bits.getOrNull(0).orEmpty()
+    val tone = bits.getOrNull(1).orEmpty()
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 13.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (avatar.isNotBlank()) {
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(V7.tone(tone)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(avatar.take(2), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = V7.Tx)
+                }
+                Spacer(Modifier.width(13.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    e.a, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = V7.Tx,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                if (e.b.isNotBlank()) {
+                    Text(
+                        e.b, fontSize = 11.5.sp, color = V7.Tx2,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (e.c.isNotBlank()) {
+                Spacer(Modifier.width(8.dp))
+                Text(e.c, fontSize = 10.5.sp, color = V7.Tx3)
+            }
+        }
+    }
+    Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+}
+
+@Composable
+private fun V7Chip(text: String, kind: String) {
+    val bg = if (kind == "ok") Color(0x1A63B87F) else V7.Sf
+    val fg = if (kind == "ok") V7.Ok else V7.Tx2
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(bg)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        ) { Text(text, fontSize = 10.5.sp, fontWeight = FontWeight.Medium, color = fg) }
+    }
+}
+
+@Composable
+private fun V7Button(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 7.dp)
+            .height(50.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(V7.Tx)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = V7.Bg) }
+}
+
+@Composable
+private fun V7Toggle(label: String, checked: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, fontSize = 13.sp, color = V7.Tx, modifier = Modifier.weight(1f))
+        Box(
+            Modifier
+                .width(40.dp).height(24.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(if (checked) V7.Cu else V7.Sf2)
+                .padding(2.dp),
+            contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
+        ) {
+            Box(Modifier.size(20.dp).clip(RoundedCornerShape(999.dp)).background(Color.White))
+        }
+    }
+}
+
+@Composable
+private fun V7Text(text: String, hint: String, onClick: () -> Unit) {
+    val size = when {
+        hint.contains("d1") -> 22.sp
+        hint.contains("num") -> 19.sp
+        hint.contains("lb") -> 10.sp
+        hint.contains("mt") || hint.contains("xs") || hint.contains("sm") || hint.contains(" s") -> 11.5.sp
+        hint.contains("mono") -> 12.sp
+        else -> 13.5.sp
+    }
+    val color = when {
+        hint.contains("ok") -> V7.Ok
+        hint.contains("wa") -> V7.Wa
+        hint.contains("er") -> V7.Er
+        hint.contains("cu") -> V7.Cu
+        hint.contains("lb") || hint.contains("mt") || hint.contains("s") || hint.contains("ph") -> V7.Tx3
+        else -> V7.Tx
+    }
+    val weight = when {
+        hint.contains("d1") || hint.contains("lb") || hint.contains("num") -> FontWeight.Bold
+        hint.contains("bold") -> FontWeight.SemiBold
+        else -> FontWeight.Normal
+    }
+    Text(
+        text, fontSize = size, color = color, fontWeight = weight,
+        lineHeight = (size.value * 1.55f).sp,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clickable(onClick = onClick),
+    )
+}
+
+/** Every design screen keeps a path into the app's REAL functions. */
+@Composable
+private fun V7FeatureLinks(screen: V7Screen, actions: V7Actions) {
+    val links = mutableListOf<Pair<String, () -> Unit>>()
+    when (screen.id) {
+        "01", "02" -> links += "＋ 新建真实对话" to actions.onNewChat
+        "03", "04", "05", "05b" -> links += "打开动态三态 · 在看 / 想到的 / 能领的" to actions.onFeed
+        "34" -> links += "打开真实语音 · 按住说" to actions.onVoice
+        "45", "45b", "45c" -> links += "打开服务器管理 · 真实巡检（本屏指标是设计稿示例值）" to actions.onServers
+        "46" -> links += "打开能力 / Agent 设置" to actions.onAgents
+        "47" -> links += "打开 MCP 服务" to actions.onMcp
+    }
+    // Mika's whole block (后台屏 / 运行过程 / 教 Mika / 接管 / 询问与自主 /
+    // 悬浮胶囊 / 应用访问 / 记忆 / AI 接打电话 / 微信派单 …) hands off to the
+    // real Agent rather than faking a local result.
+    if (screen.group == "06" || screen.group == "07") {
+        links += "把 Mika 这一屏交给 Agent 执行" to {
+            actions.onAction("【Mika · ${screen.title}】按这一屏的流程执行；需要确认的先列给我。")
+        }
+    }
+    // Every screen can hand itself to the Agent as a real chat draft.
+    links += "把这一屏交给 Agent 执行" to {
+        actions.onAction("【${screen.title}】按这一屏的全部规格执行；需要先确认的逐条列给我。")
+    }
+    Column(Modifier.fillMaxWidth()) {
+        links.forEach { (label, go) ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(V7.Sf)
+                    .clickable(onClick = go)
+                    .padding(horizontal = 16.dp, vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = V7.Cu, modifier = Modifier.weight(1f))
+                Text("→", fontSize = 13.sp, color = V7.Tx3)
+            }
+        }
+    }
+}
+
+/** Native index of all 56 design screens, in the same V7 visual language. */
+@Composable
+private fun DestinyV7Index(
+    onBack: () -> Unit,
+    onOpen: (String) -> Unit,
+    actions: V7Actions,
+) {
+    val groups = DESTINY_V7_SCREENS.groupBy { it.group }
+    Column(Modifier.fillMaxSize().background(V7.Bg).statusBarsPadding()) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = V7.Tx2)
+            }
+            Text("全部 56 屏 · 设计规格", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = V7.Tx)
+        }
+        Box(Modifier.fillMaxWidth().height(2.dp).background(V7.Cu))
+        LazyColumn(
+            Modifier.weight(1f),
+            contentPadding = PaddingValues(start = 22.dp, end = 22.dp, bottom = 30.dp),
+        ) {
+            item {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "每一屏都是原生界面：大标题、搜索框、分区、头像行、chip、按钮、开关按设计稿重画。点任意一屏进去，也能直接交给 Agent 去办。",
+                    fontSize = 12.sp, color = V7.Tx2,
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+            groups.forEach { (group, list) ->
+                item {
+                    V7Section("第 $group 组 · ${list.size} 屏", "")
+                }
+                items(list, key = { it.id }) { s ->
+                    V7Row(
+                        V7Elem("R", s.title, "${s.elems.size} 个元素 · 第 ${s.group} 组", "", s.id + "|c3"),
+                    ) { onOpen(s.id) }
+                }
+            }
+            item {
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V7.Sf)
+                        .clickable(onClick = actions.onVoice).padding(16.dp),
+                ) { Text("打开真实语音 · 按住说", fontSize = 13.sp, color = V7.Cu, fontWeight = FontWeight.SemiBold) }
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V7.Sf)
+                        .clickable(onClick = actions.onServers).padding(16.dp),
+                ) { Text("打开服务器管理", fontSize = 13.sp, color = V7.Cu, fontWeight = FontWeight.SemiBold) }
+            }
+        }
+    }
+}

@@ -104,7 +104,10 @@ sleep 25
 alive || { echo "::error::app not running after launch"; fail=1; }
 shot 01-chats 2
 
-tap desc "Open sidebar" && shot 02-sidebar 3 || { echo "::warning::sidebar button not found"; fail=1; }
+# [destiny/v7-full] The start screen is the Chinese V7 design home now, so
+# the old English sidebar/tab taps are informational only — a miss must NOT
+# fail the build. The V7 deep-link shots below are the real visual evidence.
+tap desc "Open sidebar" && shot 02-sidebar 3 || echo "::warning::legacy sidebar button not found"
 adb shell input keyevent KEYCODE_BACK; sleep 2
 
 # [destiny/v7] Four tabs now: Chats / Feed / Group chats / Settings.
@@ -117,11 +120,11 @@ if tap desc "Feed"; then
   if tap text "能领的"; then shot 03c-feed-quotas 3; else echo "::warning::feed mode 能领的 not found"; fi
   tap text "在看" >/dev/null 2>&1 || true
 else
-  echo "::warning::tab Feed not found"; fail=1
+  echo "::warning::legacy tab Feed not found (V7 home uses Chinese tabs)"
 fi
 for t in "Group chats":05-groups Settings:06-settings; do
   name="${t%%:*}"; file="${t##*:}"
-  if tap desc "$name"; then shot "$file" 3; else echo "::warning::tab $name not found"; fail=1; fi
+  if tap desc "$name"; then shot "$file" 3; else echo "::warning::legacy tab $name not found"; fi
 done
 # [destiny/v7] 服务器 sits in Settings › Network right below Tailscale.
 # Scroll a little if the row is below the fold; a miss is a warning, not a
@@ -147,6 +150,14 @@ link voice;          shot 09-voice 4
 link all-screens;    shot 10-all-screens 4
 link spec-screen/34; shot 11-spec-34 4
 link servers;        shot 12-servers 4
+# [destiny/v7-full] The design spec IS the app UI now. Shoot the V7 home plus
+# the four screens the user called out, so UI parity is checked in real pixels.
+link home;           shot 13-v7-home 4
+link v7-screen/01;   shot 14-v7-sessions 4
+link v7-screen/16;   shot 15-v7-settings 4
+link v7-screen/46;   shot 16-v7-capabilities 4
+link v7-screen/45c;  shot 17-v7-server-detail 4
+link v7-screen/19;   shot 18-v7-mika 4
 adb shell input keyevent KEYCODE_BACK >/dev/null 2>&1 || true
 
 adb shell am start -W -a android.intent.action.VIEW -d "minis://settings/backdrop" $PKG >/dev/null

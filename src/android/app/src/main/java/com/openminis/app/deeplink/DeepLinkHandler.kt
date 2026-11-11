@@ -175,6 +175,11 @@ object DeepLinkHandler {
                 if (arg != null) DeepLinkAction.OpenSettingsScreen("destiny_spec/$arg")
                 else DeepLinkAction.OpenSettingsScreen("destiny_spec")
             "servers" -> DeepLinkAction.OpenSettingsScreen("destiny_servers")
+            // [destiny/v7-full] The design-spec home + direct screen routes.
+            "home" -> DeepLinkAction.OpenSettingsScreen("destiny_v7_home")
+            "v7-screen", "screen" ->
+                if (arg != null) DeepLinkAction.OpenSettingsScreen("destiny_v7_screen/$arg")
+                else DeepLinkAction.OpenSettingsScreen("destiny_v7_home")
             // [fork/mibot-v2] Add-provider preset picker (CI screenshots, agent links).
             "add-provider", "add_provider" -> DeepLinkAction.OpenSettingsScreen(Routes.ADD_PROVIDER)
             "providers" ->
