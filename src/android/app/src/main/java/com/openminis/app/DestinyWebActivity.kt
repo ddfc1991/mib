@@ -15,6 +15,9 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.window.OnBackInvokedDispatcher
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 /**
  * destiny — the WebView shell that owns the product's visible UI.
@@ -75,18 +78,32 @@ class DestinyWebActivity : Activity() {
         }
 
         web = view
-        setContentView(
-            FrameLayout(this).apply {
-                setBackgroundColor(ink)
-                addView(
-                    view,
-                    ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
+        val root = FrameLayout(this).apply {
+            setBackgroundColor(ink)
+            addView(
+                view,
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
                 )
-            }
-        )
+            )
+        }
+
+        // targetSdk 35 forces edge-to-edge on Android 15 and up, while older
+        // releases still inset the content view themselves. Rather than let
+        // the header end up under the status bar on one version and not the
+        // other, take over the window explicitly and pad by the reported
+        // system bars. The page therefore does NOT need env(safe-area-inset-*)
+        // — adding both would double the gap.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(0, bars.top, 0, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
+        setContentView(root)
 
         // API 33+: the app opts into the new back pipeline, so onBackPressed
         // is dead there and this callback is what receives the gesture.
