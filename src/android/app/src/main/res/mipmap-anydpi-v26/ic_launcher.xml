@@ -3,18 +3,18 @@
   destiny — launcher icon, AUTO (follows system light/dark)
 
   @color/ic_launcher_background has a -night variant (#07070A both ways),
-  and the foreground sheet is theme-independent, so auto looks identical
-  in both modes on purpose: the icon is a fixed brand asset, not a UI
-  surface. Only the pinned Light/Dark variants below differ.
+  and the foreground character is theme-independent, so auto looks
+  identical in both modes on purpose: the icon is a fixed brand asset,
+  not a UI surface. Only the pinned Light/Dark variants differ.
 
-  Layer contract for this icon: the FOREGROUND drawable is a full-bleed
-  108dp sheet with the letter D punched out of it (fillType="evenOdd",
-  see res/drawable/ic_launcher_fg_destiny_*.xml). The background colour
-  below is what shows through that hole, so the two must always be
-  changed together — background here == the ink/cream inside the D.
+  Layer contract (changed with the cloud mark): the FOREGROUND drawable
+  is the cloud character only, transparent elsewhere and centred in the
+  safe circle; the background below is a flat ink ground. Nothing is
+  punched out of the foreground, so the ground colour can change on its
+  own without editing the character.
 
-  No <inset> wrapper: the sheet must reach the layer edges, otherwise
-  the adaptive-icon mask would expose a ring of background around it.
+  No <inset> wrapper: the character is already drawn inside the 72dp
+  safe zone of its own 108dp canvas.
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background" />

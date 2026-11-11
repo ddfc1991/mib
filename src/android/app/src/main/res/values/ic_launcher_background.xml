@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- destiny app icon ground. This colour is ALSO the ink that shows
-         through the letter D punched out of the foreground sheet
-         (res/drawable/ic_launcher_fg_destiny_dark.xml), so never change
-         it without changing the foreground's hole contract. -->
+    <!-- destiny app icon ground. Since the cloud mark there is no
+         punched hole, so this colour is a plain backdrop for the
+         character (res/drawable/ic_launcher_fg_destiny_dark.xml) and
+         can be changed without touching the silhouette. -->
     <color name="ic_launcher_background">#07070A</color>
 </resources>

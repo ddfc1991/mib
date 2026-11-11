@@ -2,26 +2,32 @@
 <!--
   destiny — launcher foreground, DARK ("auto" + "Dark" pin).
 
-  Design: "slab D knockout". The whole 108dp layer is ONE sheet of metal
-  (champagne -> bronze, lit from the upper left). The letter D is not
-  drawn on top of it — it is punched OUT of it, so the ink background
-  layer reads through as the letterform. No outline, no bevel, no ring:
-  one material, one hole. That is the whole logo.
+  The mark is a cloud character: three puffs on a flat bottom, two dot
+  eyes, a short smile, two soft cheeks. Drawn flat on purpose — one body
+  colour, one ink colour, one blush — because at 48dp on a launcher any
+  gradient or bevel inside the shape turns into mud.
+
+  Layer contract (changed with this icon):
+    background = the ink ground (#07070A), a flat colour;
+    foreground = THIS file, the character only, transparent elsewhere.
+  The old contract was the opposite (a full-bleed metal sheet with the D
+  punched out, background showing through the hole). Nothing is punched
+  here, so the background colour can change freely without touching the
+  silhouette.
 
   Geometry (108dp canvas, safe circle = centre 54,54 radius 33):
-    outer D   x 32..76, y 30..78  (44 x 48, bowl r 24)
-    counter   x 47..65, y 41..67  (bowl r 13)
-    farthest corner of the outer D: sqrt(22^2 + 24^2) = 32.6 <= 33
-    -> the square corners of the slab stay inside the circular mask.
+    left puff   circle (39, 57.5) r 12   -> x 27..51
+    crown       circle (55, 48)   r 15   -> x 40..70   y 33..63
+    right puff  circle (71, 57.5) r 11   -> x 60..82
+    base        rounded rect x 33..77, y 57.5..72, r 7.25
+    farthest points from centre: (27,57.5)=27.2, (82,57.5)=28.0,
+    (33,72)=27.7, (55,33)=21.0 -> all inside the 33 radius, so no mask
+    (circle, squircle or teardrop) clips the silhouette.
 
-  fillType="evenOdd" over [full rect, outer D, counter] gives exactly:
-    rect(1)                                  -> filled   (metal field)
-    rect + outer D(2)                        -> even     (punched hole)
-    rect + outer D + counter(3)              -> odd      (counter restored)
-  i.e. the D ring is transparent, its counter keeps the metal.
-
-  No extra decoration inside the safe zone on purpose: everything except
-  the knockout would compete with the letter at 48dp.
+  The four body shapes deliberately OVERLAP by 6-9dp instead of merely
+  touching: overlapping edges of the same opaque colour have no seam,
+  whereas abutting edges get two antialiased borders and show a hairline.
+  Same reason the face is inset well away from the outline.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
@@ -30,22 +36,59 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <path
-        android:fillType="evenOdd"
-        android:pathData="M0,0 H108 V108 H0 Z M32,30 H52 A24,24 0 0 1 52,78 H32 Z M47,41 H52 A13,13 0 0 1 52,67 H47 Z">
+    <!-- warm halo behind the character: keeps it from floating on pure black -->
+    <path android:pathData="M24.5,54 A30,30 0 1 0 84.5,54 A30,30 0 1 0 24.5,54 Z">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:type="linear"
-                android:startX="10"
-                android:startY="2"
-                android:endX="98"
-                android:endY="106"
+                android:type="radial"
+                android:centerX="54.5"
+                android:centerY="54"
+                android:gradientRadius="30"
                 android:tileMode="clamp">
-                <item android:offset="0" android:color="#F7DBB8" />
-                <item android:offset="0.34" android:color="#E3B183" />
-                <item android:offset="0.68" android:color="#B87A4B" />
-                <item android:offset="1" android:color="#7A4425" />
+                <item android:offset="0" android:color="#59C8926A" />
+                <item android:offset="0.62" android:color="#1FC8926A" />
+                <item android:offset="1" android:color="#00C8926A" />
             </gradient>
         </aapt:attr>
     </path>
+
+    <!-- body: cream. four overlapping shapes read as one silhouette -->
+    <group android:name="body">
+        <path
+            android:fillColor="#F7E8D2"
+            android:pathData="M27,57.5 A12,12 0 1 0 51,57.5 A12,12 0 1 0 27,57.5 Z" />
+        <path
+            android:fillColor="#F7E8D2"
+            android:pathData="M40,48 A15,15 0 1 0 70,48 A15,15 0 1 0 40,48 Z" />
+        <path
+            android:fillColor="#F7E8D2"
+            android:pathData="M60,57.5 A11,11 0 1 0 82,57.5 A11,11 0 1 0 60,57.5 Z" />
+        <path
+            android:fillColor="#F7E8D2"
+            android:pathData="M40.25,57.5 H69.75 A7.25,7.25 0 0 1 77,64.75 V64.75
+                A7.25,7.25 0 0 1 69.75,72 H40.25 A7.25,7.25 0 0 1 33,64.75 V64.75
+                A7.25,7.25 0 0 1 40.25,57.5 Z" />
+    </group>
+
+    <!-- cheeks: soft peach, laid down before the ink so the face sits on top -->
+    <path
+        android:fillColor="#4DE08A6E"
+        android:pathData="M34.4,63.6 A4.2,2.7 0 1 0 42.8,63.6 A4.2,2.7 0 1 0 34.4,63.6 Z" />
+    <path
+        android:fillColor="#4DE08A6E"
+        android:pathData="M66.6,63.6 A4.2,2.7 0 1 0 75,63.6 A4.2,2.7 0 1 0 66.6,63.6 Z" />
+
+    <!-- face: two dots + a short smile, ink so it holds at 24dp -->
+    <path
+        android:fillColor="#191410"
+        android:pathData="M42.9,59 A2.6,2.6 0 1 0 48.1,59 A2.6,2.6 0 1 0 42.9,59 Z" />
+    <path
+        android:fillColor="#191410"
+        android:pathData="M61.4,59 A2.6,2.6 0 1 0 66.6,59 A2.6,2.6 0 1 0 61.4,59 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#191410"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M51,63.4 Q54.7,67 58.4,63.4" />
 </vector>
