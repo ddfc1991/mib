@@ -78,6 +78,8 @@ class MibotSettingsActions(
     val files: () -> Unit,
     val network: () -> Unit,
     val tailscale: () -> Unit,
+    /** [destiny/v7] 远程接入 · 服务器, sitting right next to Tailscale. */
+    val servers: () -> Unit = {},
     val proxies: () -> Unit,
     val permissions: () -> Unit,
     val background: () -> Unit,
@@ -209,6 +211,8 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
                     Icons.Outlined.ViewInAr, MibotTokens.Teal, onClick = a.sandbox, showDivider = true)
                 MibotRow(t("网络路由", "Network routing"), null, Icons.Outlined.Lan, MibotTokens.Sky, onClick = a.network, showDivider = true)
                 MibotRow("Tailscale", null, Icons.Outlined.Lan, MibotTokens.Navy, onClick = a.tailscale, showDivider = true)
+                MibotRow(t("服务器", "Servers"), t("经 Tailscale 管理你的机器 · 只存清单，巡检交给 Agent", "Your machines over Tailscale · list only, Agent does the checks"),
+                    Icons.Outlined.MonitorHeart, MibotTokens.Teal, onClick = a.servers, showDivider = true)
                 MibotRow(t("代理", "Proxies"), null, Icons.Outlined.Security, MibotTokens.Slate, onClick = a.proxies, showDivider = true)
                 MibotRow(t("权限", "Permissions"), null, Icons.Outlined.Lock, MibotTokens.Amber, onClick = a.permissions, showDivider = true)
                 MibotRow(t("权限与自动化", "Permissions & automation"), t("已授予什么、实际用来做什么 · 自动化等级", "What is granted and what it is used for · automation level"),

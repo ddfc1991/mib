@@ -667,17 +667,22 @@ fun AppNavigation(
                 onSelect = { navController.navigateToGlassTab(it) },
                 scrollUnder = true,
             ) {
-                // [fork/mibot-feed] Real 动态 (filesDir/feed); 讨论 opens a new chat prefilled.
-                com.openminis.app.mibot.feed.FeedPage(
+                // [destiny/v7] 动态 is three states: 在看 / 想到的 / 能领的.
+                // Ideas moved in from the removed bottom tab; free quotas live
+                // in 能领的. Every state is a real, persisted screen.
+                com.openminis.app.mibot.feed.DestinyFeedHost(
                     onDiscuss = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
                     onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
                     onOpenGroup = { id -> navController.safeNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id)) },
+                    onChat = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
                 )
             }
         }
         composable(com.openminis.app.ui.glass.GlassRoutes.IDEAS) {
             com.openminis.app.ui.glass.GlassTabShell(
-                current = com.openminis.app.ui.glass.GlassTab.IDEAS,
+                // [destiny/v7] IDEAS has no tab anymore — keep 动态 highlighted
+                // if a deep link still lands on this legacy route.
+                current = com.openminis.app.ui.glass.GlassTab.FEED,
                 onSelect = { navController.navigateToGlassTab(it) },
                 scrollUnder = true,
             ) {
@@ -758,6 +763,8 @@ fun AppNavigation(
                         files = { mibotOpenRootfsFiles(glassContext, navController) },
                         network = go(Routes.NETWORK),
                         tailscale = go(Routes.NETWORK_TAILSCALE),
+                        // [destiny/v7] 服务器管理 sits in the Tailscale group.
+                        servers = go("destiny_servers"),
                         proxies = go(Routes.NETWORK_PROXIES),
                         permissions = go(Routes.PERMISSIONS),
                         background = go(Routes.BACKGROUND),
@@ -785,6 +792,7 @@ fun AppNavigation(
                 onEnvVarsClick = { navController.safeNavigate(Routes.ENV_VARS) },
                 onNetworkClick = { navController.safeNavigate(Routes.NETWORK) },
                 onTailscaleClick = { navController.safeNavigate(Routes.NETWORK_TAILSCALE) },
+                onServersClick = { navController.safeNavigate("destiny_servers") },
                 onProxiesClick = { navController.safeNavigate(Routes.NETWORK_PROXIES) },
                 onContainerDnsClick = { navController.safeNavigate(Routes.CONTAINER_DNS) },
                 onSkillsClick = { navController.safeNavigate(Routes.SKILLS) },
@@ -804,6 +812,15 @@ fun AppNavigation(
                 onSharedFoldersClick = { navController.safeNavigate(Routes.SHARED_FOLDERS) },
             )
           }
+        }
+
+        // [destiny/v7] 远程接入 · 服务器 (design screens 45b / 45c).
+        // Reached from Settings › Network, right below Tailscale.
+        composable("destiny_servers") {
+            com.openminis.app.mibot.servers.ServerVaultPage(
+                onBack = { navController.safePopBackStack() },
+                onDiscuss = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+            )
         }
 
         composable(Routes.BACKUP) { entry ->

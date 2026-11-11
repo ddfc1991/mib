@@ -3553,7 +3553,7 @@ private fun SessionBadgeOverlay(
     }
 }
 
-// ─── Onboarding Landing (iOS-style 3-step setup) ───────────────────────────
+// ─── Destiny empty state (V7: wordmark title + hairline action list) ───────
 
 @Composable
 private fun OnboardingLanding(
@@ -3569,36 +3569,36 @@ private fun OnboardingLanding(
             .fillMaxSize()
             // Bottom padding ≈ top-bar height so the content visually centers
             // relative to the whole screen, not just the Scaffold inner area.
-            .padding(horizontal = 32.dp)
+            .padding(horizontal = 24.dp)
             .padding(bottom = 64.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        // [destiny/v7] Left aligned, no centred mascot, no iOS hero card.
+        horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(
-            imageVector = Icons.Default.AutoAwesome,
-            contentDescription = null,
-            modifier = Modifier.size(56.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(16.dp))
-
         Text(
             text = stringResource(R.string.sessionlist_welcome_title),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
             text = stringResource(R.string.sessionlist_welcome_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Start,
+        )
+        Spacer(Modifier.height(8.dp))
+        Box(
+            Modifier
+                .size(width = 28.dp, height = 2.dp)
+                .background(MaterialTheme.colorScheme.primary),
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(28.dp))
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
             SetupStepCard(
@@ -3683,70 +3683,61 @@ private fun SetupStepCard(
     onClick: () -> Unit,
 ) {
     val isEnabled = !isDone && !isLocked
+    val accent = MaterialTheme.colorScheme.primary
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(12.dp),
-            )
-            .clickable(enabled = isEnabled, onClick = onClick)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Box(
+    // [destiny/v7] Flat rows separated by a hairline — no elevated cards,
+    // no iOS green completion bubble, no oversized step circle.
+    Column(Modifier.fillMaxWidth()) {
+        Row(
             modifier = Modifier
-                .size(32.dp)
-                .background(
-                    color = if (isDone) Color(0xFF34C759) else MaterialTheme.colorScheme.primary,
-                    shape = CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .clickable(enabled = isEnabled, onClick = onClick)
+                .padding(vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (isDone) {
-                Icon(
+            Text(
+                text = "%02d".format(number),
+                color = if (isLocked) dim.copy(alpha = 0.4f) else accent,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.width(22.dp),
+            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = if (isLocked) dim.copy(alpha = 0.6f)
+                    else MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = dim,
+                )
+            }
+            when {
+                isDone -> Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = accent,
                     modifier = Modifier.size(16.dp),
                 )
-            } else {
-                Text(
-                    text = "$number",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
+                isEnabled -> Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = dim.copy(alpha = 0.5f),
                 )
             }
         }
-
-        Column(
-            modifier = Modifier.weight(1f).height(56.dp),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = if (isDone) MaterialTheme.colorScheme.onSurfaceVariant
-                else MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        if (!isDone && isEnabled) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            )
-        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+        )
     }
 }
 

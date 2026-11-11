@@ -258,7 +258,11 @@ private fun GlassTabBar(
                 .border(1.dp, rim, shape),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            GlassTab.entries.forEach { tab ->
+            // [destiny/v7] 4 tabs: 对话 / 动态 / 群聊 / 设置. 点子 is no longer
+            // a tab — it lives as the second state inside 动态, together with
+            // 能领的 (free quotas). The enum value and its route stay reachable
+            // for deep links, but the bar itself only renders four items.
+            GlassTab.entries.filter { it != GlassTab.IDEAS }.forEach { tab ->
                 val selected = tab == current
                 val label = stringResource(tab.labelRes)
                 val color by animateColorAsState(if (selected) selectedColor else idleColor, label = "tabColor")

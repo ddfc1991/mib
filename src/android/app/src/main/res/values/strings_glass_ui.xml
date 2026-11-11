@@ -16,7 +16,7 @@
     <string name="glass_report_bug">Report a bug</string>
     <string name="glass_coming_soon">Coming soon</string>
     <string name="glass_bots_desc">Build bots from plain language or role cards, and let them work together in group chats.</string>
-    <string name="glass_feed_desc">One stream Mibot curates and orders for you from your interests. Like, discuss, or delete any post.</string>
+    <string name="glass_feed_desc">One stream Destiny curates and orders for you from your interests. Like, discuss, or delete any post.</string>
     <string name="glass_backdrop_title">Backdrop &amp; Glass</string>
     <string name="glass_backdrop_subtitle">Glass sidebar, photo or ambient background</string>
     <string name="glass_enable">Glass interface</string>
@@ -31,7 +31,7 @@
     <string name="glass_pick_photo">Choose photo…</string>
     <string name="glass_dim">Background dimming</string>
     <string name="glass_photo_failed">Could not load that image</string>
-    <string name="glass_bug_subject">Mibot bug report</string>
+    <string name="glass_bug_subject">Destiny bug report</string>
     <string name="glass_bug_chooser">Send bug report</string>
     <string name="glass_bug_body_hint">Describe what happened:</string>
     <string name="glass_tab_ideas">Ideas</string>

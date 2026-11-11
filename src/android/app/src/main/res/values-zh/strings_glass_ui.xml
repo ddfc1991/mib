@@ -16,7 +16,7 @@
     <string name="glass_report_bug">一键反馈 Bug</string>
     <string name="glass_coming_soon">即将推出</string>
     <string name="glass_bots_desc">用自然语言或角色卡创建 Bot，并让它们在群聊中协作。</string>
-    <string name="glass_feed_desc">Mibot 根据你的兴趣整理并排序的一条动态流，每条都可以点赞、讨论或删除。</string>
+    <string name="glass_feed_desc">Destiny 根据你的兴趣整理并排序的一条动态流，每条都可以点赞、讨论或删除。</string>
     <string name="glass_backdrop_title">背景与毛玻璃</string>
     <string name="glass_backdrop_subtitle">毛玻璃侧边栏、照片或氛围背景</string>
     <string name="glass_enable">毛玻璃界面</string>
@@ -31,7 +31,7 @@
     <string name="glass_pick_photo">选择照片…</string>
     <string name="glass_dim">背景暗度</string>
     <string name="glass_photo_failed">无法加载该图片</string>
-    <string name="glass_bug_subject">Mibot 问题反馈</string>
+    <string name="glass_bug_subject">Destiny 问题反馈</string>
     <string name="glass_bug_chooser">发送问题反馈</string>
     <string name="glass_bug_body_hint">请描述发生了什么：</string>
     <string name="glass_tab_ideas">点子</string>

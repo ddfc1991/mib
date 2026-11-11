@@ -91,6 +91,8 @@ fun SettingsScreen(
     onNetworkClick: () -> Unit = {},
     /** [FEAT-261021-04] The other rows of the Network section. */
     onTailscaleClick: () -> Unit = {},
+    /** [destiny/v7] 远程接入 · 服务器, next to Tailscale. */
+    onServersClick: () -> Unit = {},
     onProxiesClick: () -> Unit = {},
     onContainerDnsClick: () -> Unit = {},
     onSkillsClick: () -> Unit = {},
@@ -340,6 +342,13 @@ fun SettingsScreen(
                     title = stringResource(R.string.network_tailscale),
                     subtitle = null,
                     onClick = onTailscaleClick,
+                )
+                SettingsItem(
+                    icon = Icons.Outlined.Dns,
+                    iconColor = Color(0xFF8E8E93),
+                    title = stringResource(R.string.destiny_servers_title),
+                    subtitle = stringResource(R.string.destiny_servers_subtitle),
+                    onClick = onServersClick,
                 )
                 SettingsItem(
                     icon = Icons.Outlined.Router,
