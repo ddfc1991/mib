@@ -2,19 +2,12 @@
 <!--
   destiny — monochrome layer for Android 13+ Themed Icons.
 
-  The themed-icon pipeline throws colour away and re-tints the ALPHA
-  channel with a colour picked from the user's wallpaper, so this file
-  must be a flat white silhouette with no face: a face drawn in white
-  would vanish, and VectorDrawable has no "clear" blend to punch eyes
-  out of an overlapping body. Silhouette only is also what the platform
-  expects here — the cloud outline alone is recognisable at 24dp.
+  Silhouette only, flat white: the themed-icon pipeline keeps the ALPHA
+  channel and re-tints it, so a face drawn in white would disappear, and
+  VectorDrawable has no clear blend to punch eyes out of overlapping shapes.
 
-  Geometry is the same cloud as the coloured foreground (three puffs on
-  a rounded base, the four shapes overlapping so no hairline shows),
-  so the themed icon and the normal icon are one mark, not two.
-
-  Safe circle: centre (54,54) radius 33; farthest body point is
-  (82,57.5) at 28.0, so no mask clips it.
+  Same cloud, same off-centre placement as the coloured foreground, so the
+  themed icon and the normal icon are clearly one mark.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -24,16 +17,14 @@
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M27,57.5 A12,12 0 1 0 51,57.5 A12,12 0 1 0 27,57.5 Z" />
+        android:pathData="M8,74 A16,16 0 1 0 40,74 A16,16 0 1 0 8,74 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M40,48 A15,15 0 1 0 70,48 A15,15 0 1 0 40,48 Z" />
+        android:pathData="M28,58 A20,20 0 1 0 68,58 A20,20 0 1 0 28,58 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M60,57.5 A11,11 0 1 0 82,57.5 A11,11 0 1 0 60,57.5 Z" />
+        android:pathData="M53,74 A15,15 0 1 0 83,74 A15,15 0 1 0 53,74 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M40.25,57.5 H69.75 A7.25,7.25 0 0 1 77,64.75 V64.75
-            A7.25,7.25 0 0 1 69.75,72 H40.25 A7.25,7.25 0 0 1 33,64.75 V64.75
-            A7.25,7.25 0 0 1 40.25,57.5 Z" />
+        android:pathData="M22,74 H58 A14,14 0 0 1 72,88 V86 A14,14 0 0 1 58,100 H22 A14,14 0 0 1 8,86 V88 A14,14 0 0 1 22,74 Z" />
 </vector>
