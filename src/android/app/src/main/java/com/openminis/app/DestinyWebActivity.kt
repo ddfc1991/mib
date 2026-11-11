@@ -127,6 +127,16 @@ class DestinyWebActivity : Activity() {
             Log.d(TAG, "screen=$id title=$title")
         }
 
+        /**
+         * Layout / runtime self-check channel. The page measures every layer
+         * and sends the numbers here; without this a collapsed layout still
+         * looks like "screen=01" in the log while the screen is black.
+         */
+        @JavascriptInterface
+        fun log(msg: String) {
+            Log.d(TAG, msg ?: "")
+        }
+
         /** Back at the first screen: let the system close the app. */
         @JavascriptInterface
         fun exitApp() {

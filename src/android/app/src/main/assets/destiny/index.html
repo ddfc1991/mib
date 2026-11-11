@@ -72,7 +72,7 @@
   .sig i:nth-child(1){height:2.5px}.sig i:nth-child(2){height:4.5px}
   .sig i:nth-child(3){height:6.5px}.sig i:nth-child(4){height:8px}
   .bat{width:19px;height:9.5px;border:1px solid currentColor;border-radius:2.5px;position:relative;opacity:.6}
-  .bat::before{content:"";position:absolute;inset:1.4px;width:10px;background:currentColor;border-radius:1px}
+  .bat::before{content:"";position:absolute;top:1.4px;right:1.4px;bottom:1.4px;left:1.4px;width:10px;background:currentColor;border-radius:1px}
   .bat::after{content:"";position:absolute;right:-3px;top:2.8px;width:1.8px;height:3.6px;background:currentColor;border-radius:0 1px 1px 0}
 
   .scr{flex:1;overflow-y:auto;position:relative;z-index:3;scrollbar-width:none}
@@ -252,12 +252,14 @@
   @keyframes bhPulse{0%,100%{opacity:.66;transform:scale(.94)}50%{opacity:1;transform:scale(1)}}
   @keyframes bhRing{0%,100%{opacity:.13}50%{opacity:.42}}
   .live{position:relative;animation:bhPulse 5.4s cubic-bezier(.37,0,.63,1) infinite}
-  .live::before,.live::after{content://////;position:absolute;left:50%;top:50%;width:100%;height:100%;/n    border-radius:50%;background:inherit;pointer-events:none;
+  .live::before,.live::after{content:"";position:absolute;left:50%;top:50%;width:100%;height:100%;
+    border-radius:50%;background:inherit;pointer-events:none;
     animation:bhDot 5.4s cubic-bezier(.37,0,.63,1) infinite}
   .live::before{filter:blur(2.5px);opacity:.5}
   .live::after{filter:blur(7px);opacity:.2;animation-delay:-.8s}
   .live-ring{position:relative}
-  .live-ring::after{content://////;position:absolute;inset:0;border-radius:inherit;pointer-events:none;/n    box-shadow:0 0 0 1px var(--rc,currentColor), 0 0 15px -3px var(--rc,currentColor);
+  .live-ring::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:inherit;pointer-events:none;
+    box-shadow:0 0 0 1px var(--rc,currentColor), 0 0 15px -3px var(--rc,currentColor);
     opacity:.2;animation:bhRing 5.4s cubic-bezier(.37,0,.63,1) infinite}
 </style>
 
@@ -266,10 +268,13 @@
 html,body{height:100%;margin:0;padding:0;background:#08080A;
   overscroll-behavior:none;-webkit-text-size-adjust:100%}
 body{color:#F2F0EB}
-#app{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;background:#08080A}
-#stage{position:relative;flex:1;min-height:0}
+/* 注意：这里一律不用 inset 简写。API 30 的老 WebView(Chrome 83) 不支持 inset，
+   会让 #app 高度塌成 0，整屏全黑。四边偏移写法所有版本都认。 */
+#app{position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;
+  display:flex;flex-direction:column;overflow:hidden;background:#08080A}
+#stage{position:relative;flex:1 1 auto;min-height:0}
 
-.sc{position:absolute;inset:0;display:none;overflow:hidden}
+.sc{position:absolute;top:0;right:0;bottom:0;left:0;display:none;overflow:hidden}
 .sc.on{display:block}
 
 /* 手机壳变成整屏：去掉圆角/固定尺寸/外框 */
@@ -284,14 +289,15 @@ body{color:#F2F0EB}
 
 /* 顶部返回按钮点击热区放大一点，方便手指 */
 .sc .phone > div:nth-child(3) button{position:relative}
-.sc .phone > div:nth-child(3) button::after{content:"";position:absolute;inset:-6px}
+.sc .phone > div:nth-child(3) button::after{content:"";position:absolute;
+  top:-6px;right:-6px;bottom:-6px;left:-6px}
 
 /* 展示稿自带的底部 tab 变成真导航 */
 .sc .tabbar .tab{cursor:pointer}
 .sc .tabbar .tab:active{opacity:.6}
 
 /* ================= 全屏目录 ================= */
-#home{position:fixed;inset:0;z-index:60;background:#08080A;overflow-y:auto;
+#home{position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;background:#08080A;overflow-y:auto;
   padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 28px);
   display:none;-webkit-overflow-scrolling:touch}
 #home.on{display:block}
@@ -720,7 +726,7 @@ FROM 体检 WHERE 偏差 &gt; 40;</pre>
 
       <div style="display:flex;gap:12px;margin-top:12px">
         <div class="thumb" style="width:62px;height:70px;background:linear-gradient(155deg,#3A2A44 0%,#2C2138 45%,#1F2430 100%)">
-          <svg viewBox="0 0 62 70" style="position:absolute;inset:0;width:100%;height:100%">
+          <svg viewBox="0 0 62 70" style="position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%">
             <circle cx="46" cy="16" r="14" fill="rgba(255,255,255,.07)"/>
             <rect x="9" y="34" width="30" height="2" rx="1" fill="rgba(255,255,255,.35)"/>
             <rect x="9" y="41" width="22" height="2" rx="1" fill="rgba(255,255,255,.18)"/>
@@ -2070,7 +2076,7 @@ FROM 体检 WHERE 偏差 &gt; 40;</pre>
     <!-- 任务 1 -->
     <div style="margin-top:22px;display:flex;gap:13px;align-items:flex-start">
       <div class="vdscreen" style="width:52px;height:96px;flex:none">
-        <div style="position:absolute;inset:0;padding:7px 6px;display:flex;flex-direction:column;gap:4px">
+        <div style="position:absolute;top:0;right:0;bottom:0;left:0;padding:7px 6px;display:flex;flex-direction:column;gap:4px">
           <div style="height:3px;width:60%;border-radius:2px;background:rgba(255,255,255,.35)"></div>
           <div style="height:3px;width:85%;border-radius:2px;background:rgba(255,255,255,.16)"></div>
           <div style="height:3px;width:45%;border-radius:2px;background:rgba(255,255,255,.16)"></div>
@@ -2094,7 +2100,7 @@ FROM 体检 WHERE 偏差 &gt; 40;</pre>
     <!-- 任务 2 -->
     <div style="margin-top:20px;display:flex;gap:13px;align-items:flex-start">
       <div class="vdscreen" style="width:52px;height:96px;flex:none">
-        <div style="position:absolute;inset:0;padding:7px 6px;display:flex;flex-direction:column;gap:4px">
+        <div style="position:absolute;top:0;right:0;bottom:0;left:0;padding:7px 6px;display:flex;flex-direction:column;gap:4px">
           <div style="height:3px;width:70%;border-radius:2px;background:rgba(255,255,255,.28)"></div>
           <div style="height:20px;border-radius:3px;background:rgba(255,255,255,.09)"></div>
           <div style="height:20px;border-radius:3px;background:rgba(255,255,255,.09)"></div>
@@ -2410,7 +2416,7 @@ FROM 体检 WHERE 偏差 &gt; 40;</pre>
 <section class="sc" data-id="22" data-g="06" data-title="悬浮胶囊">
 <div class="phone" data-theme="dark">
   <!-- 模拟「别的 App」 -->
-  <div style="position:absolute;inset:0;background:#0F1013;overflow:hidden">
+  <div style="position:absolute;top:0;right:0;bottom:0;left:0;background:#0F1013;overflow:hidden">
     <div style="height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;
       font-size:11.5px;font-weight:600;opacity:.85">
       <span>11:24</span>
@@ -5283,6 +5289,45 @@ FROM 体检 WHERE 偏差 &gt; 40;</pre>
   var first = byId['01'] ? '01' : scs[0].dataset.id;
   show(first,true);
   window.__ready = true;
+
+  /* ---------- 运行时尺寸自检 ----------
+     目的：老 WebView 上 CSS 塌了会得到一整屏黑，日志却说"已显示 01"。
+     这里把每一层的真实尺寸量出来，写进 logcat，并在塌了的时候
+     直接把原因画在屏幕上——截图就成了调试通道。 */
+  function rect(el){
+    if(!el) return 'x';
+    var b=el.getBoundingClientRect();
+    return Math.round(b.width)+'x'+Math.round(b.height);
+  }
+  window.__diag=function(){
+    var on=document.querySelector('.sc.on');
+    return 'diag app='+rect(document.getElementById('app'))
+      +' stage='+rect(document.getElementById('stage'))
+      +' sc='+rect(on)
+      +' phone='+rect(on?on.querySelector('.phone'):null)
+      +' vw='+window.innerWidth+' vh='+window.innerHeight
+      +' ua='+(navigator.userAgent.match(/Chrome\/[0-9.]+/)||['?'])[0];
+  };
+  function reportDiag(){
+    var s=window.__diag();
+    try{
+      if(window.DestinyNative && DestinyNative.log) DestinyNative.log(s);
+      else if(window.console) console.log(s);
+    }catch(e){}
+    return s;
+  }
+  setTimeout(function(){
+    var s=reportDiag();
+    var h=document.getElementById('app').getBoundingClientRect().height;
+    if(h<120){
+      var msg='LAYOUT BROKEN (app height '+Math.round(h)+'px)\n'+s;
+      try{
+        document.body.innerHTML=
+          '<pre style="margin:0;padding:18px;color:#FF6B6B;background:#08080A;'
+          +'font:12px/1.6 ui-monospace,monospace;white-space:pre-wrap">'+msg+'</pre>';
+      }catch(e){}
+    }
+  }, 500);
 })();
 </script>
 </body>

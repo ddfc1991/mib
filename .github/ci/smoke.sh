@@ -67,12 +67,36 @@ sleep 8
 shot 00-destiny-shell 0
 adb logcat -d -s DestinyWeb > "$OUT/destiny-log.txt" 2>/dev/null || true
 if grep -q "screen=" "$OUT/destiny-log.txt"; then
-  echo "smoke: destiny shell rendered (bridge reported a screen)"
+  echo "smoke: destiny shell reported a screen"
   grep "screen=" "$OUT/destiny-log.txt" | tail -n 2
 else
   echo "::error::destiny shell never reported a screen — the WebView page did not run"
   sed -n '1,40p' "$OUT/destiny-log.txt" || true
   fail=1
+fi
+
+# A reported screen is NOT proof of pixels: on an old WebView the CSS can
+# collapse to zero height while the bridge happily logs screen=01, and the
+# screenshot is a solid black rectangle. So also require the self-check line
+# the page emits (diag app=WxH stage=WxH sc=WxH phone=WxH ...) to show a
+# usable height, and refuse to ship on "LAYOUT BROKEN".
+DIAG="$(grep -o 'diag app=[0-9x]* stage=[0-9x]* sc=[0-9x]* phone=[0-9x]*' "$OUT/destiny-log.txt" | tail -n1)"
+if [ -z "$DIAG" ]; then
+  echo "::error::destiny shell never reported layout sizes — the page's self-check did not run"
+  sed -n '1,60p' "$OUT/destiny-log.txt" || true
+  fail=1
+else
+  echo "smoke: destiny layout $DIAG"
+  PH="$(echo "$DIAG" | sed -n 's/.*phone=[0-9]*x\([0-9]*\).*/\1/p')"
+  if [ -z "$PH" ] || [ "$PH" -lt 300 ]; then
+    echo "::error::destiny shell has no usable height (phone=${PH:-0}px) — the page collapsed, the screen is black"
+    grep -n "LAYOUT BROKEN" "$OUT/destiny-log.txt" || true
+    fail=1
+  fi
+  if grep -q "LAYOUT BROKEN" "$OUT/destiny-log.txt"; then
+    echo "::error::destiny page self-reported LAYOUT BROKEN"
+    fail=1
+  fi
 fi
 adb shell am force-stop $PKG; sleep 1
 
