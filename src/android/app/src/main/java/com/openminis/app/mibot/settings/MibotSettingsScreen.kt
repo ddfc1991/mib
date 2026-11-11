@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Lan
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.outlined.Psychology
@@ -80,6 +81,9 @@ class MibotSettingsActions(
     val tailscale: () -> Unit,
     /** [destiny/v7] 远程接入 · 服务器, sitting right next to Tailscale. */
     val servers: () -> Unit = {},
+    /** [destiny/v7] Screen 34 语音 and the 56-screen native spec index. */
+    val voice: () -> Unit = {},
+    val allScreens: () -> Unit = {},
     val proxies: () -> Unit,
     val permissions: () -> Unit,
     val background: () -> Unit,
@@ -213,6 +217,10 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
                 MibotRow("Tailscale", null, Icons.Outlined.Lan, MibotTokens.Navy, onClick = a.tailscale, showDivider = true)
                 MibotRow(t("服务器", "Servers"), t("经 Tailscale 管理你的机器 · 只存清单，巡检交给 Agent", "Your machines over Tailscale · list only, Agent does the checks"),
                     Icons.Outlined.MonitorHeart, MibotTokens.Teal, onClick = a.servers, showDivider = true)
+                MibotRow(t("语音", "Voice"), t("按住说 · 停 2 秒就发 · 免提连说 · 朗读", "Press and hold · auto-send · hands-free · read aloud"),
+                    Icons.Outlined.Mic, MibotTokens.Brick, onClick = a.voice, showDivider = true)
+                MibotRow(t("全部页面", "All 56 screens"), t("56 屏设计规格，全部原生页面，可逐行交给 Agent", "All 56 spec screens as native pages, every row actionable"),
+                    Icons.Outlined.ViewInAr, MibotTokens.Teal, onClick = a.allScreens, showDivider = true)
                 MibotRow(t("代理", "Proxies"), null, Icons.Outlined.Security, MibotTokens.Slate, onClick = a.proxies, showDivider = true)
                 MibotRow(t("权限", "Permissions"), null, Icons.Outlined.Lock, MibotTokens.Amber, onClick = a.permissions, showDivider = true)
                 MibotRow(t("权限与自动化", "Permissions & automation"), t("已授予什么、实际用来做什么 · 自动化等级", "What is granted and what it is used for · automation level"),

@@ -765,6 +765,8 @@ fun AppNavigation(
                         tailscale = go(Routes.NETWORK_TAILSCALE),
                         // [destiny/v7] 服务器管理 sits in the Tailscale group.
                         servers = go("destiny_servers"),
+                        voice = go("destiny_voice"),
+                        allScreens = go("destiny_spec"),
                         proxies = go(Routes.NETWORK_PROXIES),
                         permissions = go(Routes.PERMISSIONS),
                         background = go(Routes.BACKGROUND),
@@ -820,6 +822,33 @@ fun AppNavigation(
             com.openminis.app.mibot.servers.ServerVaultPage(
                 onBack = { navController.safePopBackStack() },
                 onDiscuss = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+            )
+        }
+
+        // [destiny/v7] Screen 34 语音: real press-and-hold ASR + TTS.
+        composable("destiny_voice") {
+            com.openminis.app.mibot.voice.DestinyVoiceScreen(
+                onBack = { navController.safePopBackStack() },
+                onSend = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+            )
+        }
+
+        // [destiny/v7] All 56 spec screens, rendered as native Compose pages.
+        composable("destiny_spec") {
+            com.openminis.app.mibot.spec.DestinySpecIndexPage(
+                onBack = { navController.safePopBackStack() },
+                onOpenScreen = { id -> navController.safeNavigate("destiny_spec/$id") },
+                onOpenVoice = { navController.safeNavigate("destiny_voice") },
+            )
+        }
+        composable(
+            route = "destiny_spec/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.StringType }),
+        ) { entry ->
+            com.openminis.app.mibot.spec.DestinySpecPage(
+                specId = entry.arguments?.getString("id") ?: "01",
+                onBack = { navController.safePopBackStack() },
+                onAction = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
             )
         }
 

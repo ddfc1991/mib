@@ -38,6 +38,7 @@ fail=0
 shot() { sleep "${2:-3}"; adb exec-out screencap -p > "$OUT/$1.png"; echo "shot: $1 ($(stat -c%s "$OUT/$1.png") bytes)"; }
 alive() { adb shell pidof $PKG >/dev/null 2>&1; }
 tap() { python3 "$HERE/tap.py" "$@"; }
+link() { adb shell am start -W -a android.intent.action.VIEW -d "minis://settings/$1" $PKG >/dev/null; }
 launch() { adb shell am start -W -n $PKG/com.openminis.app.MainActivity --ez glass_demo true > "$OUT/start-$1.txt"; }
 
 adb shell getprop ro.product.cpu.abilist | tee "$OUT/abilist.txt"
@@ -127,7 +128,7 @@ done
 # verdict on the app.
 SERVERS_OK=0
 for i in 1 2 3; do
-  if tap text "Servers" || tap text "服务器"; then SERVERS_OK=1; break; fi
+  if tap desc "Servers" || tap text "Servers" || tap text "服务器"; then SERVERS_OK=1; break; fi
   adb shell input swipe 540 1600 540 700 400; sleep 1
 done
 if [ "$SERVERS_OK" -eq 1 ]; then
@@ -138,6 +139,15 @@ else
 fi
 # Settings page scrolled to the Appearance / Feedback rows.
 adb shell input swipe 540 1700 540 900 400; shot 07-settings-scrolled 2
+
+# [destiny/v7] Deep-link straight into the new native pages so CI has real
+# pixel evidence for voice, the 56-screen index, a single spec screen and the
+# server vault. These are Compose routes, not HTML.
+link voice;          shot 09-voice 4
+link all-screens;    shot 10-all-screens 4
+link spec-screen/34; shot 11-spec-34 4
+link servers;        shot 12-servers 4
+adb shell input keyevent KEYCODE_BACK >/dev/null 2>&1 || true
 
 adb shell am start -W -a android.intent.action.VIEW -d "minis://settings/backdrop" $PKG >/dev/null
 shot 08-backdrop-settings 4
