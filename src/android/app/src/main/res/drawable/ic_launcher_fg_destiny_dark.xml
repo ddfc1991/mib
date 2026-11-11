@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  destiny — launcher foreground, DARK ("auto" + "Dark" pin).
+
+  Design: "slab D knockout". The whole 108dp layer is ONE sheet of metal
+  (champagne -> bronze, lit from the upper left). The letter D is not
+  drawn on top of it — it is punched OUT of it, so the ink background
+  layer reads through as the letterform. No outline, no bevel, no ring:
+  one material, one hole. That is the whole logo.
+
+  Geometry (108dp canvas, safe circle = centre 54,54 radius 33):
+    outer D   x 32..76, y 30..78  (44 x 48, bowl r 24)
+    counter   x 47..65, y 41..67  (bowl r 13)
+    farthest corner of the outer D: sqrt(22^2 + 24^2) = 32.6 <= 33
+    -> the square corners of the slab stay inside the circular mask.
+
+  fillType="evenOdd" over [full rect, outer D, counter] gives exactly:
+    rect(1)                                  -> filled   (metal field)
+    rect + outer D(2)                        -> even     (punched hole)
+    rect + outer D + counter(3)              -> odd      (counter restored)
+  i.e. the D ring is transparent, its counter keeps the metal.
+
+  No extra decoration inside the safe zone on purpose: everything except
+  the knockout would compete with the letter at 48dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillType="evenOdd"
+        android:pathData="M0,0 H108 V108 H0 Z M32,30 H52 A24,24 0 0 1 52,78 H32 Z M47,41 H52 A13,13 0 0 1 52,67 H47 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="10"
+                android:startY="2"
+                android:endX="98"
+                android:endY="106"
+                android:tileMode="clamp">
+                <item android:offset="0" android:color="#F7DBB8" />
+                <item android:offset="0.34" android:color="#E3B183" />
+                <item android:offset="0.68" android:color="#B87A4B" />
+                <item android:offset="1" android:color="#7A4425" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

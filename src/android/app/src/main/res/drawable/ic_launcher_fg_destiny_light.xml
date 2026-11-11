@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  destiny — launcher foreground, LIGHT ("Light" pin).
+
+  Same "slab D knockout" as ic_launcher_fg_destiny_dark, re-cut in rust
+  copper instead of champagne gold, and punched out to reveal the cream
+  background layer (ic_launcher_bg_force_light) as the letterform.
+
+  Why a separate file instead of one vector with a night qualifier: the
+  forced "Light" app icon must stay light even on a dark-mode device
+  ([T-android-light-icon-preview-night-leak]). No -night variant exists
+  for this file, so the resolver can never swap it out.
+
+  Geometry is identical to the dark sheet — see that file for the
+  safe-circle maths. Only the ramp changes.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillType="evenOdd"
+        android:pathData="M0,0 H108 V108 H0 Z M32,30 H52 A24,24 0 0 1 52,78 H32 Z M47,41 H52 A13,13 0 0 1 52,67 H47 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="10"
+                android:startY="2"
+                android:endX="98"
+                android:endY="106"
+                android:tileMode="clamp">
+                <item android:offset="0" android:color="#EE9C7C" />
+                <item android:offset="0.34" android:color="#D2624A" />
+                <item android:offset="0.68" android:color="#AE3A2A" />
+                <item android:offset="1" android:color="#74261B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

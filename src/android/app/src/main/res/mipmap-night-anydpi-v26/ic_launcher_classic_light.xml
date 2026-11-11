@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  destiny — launcher icon, pinned LIGHT
+
+  Uses the rust sheet on a cream ground. The cream ground is also what
+  the D is punched out to, so the letter reads light-on-copper.
+  [T-android-light-icon-preview-night-leak] Both the colour and the
+  drawable are non-night resources, so pinning Light stays light even
+  on a dark-mode device.
+
+  Layer contract for this icon: the FOREGROUND drawable is a full-bleed
+  108dp sheet with the letter D punched out of it (fillType="evenOdd",
+  see res/drawable/ic_launcher_fg_destiny_*.xml). The background colour
+  below is what shows through that hole, so the two must always be
+  changed together — background here == the ink/cream inside the D.
+
+  No <inset> wrapper: the sheet must reach the layer edges, otherwise
+  the adaptive-icon mask would expose a ring of background around it.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_bg_force_light" />
-    <!-- [T-android-light-icon-preview-night-leak] Forced "Light" variant always
-         uses the light M artwork (see the day variant). This -night copy must
-         ALSO pin the always-light foreground rather than @mipmap/ic_launcher_
-         foreground — otherwise a Light icon pinned on a dark-mode device picks
-         the night (dark) foreground and darkens. Keeps pinned Light identical
-         in both system modes. -->
-    <foreground>
-        <inset
-            android:drawable="@mipmap/ic_launcher_foreground_light"
-            android:inset="15%" />
-    </foreground>
-    <!-- T-android-themed-icons: monochrome layer (see day variant). -->
+    <foreground android:drawable="@drawable/ic_launcher_fg_destiny_light" />
     <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

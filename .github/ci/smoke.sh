@@ -2,7 +2,35 @@
 # Emulator smoke test: install, launch, capture key screens of the glass UI.
 # Usage: smoke.sh <apk> <outdir>
 set -uo pipefail
-APK="$1"; OUT="$2"; PKG=com.dl1991.mibot  # applicationId; activity classes stay in namespace com.openminis.app
+APK="$1"; OUT="$2"
+# applicationId is NOT the code namespace: the app installs as
+# com.destiny.app while its classes stay in com.openminis.app, so
+# `am start -n <PKG>/com.openminis.app.MainActivity` needs the
+# applicationId on the LEFT of the slash.
+#
+# This used to be hardcoded to a stale value (com.dl1991.mibot). After the
+# rename, every `am start` below failed with "Activity class ... does not
+# exist", zero screenshots were usable and the job was reported as an app
+# crash — the app itself never crashed. So: read the value off the APK.
+AAPT2="$(command -v aapt2 2>/dev/null || true)"
+if [ -z "$AAPT2" ]; then
+  for d in "$ANDROID_HOME"/build-tools/*/aapt2 "$ANDROID_SDK_ROOT"/build-tools/*/aapt2; do
+    [ -x "$d" ] && AAPT2="$d" && break
+  done
+fi
+PKG=""
+if [ -n "$AAPT2" ]; then
+  PKG="$("$AAPT2" dump packagename "$APK" 2>/dev/null | tr -d '\r' | head -n1)"
+fi
+if [ -z "$PKG" ]; then
+  PKG="$(aapt dump badging "$APK" 2>/dev/null | tr -d '\r' \
+        | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n1)"
+fi
+if [ -z "${PKG:-}" ]; then
+  PKG=com.destiny.app
+  echo "::warning::package name not readable from APK, assuming $PKG"
+fi
+echo "smoke: APK=$APK PKG=$PKG OUT=$OUT aapt2=${AAPT2:-none}"
 mkdir -p "$OUT"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 fail=0
@@ -16,6 +44,15 @@ adb shell getprop ro.product.cpu.abilist | tee "$OUT/abilist.txt"
 adb logcat -c || true
 adb install -r -g "$APK" 2>&1 | tee "$OUT/install.txt"
 grep -q Success "$OUT/install.txt" || { echo "::error::install failed"; exit 1; }
+
+# Guard: with a wrong applicationId every `am start` below fails with
+# "Activity class ... does not exist", and the run then looks exactly like
+# an app crash. Fail loudly and early instead.
+if ! adb shell pm list packages 2>/dev/null | tr -d '\r' | grep -qx "package:$PKG"; then
+  echo "::error::package $PKG is not installed after a successful install — PKG is wrong"
+  exit 1
+fi
+echo "smoke: $PKG installed"
 
 adb shell settings put system screen_off_timeout 1800000 || true
 adb shell svc power stayon true || true

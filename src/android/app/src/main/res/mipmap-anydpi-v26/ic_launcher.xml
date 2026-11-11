@@ -1,14 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  destiny — launcher icon, AUTO (follows system light/dark)
+
+  @color/ic_launcher_background has a -night variant (#07070A both ways),
+  and the foreground sheet is theme-independent, so auto looks identical
+  in both modes on purpose: the icon is a fixed brand asset, not a UI
+  surface. Only the pinned Light/Dark variants below differ.
+
+  Layer contract for this icon: the FOREGROUND drawable is a full-bleed
+  108dp sheet with the letter D punched out of it (fillType="evenOdd",
+  see res/drawable/ic_launcher_fg_destiny_*.xml). The background colour
+  below is what shows through that hole, so the two must always be
+  changed together — background here == the ink/cream inside the D.
+
+  No <inset> wrapper: the sheet must reach the layer edges, otherwise
+  the adaptive-icon mask would expose a ring of background around it.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background" />
-    <foreground>
-        <inset
-            android:drawable="@mipmap/ic_launcher_foreground"
-            android:inset="15%" />
-    </foreground>
-    <!-- T-android-themed-icons: monochrome layer for Android 13+ Themed
-         Icons. Same silhouette shared by all 3 activity-alias adaptive
-         icons (auto / classic_light / classic_dark) — Themed Icons
-         re-tints from one shape regardless of which alias is active. -->
+    <foreground android:drawable="@drawable/ic_launcher_fg_destiny_dark" />
     <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

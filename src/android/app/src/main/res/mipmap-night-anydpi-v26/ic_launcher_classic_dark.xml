@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  destiny — launcher icon, pinned DARK
+
+  Champagne-to-bronze sheet on an ink ground; the D is punched out to
+  ink. Same geometry as the light variant, only the ramp and the
+  background colour change. Non-night resources so a pinned Dark icon
+  stays dark while the system is in light mode.
+
+  Layer contract for this icon: the FOREGROUND drawable is a full-bleed
+  108dp sheet with the letter D punched out of it (fillType="evenOdd",
+  see res/drawable/ic_launcher_fg_destiny_*.xml). The background colour
+  below is what shows through that hole, so the two must always be
+  changed together — background here == the ink/cream inside the D.
+
+  No <inset> wrapper: the sheet must reach the layer edges, otherwise
+  the adaptive-icon mask would expose a ring of background around it.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_bg_force_dark" />
-    <!-- [T-android-dark-app-icon-from-ios] Forced "Dark" variant always uses the
-         dark M artwork (see the day variant). Pointing at the explicit
-         always-dark drawable rather than @mipmap/ic_launcher_foreground keeps the
-         pinned Dark icon identical whether the system is in light or dark mode. -->
-    <foreground>
-        <inset
-            android:drawable="@mipmap/ic_launcher_foreground_dark"
-            android:inset="15%" />
-    </foreground>
-    <!-- T-android-themed-icons: monochrome layer (see day variant). -->
+    <foreground android:drawable="@drawable/ic_launcher_fg_destiny_dark" />
     <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>
