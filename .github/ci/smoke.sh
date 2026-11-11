@@ -54,6 +54,28 @@ if ! adb shell pm list packages 2>/dev/null | tr -d '\r' | grep -qx "package:$PK
 fi
 echo "smoke: $PKG installed"
 
+# destiny UI shell — the actual launcher entry, and the thing this smoke run
+# used to miss entirely: `launch()` starts MainActivity directly, so every
+# screenshot below shows the COMPOSE app no matter what the launcher opens.
+# Boot the shell on its own, prove the page and the JS bridge really came up
+# (the bridge logs one line per screen change), and capture it. A blank or
+# crashed WebView then fails the run instead of shipping as a silent dark
+# rectangle.
+adb shell am force-stop $PKG; sleep 1
+adb shell am start -W -n $PKG/com.openminis.app.DestinyWebActivity > "$OUT/start-destiny.txt" 2>&1 || true
+sleep 8
+shot 00-destiny-shell 0
+adb logcat -d -s DestinyWeb > "$OUT/destiny-log.txt" 2>/dev/null || true
+if grep -q "screen=" "$OUT/destiny-log.txt"; then
+  echo "smoke: destiny shell rendered (bridge reported a screen)"
+  grep "screen=" "$OUT/destiny-log.txt" | tail -n 2
+else
+  echo "::error::destiny shell never reported a screen — the WebView page did not run"
+  sed -n '1,40p' "$OUT/destiny-log.txt" || true
+  fail=1
+fi
+adb shell am force-stop $PKG; sleep 1
+
 adb shell settings put system screen_off_timeout 1800000 || true
 adb shell svc power stayon true || true
 adb shell input keyevent KEYCODE_WAKEUP || true
