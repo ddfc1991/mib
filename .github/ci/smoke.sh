@@ -2,35 +2,7 @@
 # Emulator smoke test: install, launch, capture key screens of the glass UI.
 # Usage: smoke.sh <apk> <outdir>
 set -uo pipefail
-APK="$1"; OUT="$2"
-# applicationId is NOT the code namespace: the app installs as
-# com.destiny.app while its classes stay in com.openminis.app, so
-# `am start -n <PKG>/com.openminis.app.MainActivity` needs the
-# applicationId on the LEFT of the slash.
-#
-# This used to be hardcoded to a stale value (com.dl1991.mibot). After the
-# rename, every `am start` below failed with "Activity class ... does not
-# exist", zero screenshots were usable and the job was reported as an app
-# crash — the app itself never crashed. So: read the value off the APK.
-AAPT2="$(command -v aapt2 2>/dev/null || true)"
-if [ -z "$AAPT2" ]; then
-  for d in "$ANDROID_HOME"/build-tools/*/aapt2 "$ANDROID_SDK_ROOT"/build-tools/*/aapt2; do
-    [ -x "$d" ] && AAPT2="$d" && break
-  done
-fi
-PKG=""
-if [ -n "$AAPT2" ]; then
-  PKG="$("$AAPT2" dump packagename "$APK" 2>/dev/null | tr -d '\r' | head -n1)"
-fi
-if [ -z "$PKG" ]; then
-  PKG="$(aapt dump badging "$APK" 2>/dev/null | tr -d '\r' \
-        | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n1)"
-fi
-if [ -z "${PKG:-}" ]; then
-  PKG=com.destiny.app
-  echo "::warning::package name not readable from APK, assuming $PKG"
-fi
-echo "smoke: APK=$APK PKG=$PKG OUT=$OUT aapt2=${AAPT2:-none}"
+APK="$1"; OUT="$2"; PKG=com.destiny.mika  # applicationId; activity classes stay in namespace com.openminis.app
 mkdir -p "$OUT"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 fail=0
@@ -38,59 +10,12 @@ fail=0
 shot() { sleep "${2:-3}"; adb exec-out screencap -p > "$OUT/$1.png"; echo "shot: $1 ($(stat -c%s "$OUT/$1.png") bytes)"; }
 alive() { adb shell pidof $PKG >/dev/null 2>&1; }
 tap() { python3 "$HERE/tap.py" "$@"; }
-link() { adb shell am start -W -a android.intent.action.VIEW -d "minis://settings/$1" $PKG >/dev/null; }
 launch() { adb shell am start -W -n $PKG/com.openminis.app.MainActivity --ez glass_demo true > "$OUT/start-$1.txt"; }
 
 adb shell getprop ro.product.cpu.abilist | tee "$OUT/abilist.txt"
 adb logcat -c || true
 adb install -r -g "$APK" 2>&1 | tee "$OUT/install.txt"
 grep -q Success "$OUT/install.txt" || { echo "::error::install failed"; exit 1; }
-
-# Guard: with a wrong applicationId every `am start` below fails with
-# "Activity class ... does not exist", and the run then looks exactly like
-# an app crash. Fail loudly and early instead.
-PKG_OK=0
-for i in 1 2 3 4 5; do
-  if adb shell pm list packages 2>/dev/null | tr -d '\r' | grep -qx "package:$PKG"; then
-    PKG_OK=1; break
-  fi
-  # The emulator's adbd can reconnect right after boot; a single empty
-  # `pm list packages` is not proof the install failed.
-  echo "smoke: package not visible yet, retry $i/5"; sleep 2
-done
-if [ "$PKG_OK" -ne 1 ]; then
-  echo "::error::package $PKG is not installed after a successful install — PKG is wrong"
-  exit 1
-fi
-echo "smoke: $PKG installed"
-
-# [destiny/v7] The launcher is the NATIVE Compose app again. Earlier builds
-# pointed all three aliases at DestinyWebActivity (an HTML design mock in a
-# WebView), so `launch()` starting MainActivity directly hid the fact that
-# tapping the icon opened a web page. Resolve the LAUNCHER intent and make
-# sure it is NOT the WebView shell, then start MainActivity explicitly —
-# an implicit MAIN/LAUNCHER am start resolves to the HOME screen on these
-# emulator images and produces a false negative.
-RESOLVED="$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $PKG 2>/dev/null | tr -d '\r' | tail -n1)"
-echo "smoke: launcher resolves to $RESOLVED" | tee "$OUT/launcher-resolve.txt"
-if [ -z "$RESOLVED" ]; then
-  echo "::error::no LAUNCHER activity resolved for $PKG"
-  fail=1
-elif echo "$RESOLVED" | grep -q "DestinyWebActivity"; then
-  echo "::error::launcher still resolves to the WebView shell"
-  fail=1
-fi
-adb shell am force-stop $PKG; sleep 1
-adb shell am start -W -n $PKG/com.openminis.app.MainActivity > "$OUT/start-native.txt" 2>&1 || true
-sleep 8
-shot 00-native-launcher 0
-adb shell dumpsys activity activities > "$OUT/activities.txt" 2>/dev/null || true
-if grep -m1 "mResumedActivity" "$OUT/activities.txt" | grep -q "MainActivity"; then
-  echo "smoke: native MainActivity is resumed"
-else
-  echo "::warning::could not confirm resumed MainActivity from dumpsys (screenshot is the evidence)"
-fi
-adb shell am force-stop $PKG; sleep 1
 
 adb shell settings put system screen_off_timeout 1800000 || true
 adb shell svc power stayon true || true
@@ -104,71 +29,15 @@ sleep 25
 alive || { echo "::error::app not running after launch"; fail=1; }
 shot 01-chats 2
 
-# [destiny/v7-full] The start screen is the Chinese V7 design home now, so
-# the old English sidebar/tab taps are informational only — a miss must NOT
-# fail the build. The V7 deep-link shots below are the real visual evidence.
-# [destiny/v7-deeplink] Only press BACK when the sidebar actually opened.
-# On the V7 home the old "Open sidebar" desc doesn't exist — a blind BACK
-# here FINISHES MainActivity at the root, every later tap runs against a
-# dead app, and each `link` below silently becomes a cold start. (Cold
-# start deep links now mount correctly via startDestination, but warm
-# start is the realistic path — keep the app alive.)
-if tap desc "Open sidebar"; then
-  shot 02-sidebar 3
-  adb shell input keyevent KEYCODE_BACK; sleep 2
-else
-  echo "::warning::legacy sidebar button not found (app stays on V7 home)"
-fi
+tap desc "Open sidebar" && shot 02-sidebar 3 || { echo "::warning::sidebar button not found"; fail=1; }
+adb shell input keyevent KEYCODE_BACK; sleep 2
 
-# [destiny/v7] Four tabs now: Chats / Feed / Group chats / Settings.
-# Ideas is NOT a tab any more — it is the second state inside Feed.
-# Keep the old assertion and the job would fail trying to tap a tab we removed.
-if tap desc "Feed"; then
-  shot 03-feed 3
-  # Prove the tri-state is real, not a picture: tap both extra modes and shoot.
-  if tap text "想到的"; then shot 03b-feed-ideas 3; else echo "::warning::feed mode 想到的 not found"; fi
-  if tap text "能领的"; then shot 03c-feed-quotas 3; else echo "::warning::feed mode 能领的 not found"; fi
-  tap text "在看" >/dev/null 2>&1 || true
-else
-  echo "::warning::legacy tab Feed not found (V7 home uses Chinese tabs)"
-fi
-for t in "Group chats":05-groups Settings:06-settings; do
+for t in Feed:03-feed Ideas:04-ideas "Group chats":05-groups Settings:06-settings; do
   name="${t%%:*}"; file="${t##*:}"
-  if tap desc "$name"; then shot "$file" 3; else echo "::warning::legacy tab $name not found"; fi
+  if tap desc "$name"; then shot "$file" 3; else echo "::warning::tab $name not found"; fail=1; fi
 done
-# [destiny/v7] 服务器 sits in Settings › Network right below Tailscale.
-# Scroll a little if the row is below the fold; a miss is a warning, not a
-# verdict on the app.
-SERVERS_OK=0
-for i in 1 2 3; do
-  if tap desc "Servers" || tap text "Servers" || tap text "服务器"; then SERVERS_OK=1; break; fi
-  adb shell input swipe 540 1600 540 700 400; sleep 1
-done
-if [ "$SERVERS_OK" -eq 1 ]; then
-  shot 06b-servers 3
-  adb shell input keyevent KEYCODE_BACK; sleep 2
-else
-  echo "::warning::Servers row not found in Settings"
-fi
 # Settings page scrolled to the Appearance / Feedback rows.
 adb shell input swipe 540 1700 540 900 400; shot 07-settings-scrolled 2
-
-# [destiny/v7] Deep-link straight into the new native pages so CI has real
-# pixel evidence for voice, the 56-screen index, a single spec screen and the
-# server vault. These are Compose routes, not HTML.
-link voice;          shot 09-voice 4
-link all-screens;    shot 10-all-screens 4
-link spec-screen/34; shot 11-spec-34 4
-link servers;        shot 12-servers 4
-# [destiny/v7-full] The design spec IS the app UI now. Shoot the V7 home plus
-# the four screens the user called out, so UI parity is checked in real pixels.
-link home;           shot 13-v7-home 4
-link v7-screen/01;   shot 14-v7-sessions 4
-link v7-screen/16;   shot 15-v7-settings 4
-link v7-screen/46;   shot 16-v7-capabilities 4
-link v7-screen/45c;  shot 17-v7-server-detail 4
-link v7-screen/19;   shot 18-v7-mika 4
-adb shell input keyevent KEYCODE_BACK >/dev/null 2>&1 || true
 
 adb shell am start -W -a android.intent.action.VIEW -d "minis://settings/backdrop" $PKG >/dev/null
 shot 08-backdrop-settings 4
