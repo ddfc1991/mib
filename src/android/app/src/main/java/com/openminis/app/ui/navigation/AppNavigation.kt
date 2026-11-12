@@ -586,6 +586,9 @@ fun AppNavigation(
         onMcp = { navController.safeNavigate(Routes.MCP) },
         onLegacy = { navController.safeNavigate(Routes.SESSION_LIST) },
         onIndex = { navController.safeNavigate("destiny_spec") },
+        // [destiny/v7] 01/02 点会话行 → 真实 ChatScreen；16 分组行 → 真实设置入口。
+        onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
+        onOpenRoute = { route -> navController.safeNavigate(route) },
     )
     // [fork/mibot-v2] One shared backdrop behind every screen; the Mibot
     // scheme makes Scaffold containers transparent so it shows through.
