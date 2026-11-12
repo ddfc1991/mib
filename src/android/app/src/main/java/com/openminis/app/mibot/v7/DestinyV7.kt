@@ -42,10 +42,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openminis.app.mibot.servers.ServerVaultStore
+import com.openminis.app.mibot.servers.inspectPrompt
+import com.openminis.app.mibot.servers.metricsPrompt
 
 /**
  * [destiny/v7-full] The 56-screen design spec, rendered as NATIVE Compose UI.
@@ -246,6 +250,17 @@ private fun V7Element(
     draft: (String) -> Unit,
     actions: V7Actions,
 ) {
+    // "insp" marks the 45c screen's metric rows + 「让 Agent 巡检」 button: the
+    // real inspection path lives in ServerVaultPage, so route there / draft it.
+    val insp = e.d == "insp"
+    val ctx = LocalContext.current
+    val runInspect: () -> Unit = {
+        val servers = ServerVaultStore.load(ctx)
+        if (servers.isEmpty()) actions.onServers()
+        else actions.onAction(
+            if (e.kind == "B") inspectPrompt(servers) else metricsPrompt(servers),
+        )
+    }
     when (e.kind) {
         "H", "I" -> Unit // header and its icon actions are drawn in the top bar
         "D" -> Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln).padding(vertical = 6.dp))
@@ -253,13 +268,13 @@ private fun V7Element(
         "S" -> V7Section(e.a, e.b)
         "R" -> V7Row(e) { draft(listOf(e.a, e.b).filter { it.isNotBlank() }.joinToString(" · ")) }
         "P" -> V7Chip(e.a, e.c)
-        "B" -> V7Button(e.a) { draft(e.a) }
+        "B" -> V7Button(e.a) { if (insp) runInspect() else draft(e.a) }
         "G" -> V7Toggle(e.a, e.b == "1") { draft("切换：「${e.a}」") }
         "N" -> Text(
             e.a, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = V7.Tx,
             modifier = Modifier.padding(vertical = 5.dp).clickable { draft(e.a) },
         )
-        else -> V7Text(e.a, e.c) { draft(e.a) }
+        else -> V7Text(e.a, e.c) { if (insp) runInspect() else draft(e.a) }
     }
 }
 

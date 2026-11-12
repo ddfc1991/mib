@@ -1,5 +1,6 @@
 package com.openminis.app.mibot.feed
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,21 +22,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openminis.app.mibot.ideas.IdeasPage
+import com.openminis.app.mibot.vault.VaultServices
 import com.openminis.app.ui.glass.LocalGlassBottomInset
 
 /**
  * [destiny/v7] 动态 owns three states: 在看 (real feed), 想到的 (ideas),
  * 能领的 (free quotas). 点子 is no longer a bottom tab — the V7 IA folds it
- * in here together with the free-token list from aihot.news/free-tokens.
+ * in here together with the real free-tier list from assets/mibot/services.json.
  *
  * All three pages are real, persisted screens; nothing here is a mock.
  */
@@ -111,7 +115,7 @@ private fun FeedModeTabs(selected: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/** A starter list. Nothing here claims to be live — tapping a row asks the Agent to verify. */
+/** One catalog service's free tier, read from assets/mibot/services.json. */
 private data class Quota(
     val name: String,
     val detail: String,
@@ -119,47 +123,24 @@ private data class Quota(
     val url: String,
 )
 
-private val QUOTAS = listOf(
-    Quota(
-        "Cloudflare Workers AI",
-        "每天 1 万 Neurons · 无需实名 · 超额即停",
-        "能进网关",
-        "https://developers.cloudflare.com/workers-ai/",
-    ),
-    Quota(
-        "Rime 语音额度",
-        "每月约 50 美元额度 · 无需绑卡 · 限评估与开发",
-        "能进网关",
-        "https://rime.ai/",
-    ),
-    Quota(
-        "硅基流动实名券",
-        "¥16 代金券 · 含 Pro 与高速通道",
-        "只能产品内用",
-        "https://cloud.siliconflow.cn/",
-    ),
-    Quota(
-        "阿里云百炼新人额度",
-        "每模型 100 万 Token · 仅北京地域",
-        "只能产品内用",
-        "https://help.aliyun.com/zh/model-studio/",
-    ),
-    Quota(
-        "豆包电脑版签到",
-        "每天额度 · 仅电脑端产品内使用",
-        "只能产品内用",
-        "https://www.doubao.com/",
-    ),
-    Quota(
-        "aihot.news 免费 Tokens",
-        "免费 Token / API 额度清单汇总，按可用性排序",
-        "清单入口",
-        "https://aihot.news/free-tokens",
-    ),
-)
+/** Real free quotas: every services.json entry carrying a `free` note or `freeModels`. */
+private fun realQuotas(ctx: Context): List<Quota> =
+    VaultServices.all(ctx)
+        .filter { it.freeModels || !it.free.isNullOrBlank() }
+        .sortedByDescending { it.freeModels }
+        .map { s ->
+            Quota(
+                name = s.name,
+                detail = s.free?.takeIf { it.isNotBlank() } ?: "免费模型可进网关",
+                kind = if (s.freeModels) "能进网关" else "只能产品内用",
+                url = s.url,
+            )
+        }
 
 @Composable
 private fun FreeQuotasPage(onDiscuss: (String) -> Unit) {
+    val ctx = LocalContext.current
+    val quotas = remember { realQuotas(ctx) }
     val bottom = LocalGlassBottomInset.current
     val accent = MaterialTheme.colorScheme.primary
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
@@ -174,7 +155,7 @@ private fun FreeQuotasPage(onDiscuss: (String) -> Unit) {
     ) {
         item {
             Text(
-                "能领的钱 · ${QUOTAS.size} 条内置清单",
+                "能领的钱 · ${quotas.size} 条服务免费额度",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -186,7 +167,7 @@ private fun FreeQuotasPage(onDiscuss: (String) -> Unit) {
             )
             Spacer(Modifier.height(14.dp))
         }
-        items(QUOTAS, key = { it.name }) { q ->
+        items(quotas, key = { it.name }) { q ->
             Column(
                 Modifier
                     .fillMaxWidth()
