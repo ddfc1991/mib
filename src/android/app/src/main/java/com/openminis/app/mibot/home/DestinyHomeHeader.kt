@@ -123,14 +123,14 @@ private fun TunnelCard() {
             Spacer(Modifier.height(8.dp))
             TUNNELS.forEach { t ->
                 Row(
-                    Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         Modifier.size(8.dp).clip(RoundedCornerShape(4.dp))
                             .background(if (t.up) okColor else MaterialTheme.colorScheme.error),
                     )
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text(t.name, fontSize = 13.sp, modifier = Modifier.weight(1f))
                     Text(t.ip, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(8.dp))
@@ -157,9 +157,9 @@ private fun CapabilityGrid(
         Cap("手机操控", Icons.Outlined.Android, onPhoneControl),
         Cap("微信", Icons.Outlined.Groups, onWechat),
         Cap("应用访问", Icons.Outlined.Tune, onAppAccess),
-        Cap("钱包", Icons.Outlined.Settings, onWallet),
+        Cap("钱包", Icons.Outlined.AccountBalanceWallet, onWallet),
         Cap("沙箱", Icons.Outlined.Terminal, onSandbox),
-        Cap("监控", Icons.Outlined.Settings, onMonitor),
+        Cap("监控", Icons.Outlined.Insights, onMonitor),
         Cap("设置", Icons.Outlined.Settings, onSettings),
     )
     Column {
