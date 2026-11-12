@@ -350,31 +350,31 @@ fun AppNavigation(
     // mid-transition. Park the route and navigate once RESUMED settles.
     val nlActivity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
     if (nlActivity != null) {
-        var pendingLink by androidx.compose.runtime.remember {
+        val pendingLink = androidx.compose.runtime.remember {
             androidx.compose.runtime.mutableStateOf<String?>(null)
         }
         androidx.compose.runtime.DisposableEffect(nlActivity) {
             val nlListener = androidx.core.util.Consumer<android.content.Intent> { intent ->
                 val action = com.openminis.app.deeplink.DeepLinkHandler.parse(intent.data)
-                if (action is DeepLinkAction.OpenSettingsScreen) pendingLink = action.route
+                if (action is DeepLinkAction.OpenSettingsScreen) pendingLink.value = action.route
             }
             nlActivity.addOnNewIntentListener(nlListener)
             onDispose { nlActivity.removeOnNewIntentListener(nlListener) }
         }
-        androidx.compose.runtime.LaunchedEffect(pendingLink) {
-            val route = pendingLink ?: return@LaunchedEffect
+        androidx.compose.runtime.LaunchedEffect(pendingLink.value) {
+            val route = pendingLink.value ?: return@LaunchedEffect
             var waited = 0
             while (waited < 4000) {
                 val st = navController.currentBackStackEntry?.lifecycle?.currentState
                 if (st == androidx.lifecycle.Lifecycle.State.RESUMED) {
                     navController.safeNavigate(route)
-                    pendingLink = null
+                    pendingLink.value = null
                     return@LaunchedEffect
                 }
                 kotlinx.coroutines.delay(100)
                 waited += 100
             }
-            pendingLink = null
+            pendingLink.value = null
         }
     }
 
