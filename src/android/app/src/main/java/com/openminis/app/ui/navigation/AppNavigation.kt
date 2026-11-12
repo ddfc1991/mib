@@ -220,6 +220,14 @@ object Routes {
         if (taskId == null) "scheduled_tasks/edit" else "scheduled_tasks/edit?taskId=$taskId"
     // [T-android-scheduled-tasks-run-records] per-task execution log.
     const val SCHEDULED_TASK_RUNS = "scheduled_tasks/runs/{taskId}"
+
+    // [destiny/mibot-capability] 5 个能力页 Screen（DestinyCapabilityScreens.kt）。
+    const val MIBOT_WECHAT = "mibot_wechat"
+    const val MIBOT_APP_ACCESS = "mibot_app_access"
+    const val MIBOT_WALLET = "mibot_wallet"
+    const val MIBOT_VOICE = "mibot_voice"
+    const val MIBOT_TASK_QUEUE = "mibot_task_queue"
+
     fun scheduledTaskRuns(taskId: String): String = "scheduled_tasks/runs/$taskId"
 
     fun logDetail(fileName: String) = "log_detail/$fileName"
@@ -1988,6 +1996,25 @@ fun AppNavigation(
                 onMirrors = { navController.safeNavigate(Routes.ROOTFS_MANAGEMENT) },
                 onOpenTerminalCommand = { cmd -> navController.safeNavigate(Routes.terminal(cmd)) },
             )
+        }
+
+        // [destiny/mibot-capability] 5 个能力页 Screen 的路由（DestinyCapabilityScreens.kt）。
+        composable(Routes.MIBOT_WECHAT) {
+            com.openminis.app.mibot.capabilities.WechatScreen()
+        }
+        composable(Routes.MIBOT_APP_ACCESS) {
+            com.openminis.app.mibot.capabilities.AppAccessScreen()
+        }
+        composable(Routes.MIBOT_WALLET) {
+            com.openminis.app.mibot.capabilities.WalletScreen()
+        }
+        composable(Routes.MIBOT_VOICE) {
+            com.openminis.app.mibot.capabilities.VoiceScreen()
+        }
+        composable(Routes.MIBOT_TASK_QUEUE) {
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            val queue = remember { com.openminis.app.mibot.queue.TaskRunQueue.get(ctx.applicationContext) }
+            com.openminis.app.mibot.capabilities.TaskQueueScreen(queue)
         }
     }
     }
