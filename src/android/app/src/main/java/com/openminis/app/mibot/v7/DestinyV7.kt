@@ -185,20 +185,8 @@ fun DestinyV7Home(
             contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 6.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            // If the spec had no big header, show the screen title + copper rule.
-            if (screen.elems.none { it.kind == "H" }) {
-                item {
-                    Text(
-                        screen.title,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = V7.Tx,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 6.dp),
-                    )
-                    Box(Modifier.width(28.dp).height(2.dp).background(V7.Cu))
-                    Spacer(Modifier.height(10.dp))
-                }
-            }
+            // Screens without a big header already show their title in the
+            // top bar — do not repeat it in the content area.
             items(screen.elems.size) { i ->
                 V7Element(screen.elems[i], screen, draft, actions)
             }
