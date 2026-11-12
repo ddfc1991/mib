@@ -34,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,10 +43,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openminis.app.MinisApp
+import com.openminis.app.data.db.ChatSessionEntity
+import com.openminis.app.data.db.MessageEntity
+import com.openminis.app.data.model.ProviderConfig
+import com.openminis.app.mibot.servers.ServerVaultStore
+import com.openminis.app.mibot.servers.inspectPrompt
+import com.openminis.app.mibot.servers.metricsPrompt
+import com.openminis.app.mibot.vault.VaultStore
+import com.openminis.app.ui.settings.getThemeMode
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 /**
  * [destiny/v7-full] The 56-screen design spec, rendered as NATIVE Compose UI.
@@ -115,6 +128,10 @@ data class V7Actions(
     val onMcp: () -> Unit = {},
     val onLegacy: () -> Unit = {},
     val onIndex: () -> Unit = {},
+    /** [destiny/v7] 01/02 屏点会话行 → 真实 ChatScreen。 */
+    val onOpenSession: (String) -> Unit = {},
+    /** [destiny/v7] 16 屏分组行 → 真实设置入口（route 字符串）。 */
+    val onOpenRoute: (String) -> Unit = {},
 )
 
 @Composable
@@ -137,6 +154,46 @@ fun DestinyV7Home(
     }
 
     val screen = v7Screen(screenId) ?: v7Screen(V7_TAB_SCREENS[tab]) ?: return
+
+    // [destiny/v7] 34 语音屏：整屏接上真实 DestinyVoiceScreen（系统
+    // SpeechRecognizer / TextToSpeech），「按住说」直接触发真实识别。
+    if (screen.id == "34") {
+        V7MaterialWrap {
+            com.openminis.app.mibot.voice.DestinyVoiceScreen(
+                // 34 是从索引/标签进入的，返回回到当前标签屏而不是弹出导航栈。
+                onBack = { screenId = V7_TAB_SCREENS[tab] },
+                onSend = { text -> actions.onAction("【语音】$text") },
+            )
+        }
+        return
+    }
+
+    val ctx = LocalContext.current
+    val app = ctx.applicationContext as? MinisApp
+    val chatRepo = app?.chatRepositoryOrNull
+    val providerRepo = app?.providerRepositoryOrNull
+
+    // [destiny/v7] 01/02 屏的真实数据源：会话与消息来自 ChatRepository（Room）。
+    val sessions by remember(chatRepo) {
+        chatRepo?.observeSessions()
+            ?: kotlinx.coroutines.flow.flowOf<List<ChatSessionEntity>>(emptyList())
+    }.collectAsState(initial = emptyList())
+    val latestSessionId = sessions.firstOrNull { !it.isChild }?.id
+    val messages by remember(chatRepo, latestSessionId) {
+        if (chatRepo == null || latestSessionId == null) {
+            kotlinx.coroutines.flow.flowOf<List<MessageEntity>>(emptyList())
+        } else {
+            chatRepo.observeMessages(latestSessionId)
+        }
+    }.collectAsState(initial = emptyList())
+    // [destiny/v7] 16 屏的真实设置源：当前模型（ProviderRepository）、账号台账（VaultStore）。
+    val config by remember(providerRepo) {
+        providerRepo?.config ?: kotlinx.coroutines.flow.flowOf(ProviderConfig())
+    }.collectAsState(initial = ProviderConfig())
+    val accounts by remember(ctx) { VaultStore.entries(ctx) }.collectAsState()
+    val themeMode = remember(ctx) { getThemeMode(ctx) }
+
+    val elems = buildV7Elems(screen, sessions, messages, config, accounts.size, themeMode)
     val header = screen.elems.firstOrNull { it.kind == "H" }?.a ?: screen.title
     val draft = { s: String -> actions.onAction("【${screen.title}】$s\n按这一条执行；需要先确认的先列给我。") }
 
@@ -187,15 +244,15 @@ fun DestinyV7Home(
         ) {
             // Screens without a big header already show their title in the
             // top bar — do not repeat it in the content area.
-            items(screen.elems.size) { i ->
-                V7Element(screen.elems[i], screen, draft, actions)
+            items(elems.size) { i ->
+                V7Element(elems[i], screen, draft, actions)
             }
             item {
                 Spacer(Modifier.height(20.dp))
                 V7FeatureLinks(screen, actions)
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "第 ${screen.group} 组 · ${screen.id} 屏 · ${screen.elems.size} 个元素 · 点任一行交给 Agent",
+                    "第 ${screen.group} 组 · ${screen.id} 屏 · ${elems.size} 个元素 · 点任一行交给 Agent",
                     fontSize = 10.sp,
                     color = V7.Tx3,
                 )
@@ -246,20 +303,219 @@ private fun V7Element(
     draft: (String) -> Unit,
     actions: V7Actions,
 ) {
+    // "insp" marks the 45c screen's metric rows + 「让 Agent 巡检」 button: the
+    // real inspection path lives in ServerVaultPage, so route there / draft it.
+    val insp = e.d == "insp"
+    // 真实入口标记（放在 d 的尾部，不破坏 V7Row 的 avatar/tone 解析）：
+    // "session|<id>" → 真实聊天屏；"route|<route>" → 真实设置入口；"voice" → 语音屏。
+    val open = v7OpenAction(e, actions)
+    val ctx = LocalContext.current
+    val runInspect: () -> Unit = {
+        val servers = ServerVaultStore.load(ctx)
+        if (servers.isEmpty()) actions.onServers()
+        else actions.onAction(
+            if (e.kind == "B") inspectPrompt(servers) else metricsPrompt(servers),
+        )
+    }
     when (e.kind) {
         "H", "I" -> Unit // header and its icon actions are drawn in the top bar
         "D" -> Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln).padding(vertical = 6.dp))
         "Q" -> V7Search(e.a) { draft("搜索：「${e.a}」") }
         "S" -> V7Section(e.a, e.b)
-        "R" -> V7Row(e) { draft(listOf(e.a, e.b).filter { it.isNotBlank() }.joinToString(" · ")) }
+        "R" -> V7Row(e) { open?.invoke() ?: draft(listOf(e.a, e.b).filter { it.isNotBlank() }.joinToString(" · ")) }
         "P" -> V7Chip(e.a, e.c)
-        "B" -> V7Button(e.a) { draft(e.a) }
+        "B" -> V7Button(e.a) { open?.invoke() ?: if (insp) runInspect() else draft(e.a) }
         "G" -> V7Toggle(e.a, e.b == "1") { draft("切换：「${e.a}」") }
         "N" -> Text(
             e.a, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = V7.Tx,
-            modifier = Modifier.padding(vertical = 5.dp).clickable { draft(e.a) },
+            modifier = Modifier.padding(vertical = 5.dp).clickable { open?.invoke() ?: draft(e.a) },
         )
-        else -> V7Text(e.a, e.c) { draft(e.a) }
+        else -> V7Text(e.a, e.c) { open?.invoke() ?: if (insp) runInspect() else draft(e.a) }
+    }
+}
+
+/** 真实入口标记 → 点击动作；无标记返回 null（回退到「交给 Agent」草稿）。 */
+private fun v7OpenAction(e: V7Elem, actions: V7Actions): (() -> Unit)? {
+    val bits = e.d.split("|")
+    for (i in bits.indices) {
+        when (bits[i]) {
+            "session" -> {
+                val id = bits.getOrNull(i + 1).orEmpty()
+                if (id.isNotEmpty()) return { actions.onOpenSession(id) }
+            }
+            "route" -> {
+                val route = bits.getOrNull(i + 1).orEmpty()
+                if (route.isNotEmpty()) return { actions.onOpenRoute(route) }
+            }
+            "voice" -> return { actions.onVoice() }
+        }
+    }
+    return null
+}
+
+/**
+ * [destiny/v7] 01/02/16 三屏的真实数据源：会话/消息来自 ChatRepository，
+ * 当前模型来自 ProviderRepository，账号数来自 VaultStore。其余屏原样渲染。
+ */
+private fun buildV7Elems(
+    screen: V7Screen,
+    sessions: List<ChatSessionEntity>,
+    messages: List<MessageEntity>,
+    config: ProviderConfig,
+    accountCount: Int,
+    themeMode: Int,
+): List<V7Elem> = when (screen.id) {
+    "01" -> buildSessionListElems(sessions)
+    "02" -> buildConversationElems(config, sessions, messages)
+    "16" -> buildSettingsElems(screen, config, accountCount, themeMode)
+    else -> screen.elems
+}
+
+/** 01 会话列表：真实会话（置顶在前，最近在后），点行开真实聊天屏。 */
+private fun buildSessionListElems(sessions: List<ChatSessionEntity>): List<V7Elem> {
+    val visible = sessions.filter { !it.isChild }
+    if (visible.isEmpty()) {
+        return listOf(
+            V7Elem("H", "会话"),
+            V7Elem("Q", "搜索会话、文件、记忆"),
+            V7Elem("T", "还没有会话，说一句开始"),
+        )
+    }
+    val pinned = visible.filter { it.pinnedAt != null }.sortedByDescending { it.pinnedAt }
+    val recent = visible.filter { it.pinnedAt == null }.sortedByDescending { it.updatedAt }
+    return buildList {
+        add(V7Elem("H", "会话"))
+        add(V7Elem("Q", "搜索会话、文件、记忆"))
+        add(V7Elem("S", "置顶", "${pinned.size} / ${visible.size}"))
+        add(V7Elem("D"))
+        pinned.forEach { add(sessionRow(it)) }
+        add(V7Elem("S", "最近", "今天"))
+        add(V7Elem("D"))
+        add(V7Elem("T", "今天"))
+        recent.take(8).forEach { add(sessionRow(it)) }
+        add(V7Elem("T", "归档 ${visible.size} 个"))
+    }
+}
+
+private fun sessionRow(s: ChatSessionEntity): V7Elem {
+    val title = s.title ?: "新对话"
+    val avatar = title.trim().take(1).ifEmpty { "新" }
+    val tone = "c" + ((s.id.hashCode().mod(8)) + 1)
+    return V7Elem(
+        "R",
+        title,
+        s.lastMessage ?: "暂无消息",
+        relativeTime(s.updatedAt),
+        "$avatar|$tone|session|${s.id}",
+    )
+}
+
+/** 02 对话：最近一个真实会话的消息流，点行开真实聊天屏。 */
+private fun buildConversationElems(
+    config: ProviderConfig,
+    sessions: List<ChatSessionEntity>,
+    messages: List<MessageEntity>,
+): List<V7Elem> {
+    val s = sessions.firstOrNull { !it.isChild } ?: return listOf(
+        V7Elem("T", "Destiny"),
+        V7Elem("T", "还没有对话"),
+        V7Elem("Q", "发消息给 Destiny（@ 提及文件）"),
+    )
+    val snapshot = messages.lastOrNull { it.modelDisplayName != null }
+    val entry = config.modelEntries.firstOrNull { it.baseModel.id == s.modelId || it.model.id == s.modelId }
+    val inst = entry?.let { e -> config.instances.find { it.id == e.providerInstanceId } }
+        ?: snapshot?.let { m -> config.instances.find { it.id == m.providerInstanceId } }
+    val modelName = snapshot?.modelDisplayName ?: entry?.model?.displayName ?: s.modelId
+    val provider = inst?.label ?: (snapshot?.providerType).orEmpty()
+    return buildList {
+        add(V7Elem("T", s.title ?: "新对话"))
+        add(V7Elem("T", modelName))
+        add(V7Elem("T", if (provider.isBlank()) "当前会话" else "通过 $provider"))
+        val body = messages.takeLast(24)
+        if (body.isEmpty()) add(V7Elem("T", "还没有消息"))
+        body.forEach { m ->
+            val text = messageText(m.partsJson)
+            if (text.isNotBlank()) add(V7Elem("T", text, "", "", "|session|${s.id}"))
+        }
+        add(V7Elem("Q", "发消息给 Destiny（@ 提及文件）"))
+    }
+}
+
+/** 16 设置：当前模型取真实默认模型组；分组行点击进真实设置入口。 */
+private fun buildSettingsElems(
+    screen: V7Screen,
+    config: ProviderConfig,
+    accountCount: Int,
+    themeMode: Int,
+): List<V7Elem> {
+    val group = config.modelGroups.find { it.id == config.defaultPrimaryGroupId }
+        ?: config.modelGroups.firstOrNull()
+    val entry = group?.memberEntryIds?.firstNotNullOfOrNull { id -> config.modelEntries.find { it.id == id } }
+    val inst = entry?.let { e -> config.instances.find { it.id == e.providerInstanceId } }
+    val modelLine = if ((entry == null || inst == null) && config.instances.isNotEmpty()) {
+        "${config.instances.size} 个服务商 · 未设默认模型组"
+    } else if (entry == null || inst == null) {
+        "未配置 · 点此添加服务商"
+    } else {
+        "${inst.label} · ${entry.model.displayName}" + (group?.name?.let { " · $it" } ?: "")
+    }
+    return screen.elems.map { e ->
+        when (e.a) {
+            "当前模型" -> e.copy(b = modelLine, d = "|c0|route|${com.openminis.app.ui.navigation.Routes.MODEL_GROUPS}")
+            "技能" -> e.copy(d = "|c0|route|${com.openminis.app.ui.navigation.Routes.SKILLS}")
+            "记忆" -> e.copy(d = "|c0|route|${com.openminis.app.ui.navigation.Routes.MEMORY}")
+            "人格" -> e.copy(d = "|c0|route|${com.openminis.app.ui.navigation.Routes.SOUL}")
+            "自动化" -> e.copy(d = "|c0|route|${com.openminis.app.ui.navigation.Routes.SCHEDULED_TASKS}")
+            "账号台账" -> e.copy(b = "$accountCount 个账号", d = "|c0|route|mibot_vault")
+            "本地网关" -> e.copy(d = "|c0|route|mibot_gateway")
+            "沙箱" -> e.copy(d = "|c0|route|mibot_sandbox")
+            "AI 邮箱" -> e.copy(d = "|c0|route|mibot_mail")
+            "跟随系统" -> e.copy(
+                b = "当前：" + themeLabel(themeMode),
+                d = "|c0|route|${com.openminis.app.ui.navigation.Routes.APPEARANCE}",
+            )
+            "工具调用详情" -> e.copy(d = "|c0|route|${com.openminis.app.ui.navigation.Routes.AGENT_TOOLS}")
+            else -> e
+        }
+    }
+}
+
+private fun themeLabel(mode: Int): String = when (mode) {
+    1 -> "浅色"
+    2 -> "深色"
+    else -> "跟随系统"
+}
+
+/** 取 parts_json 里全部 text 片段（02 屏渲染真实消息用）。 */
+private fun messageText(partsJson: String): String = try {
+    val arr = org.json.JSONArray(partsJson)
+    val sb = StringBuilder()
+    for (i in 0 until arr.length()) {
+        val o = arr.optJSONObject(i) ?: continue
+        if (o.optString("type") == "text") {
+            val v = o.optString("value", "")
+            if (v.isNotBlank()) {
+                if (sb.isNotEmpty()) sb.append("\n")
+                sb.append(v)
+            }
+        }
+    }
+    sb.toString().trim()
+} catch (_: Exception) {
+    ""
+}
+
+private fun relativeTime(ts: Long): String {
+    val diff = System.currentTimeMillis() - ts
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+    return when {
+        minutes < 1 -> "刚刚"
+        minutes < 60 -> "$minutes 分钟前"
+        minutes < 60 * 24 -> "${TimeUnit.MILLISECONDS.toHours(diff)} 小时前"
+        else -> {
+            val cal = Calendar.getInstance().apply { timeInMillis = ts }
+            "${cal.get(Calendar.MONTH) + 1}/${cal.get(Calendar.DAY_OF_MONTH)}"
+        }
     }
 }
 
