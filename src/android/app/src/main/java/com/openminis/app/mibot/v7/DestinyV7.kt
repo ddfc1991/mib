@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.openminis.app.mibot.home.DestinyHomeHeader
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -187,6 +189,21 @@ fun DestinyV7Home(
         ) {
             // Screens without a big header already show their title in the
             // top bar — do not repeat it in the content area.
+            // [destiny] 动态屏(03) 顶部插首页区：模型卡/隧道死活/能力网格。
+            if (screen.id == "03") {
+                item {
+                    DestinyHomeHeader(
+                        onPhoneControl = { draft("打开手机操控（虚拟屏多开）") },
+                        onWechat = { draft("打开微信（ilinkai 绑定与收发）") },
+                        onAppAccess = { draft("打开应用访问（per-app 允许/禁用）") },
+                        onWallet = { draft("打开钱包（卡片与订阅）") },
+                        onSandbox = { draft("打开沙箱（镜像源与终端）") },
+                        onMonitor = { draft("打开监控（通道与用量）") },
+                        onSettings = { draft("打开设置") },
+                    )
+                    Spacer(Modifier.height(6.dp))
+                }
+            }
             items(screen.elems.size) { i ->
                 V7Element(screen.elems[i], screen, draft, actions)
             }
