@@ -2,12 +2,8 @@
 <!--
   destiny — monochrome layer for Android 13+ Themed Icons.
 
-  Silhouette only, flat white: the themed-icon pipeline keeps the ALPHA
-  channel and re-tints it, so a face drawn in white would disappear, and
-  VectorDrawable has no clear blend to punch eyes out of overlapping shapes.
-
-  Same cloud, same off-centre placement as the coloured foreground, so the
-  themed icon and the normal icon are clearly one mark.
+  Flat white silhouette of the same 命运星轨 mark (orbit ring + core + star),
+  so the themed icon and the normal icon are clearly one brand asset.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -15,16 +11,20 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
+    <group
+        android:rotation="-24"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M27,54 A27,11.5 0 1,1 81,54 A27,11.5 0 1,1 27,54 Z M33.5,54 A20.5,5 0 1,1 74.5,54 A20.5,5 0 1,1 33.5,54 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M75.9,54 A2.8,2.8 0 1,1 81.5,54 A2.8,2.8 0 1,1 75.9,54 Z" />
+    </group>
+
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M8,74 A16,16 0 1 0 40,74 A16,16 0 1 0 8,74 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M28,58 A20,20 0 1 0 68,58 A20,20 0 1 0 28,58 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M53,74 A15,15 0 1 0 83,74 A15,15 0 1 0 53,74 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M22,74 H58 A14,14 0 0 1 72,88 V86 A14,14 0 0 1 58,100 H22 A14,14 0 0 1 8,86 V88 A14,14 0 0 1 22,74 Z" />
+        android:pathData="M46.5,54 A7.5,7.5 0 1,1 61.5,54 A7.5,7.5 0 1,1 46.5,54 Z" />
 </vector>

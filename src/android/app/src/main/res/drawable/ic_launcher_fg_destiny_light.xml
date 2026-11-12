@@ -1,148 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  destiny — launcher foreground, LIGHT (pinned Light variant only).
+  destiny — launcher foreground, DARK ("auto" + "Dark" pin).
 
-  Composition matters as much as the drawing here: the cloud is pushed into
-  the BOTTOM-LEFT and deliberately runs off the canvas on the left, bottom and
-  right, so the launcher mask crops it. The top-right is left empty on purpose.
-  A centred mark on a dark tile reads as a sticker; an off-centre, cropped one
-  reads as a character leaning into the frame.
-
-  Volume comes from three things, in this order (no outline anywhere):
-    1. ONE absolute linear gradient (18,32 -> 84,106) shared by every body
-       shape. Absolute coordinates are the whole trick: each shape's fill is
-       computed from the same ramp in viewport space, so overlapping shapes
-       meet seamlessly — a per-shape gradient would band at every joint.
-    2. A core shadow: an ellipse sitting inside the rounded base, filled with
-       a vertical transparent -> warm-dark ramp. Inset far enough that it can
-       never poke out of the silhouette.
-    3. A small soft highlight on the upper-left puff, where the light is.
+  命运星轨 (Destiny orbit): 一条紫青轨道环 + 中心白色光核 + 右上青色星点。
+  Theme-independent (same in light/dark): the icon is a fixed brand asset.
 
   Geometry (108dp canvas; the safe circle is centre 54,54 r 33):
-    left puff   circle (24, 74) r 16
-    crown       circle (46, 58) r 19
-    right puff  circle (64, 76) r 14
-    base        rounded rect x 8..74, y 76..100, r 13
-    face        eyes (43,62) and (55,62) r 2.8, smile M48,68 Q51.5,72 55,68
-  Body bbox is x 8..78, y 39..100. Against the 72dp window a launcher shows
-  (18..90) it is cropped on the LEFT and BOTTOM only, so the top-right corner
-  stays empty — that negative space is the composition, not leftover padding.
-  Everything that must survive any mask (both eyes, the smile, the crown) sits
-  within r 22 of the centre.
+    orbit ring  centre (54,54), outer ellipse rx27 ry11.5, inner rx20.5 ry5,
+                rotated -24deg about (54,54), evenOdd -> ring
+    core        circle (54,54) r 7.5, white
+    star        circle (78.7,54) r 2.8 in the rotated group -> lands upper-right
+
+  Everything sits inside the 72dp window (18..90) so no mask crops it.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- body: five overlapping shapes, one shared absolute gradient -->
-    <path android:pathData="M8,74 A16,16 0 1 0 40,74 A16,16 0 1 0 8,74 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="linear"
-                android:startX="6"
-                android:startY="30"
-                android:endX="78"
-                android:endY="106"
-                android:tileMode="clamp">
-                <item android:offset="0" android:color="#EFA87F" />
-                <item android:offset="0.35" android:color="#DF8863" />
-                <item android:offset="0.72" android:color="#C46844" />
-                <item android:offset="1" android:color="#9E4B2B" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <path android:pathData="M28,58 A20,20 0 1 0 68,58 A20,20 0 1 0 28,58 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="linear"
-                android:startX="6"
-                android:startY="30"
-                android:endX="78"
-                android:endY="106"
-                android:tileMode="clamp">
-                <item android:offset="0" android:color="#EFA87F" />
-                <item android:offset="0.35" android:color="#DF8863" />
-                <item android:offset="0.72" android:color="#C46844" />
-                <item android:offset="1" android:color="#9E4B2B" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <path android:pathData="M53,74 A15,15 0 1 0 83,74 A15,15 0 1 0 53,74 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="linear"
-                android:startX="6"
-                android:startY="30"
-                android:endX="78"
-                android:endY="106"
-                android:tileMode="clamp">
-                <item android:offset="0" android:color="#EFA87F" />
-                <item android:offset="0.35" android:color="#DF8863" />
-                <item android:offset="0.72" android:color="#C46844" />
-                <item android:offset="1" android:color="#9E4B2B" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <path android:pathData="M22,74 H58 A14,14 0 0 1 72,88 V86 A14,14 0 0 1 58,100 H22 A14,14 0 0 1 8,86 V88 A14,14 0 0 1 22,74 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="linear"
-                android:startX="6"
-                android:startY="30"
-                android:endX="78"
-                android:endY="106"
-                android:tileMode="clamp">
-                <item android:offset="0" android:color="#EFA87F" />
-                <item android:offset="0.35" android:color="#DF8863" />
-                <item android:offset="0.72" android:color="#C46844" />
-                <item android:offset="1" android:color="#9E4B2B" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    <group
+        android:rotation="-24"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:fillColor="#7C6CFF"
+            android:fillType="evenOdd"
+            android:pathData="M27,54 A27,11.5 0 1,1 81,54 A27,11.5 0 1,1 27,54 Z M33.5,54 A20.5,5 0 1,1 74.5,54 A20.5,5 0 1,1 33.5,54 Z" />
+        <path
+            android:fillColor="#00D4A0"
+            android:pathData="M75.9,54 A2.8,2.8 0 1,1 81.5,54 A2.8,2.8 0 1,1 75.9,54 Z" />
+    </group>
 
-    <!-- core shadow, fully inside the base -->
-    <path android:pathData="M18,92 A22,8 0 1 0 62,92 A22,8 0 1 0 18,92 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="linear"
-                android:startX="0"
-                android:startY="84"
-                android:endX="0"
-                android:endY="100"
-                android:tileMode="clamp">
-                <item android:offset="0" android:color="#00000000" />
-                <item android:offset="1" android:color="#2E7A3418" />
-            </gradient>
-        </aapt:attr>
-    </path>
-
-    <!-- upper-left sheen -->
     <path
-        android:fillColor="#4DFFECDC"
-        android:pathData="M18,66 A4,2.8 0 1 0 26,66 A4,2.8 0 1 0 18,66 Z" />
-
-    <!-- cheeks -->
-    <path
-        android:fillColor="#8CF9D3B8"
-        android:pathData="M28.6,70 A4.4,3 0 1 0 37.4,70 A4.4,3 0 1 0 28.6,70 Z" />
-    <path
-        android:fillColor="#8CF9D3B8"
-        android:pathData="M59.6,72 A4.4,3 0 1 0 68.4,72 A4.4,3 0 1 0 59.6,72 Z" />
-
-    <!-- face -->
-    <path
-        android:fillColor="#33190E"
-        android:pathData="M40.2,64 A2.8,2.8 0 1 0 45.8,64 A2.8,2.8 0 1 0 40.2,64 Z" />
-    <path
-        android:fillColor="#33190E"
-        android:pathData="M52.2,64 A2.8,2.8 0 1 0 57.8,64 A2.8,2.8 0 1 0 52.2,64 Z" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#33190E"
-        android:strokeWidth="2.2"
-        android:strokeLineCap="round"
-        android:pathData="M46,70 Q49,74 52,70" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M46.5,54 A7.5,7.5 0 1,1 61.5,54 A7.5,7.5 0 1,1 46.5,54 Z" />
 </vector>
