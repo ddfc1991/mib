@@ -33,8 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openminis.app.mibot.design.MibotCard
 import com.openminis.app.mibot.design.MibotSectionHeader
-import com.openminis.app.mibot.design.iconTint
-import com.openminis.app.mibot.design.card
+import com.openminis.app.mibot.design.MibotTokens
 import com.openminis.app.quota.QuotaStore
 import com.openminis.app.ui.quota.rememberProviderRepository
 
@@ -81,12 +80,12 @@ private fun ModelCard(providerRepo: com.openminis.app.data.repository.ProviderRe
     MibotCard {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(card()),
+                Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MibotTokens.card()),
                 contentAlignment = Alignment.Center,
             ) {
                 androidx.compose.material3.Icon(
                     Icons.Outlined.Memory, null,
-                    Modifier.size(20.dp), tint = iconTint(),
+                    Modifier.size(20.dp), tint = MibotTokens.iconTint(),
                 )
             }
             Spacer(Modifier.width(12.dp))
@@ -172,10 +171,10 @@ private fun CapabilityGrid(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Box(
-                            Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(card()),
+                            Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(MibotTokens.card()),
                             contentAlignment = Alignment.Center,
                         ) {
-                            androidx.compose.material3.Icon(c.icon, c.label, Modifier.size(22.dp), tint = iconTint())
+                            androidx.compose.material3.Icon(c.icon, c.label, Modifier.size(22.dp), tint = MibotTokens.iconTint())
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(c.label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
