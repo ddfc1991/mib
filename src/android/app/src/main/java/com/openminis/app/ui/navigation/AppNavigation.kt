@@ -344,20 +344,37 @@ fun AppNavigation(
     // RUNNING a deep link arrives via onNewIntent, not a fresh composition, so
     // the LaunchedEffect above never fires again and minis:// links silently
     // died after cold start (voice / servers / spec screens in CI, browser and
-    // notification links on a real phone). Register for new intents here.
+    // notification links on a real phone). Register for new intents here, but
+    // do NOT navigate from the listener itself: safeNavigate() drops anything
+    // fired while the back-stack entry is not RESUMED, and onNewIntent lands
+    // mid-transition. Park the route and navigate once RESUMED settles.
     val nlActivity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
     if (nlActivity != null) {
+        var pendingLink by androidx.compose.runtime.remember {
+            androidx.compose.runtime.mutableStateOf<String?>(null)
+        }
         androidx.compose.runtime.DisposableEffect(nlActivity) {
             val nlListener = androidx.core.util.Consumer<android.content.Intent> { intent ->
-                when (val action = com.openminis.app.deeplink.DeepLinkHandler.parse(intent.data)) {
-                    is DeepLinkAction.OpenSettingsScreen -> navController.safeNavigate(action.route)
-                    is DeepLinkAction.NewChat ->
-                        navController.safeNavigate(Routes.chat("__new__${java.util.UUID.randomUUID()}"))
-                    else -> Unit
-                }
+                val action = com.openminis.app.deeplink.DeepLinkHandler.parse(intent.data)
+                if (action is DeepLinkAction.OpenSettingsScreen) pendingLink = action.route
             }
             nlActivity.addOnNewIntentListener(nlListener)
             onDispose { nlActivity.removeOnNewIntentListener(nlListener) }
+        }
+        androidx.compose.runtime.LaunchedEffect(pendingLink) {
+            val route = pendingLink ?: return@LaunchedEffect
+            var waited = 0
+            while (waited < 4000) {
+                val st = navController.currentBackStackEntry?.lifecycle?.currentState
+                if (st == androidx.lifecycle.Lifecycle.State.RESUMED) {
+                    navController.safeNavigate(route)
+                    pendingLink = null
+                    return@LaunchedEffect
+                }
+                kotlinx.coroutines.delay(100)
+                waited += 100
+            }
+            pendingLink = null
         }
     }
 
