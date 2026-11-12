@@ -340,6 +340,27 @@ fun AppNavigation(
         }
     }
 
+    // [destiny/v7-full] MainActivity is launchMode=singleTask: while the app is
+    // RUNNING a deep link arrives via onNewIntent, not a fresh composition, so
+    // the LaunchedEffect above never fires again and minis:// links silently
+    // died after cold start (voice / servers / spec screens in CI, browser and
+    // notification links on a real phone). Register for new intents here.
+    val nlActivity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+    if (nlActivity != null) {
+        androidx.compose.runtime.DisposableEffect(nlActivity) {
+            val nlListener = androidx.core.util.Consumer<android.content.Intent> { intent ->
+                when (val action = com.openminis.app.deeplink.DeepLinkHandler.parse(intent.data)) {
+                    is DeepLinkAction.OpenSettingsScreen -> navController.safeNavigate(action.route)
+                    is DeepLinkAction.NewChat ->
+                        navController.safeNavigate(Routes.chat("__new__${java.util.UUID.randomUUID()}"))
+                    else -> Unit
+                }
+            }
+            nlActivity.addOnNewIntentListener(nlListener)
+            onDispose { nlActivity.removeOnNewIntentListener(nlListener) }
+        }
+    }
+
     // Resolve launch session preference once into a deferred navigation target.
     // T314: this LaunchedEffect fires the same frame the NavHost mounts, so
     // the SESSION_LIST start-destination's NavBackStackEntry is still in
