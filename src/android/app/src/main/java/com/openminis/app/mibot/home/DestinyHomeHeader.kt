@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Android
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Settings
@@ -159,7 +161,7 @@ private fun CapabilityGrid(
         Cap("应用访问", Icons.Outlined.Tune, onAppAccess),
         Cap("钱包", Icons.Outlined.AccountBalanceWallet, onWallet),
         Cap("沙箱", Icons.Outlined.Terminal, onSandbox),
-        Cap("监控", Icons.Outlined.Insights, onMonitor),
+        Cap("监控", Icons.Outlined.BarChart, onMonitor),
         Cap("设置", Icons.Outlined.Settings, onSettings),
     )
     Column {
