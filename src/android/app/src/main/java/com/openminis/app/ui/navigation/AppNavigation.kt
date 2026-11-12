@@ -312,12 +312,15 @@ fun AppNavigation(
                 )
                 navController.safeNavigate(Routes.ENV_VARS)
             }
-            // T183: any settings screen reachable by route string. The
-            // parser already resolved the path → route mapping so we
-            // just navigate.
-            is DeepLinkAction.OpenSettingsScreen -> {
-                navController.safeNavigate(initialDeepLink.route)
-            }
+            // T183: any settings screen reachable by route string.
+            // [destiny/v7-deeplink] Handled by startDestination below: the
+            // NavHost mounts DIRECTLY on the target route, so this branch
+            // must not navigate again (it would stack a duplicate entry).
+            // The old safeNavigate() here was dead code on cold start —
+            // the start entry is not RESUMED yet mid-composition, the
+            // guard dropped the call, and minis://settings/voice (and
+            // every other settings link) silently landed on home.
+            is DeepLinkAction.OpenSettingsScreen -> {}
             is DeepLinkAction.OpenPermissionSettings -> {
                 navController.safeNavigate(Routes.PERMISSIONS)
             }
@@ -340,43 +343,12 @@ fun AppNavigation(
         }
     }
 
-    // [destiny/v7-full] MainActivity is launchMode=singleTask: while the app is
-    // RUNNING a deep link arrives via onNewIntent, not a fresh composition, so
-    // the LaunchedEffect above never fires again and minis:// links silently
-    // died after cold start (voice / servers / spec screens in CI, browser and
-    // notification links on a real phone). Register for new intents here, but
-    // do NOT navigate from the listener itself: safeNavigate() drops anything
-    // fired while the back-stack entry is not RESUMED, and onNewIntent lands
-    // mid-transition. Park the route and navigate once RESUMED settles.
-    val nlActivity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
-    if (nlActivity != null) {
-        val pendingLink = androidx.compose.runtime.remember {
-            androidx.compose.runtime.mutableStateOf<String?>(null)
-        }
-        androidx.compose.runtime.DisposableEffect(nlActivity) {
-            val nlListener = androidx.core.util.Consumer<android.content.Intent> { intent ->
-                val action = com.openminis.app.deeplink.DeepLinkHandler.parse(intent.data)
-                if (action is DeepLinkAction.OpenSettingsScreen) pendingLink.value = action.route
-            }
-            nlActivity.addOnNewIntentListener(nlListener)
-            onDispose { nlActivity.removeOnNewIntentListener(nlListener) }
-        }
-        androidx.compose.runtime.LaunchedEffect(pendingLink.value) {
-            val route = pendingLink.value ?: return@LaunchedEffect
-            var waited = 0
-            while (waited < 4000) {
-                val st = navController.currentBackStackEntry?.lifecycle?.currentState
-                if (st == androidx.lifecycle.Lifecycle.State.RESUMED) {
-                    navController.safeNavigate(route)
-                    pendingLink.value = null
-                    return@LaunchedEffect
-                }
-                kotlinx.coroutines.delay(100)
-                waited += 100
-            }
-            pendingLink.value = null
-        }
-    }
+    // [destiny/v7-deeplink] Warm-start deep links no longer need a Compose-side
+    // hook: MainActivity.onNewIntent → handleDeepLink already navigates
+    // synchronously for OpenSettingsScreen (no RESUMED guard on that path),
+    // and cold-start links are handled by startDestination below. Anything
+    // registered here only duplicated those navigations and stacked
+    // duplicate back-stack entries.
 
     // Resolve launch session preference once into a deferred navigation target.
     // T314: this LaunchedEffect fires the same frame the NavHost mounts, so
@@ -589,6 +561,15 @@ fun AppNavigation(
             Routes.chat(htmlShortcut.sessionId)
         }
         quickActionStart != null -> quickActionStart
+        // [destiny/v7-deeplink] Settings-screen deep links (voice / servers /
+        // home / v7-screen/<id> / spec) mount the NavHost DIRECTLY on the
+        // target route. Navigating after composition (the old
+        // LaunchedEffect → safeNavigate path) was silently swallowed by
+        // safeNavigate's RESUMED guard: during cold start the freshly
+        // mounted start entry is not RESUMED yet, so every minis://settings
+        // link landed on the home screen instead. No navigation needed now,
+        // so no timing window can drop it.
+        initialDeepLink is DeepLinkAction.OpenSettingsScreen -> initialDeepLink.route
         // [destiny/v7-full] The 56-screen design spec IS the app UI now.
         // The original native chat scaffold stays reachable as 「原功能」.
         else -> "destiny_v7_home"

@@ -107,8 +107,18 @@ shot 01-chats 2
 # [destiny/v7-full] The start screen is the Chinese V7 design home now, so
 # the old English sidebar/tab taps are informational only — a miss must NOT
 # fail the build. The V7 deep-link shots below are the real visual evidence.
-tap desc "Open sidebar" && shot 02-sidebar 3 || echo "::warning::legacy sidebar button not found"
-adb shell input keyevent KEYCODE_BACK; sleep 2
+# [destiny/v7-deeplink] Only press BACK when the sidebar actually opened.
+# On the V7 home the old "Open sidebar" desc doesn't exist — a blind BACK
+# here FINISHES MainActivity at the root, every later tap runs against a
+# dead app, and each `link` below silently becomes a cold start. (Cold
+# start deep links now mount correctly via startDestination, but warm
+# start is the realistic path — keep the app alive.)
+if tap desc "Open sidebar"; then
+  shot 02-sidebar 3
+  adb shell input keyevent KEYCODE_BACK; sleep 2
+else
+  echo "::warning::legacy sidebar button not found (app stays on V7 home)"
+fi
 
 # [destiny/v7] Four tabs now: Chats / Feed / Group chats / Settings.
 # Ideas is NOT a tab any more — it is the second state inside Feed.
