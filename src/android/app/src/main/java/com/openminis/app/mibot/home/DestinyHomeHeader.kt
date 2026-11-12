@@ -45,7 +45,7 @@ fun DestinyHomeHeader(
     onSettings: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxWidth().background(HarkTokens.bgBrush)) {
-        GreetingHeader()
+        GreetingHeader(onSettings)
         Spacer(Modifier.height(20.dp))
         SearchBar()
         Spacer(Modifier.height(20.dp))
@@ -65,7 +65,7 @@ fun DestinyHomeHeader(
 }
 
 @Composable
-private fun GreetingHeader() {
+private fun GreetingHeader(onSettings: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier.size(48.dp).clip(CircleShape).background(HarkTokens.terracotta),
