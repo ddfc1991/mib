@@ -105,6 +105,19 @@ object ServerVaultStore {
     }
 }
 
+/** The real inspection draft, shared by this page and the V7 45c screen. */
+fun inspectPrompt(servers: List<ServerEntry>): String {
+    val hosts = servers.joinToString("\n") { "- ${it.name} ${it.address}" }
+    return "巡检这些服务器，只看负载、内存、磁盘、证书到期；有异常才告诉我，没异常一句话都别说。" +
+        "读操作你自己跑，写操作逐条列给我点确认，一次点一条：\n" + hosts
+}
+
+/** Metric-refresh draft for the V7 45c screen's CPU / RAM / disk rows. */
+fun metricsPrompt(servers: List<ServerEntry>): String {
+    val hosts = servers.joinToString("\n") { "- ${it.name} ${it.address}" }
+    return "刷新这些服务器的实时指标（CPU、内存、磁盘、负载），只报当前值和异常：\n" + hosts
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServerVaultPage(
@@ -159,15 +172,7 @@ fun ServerVaultPage(
                 )
                 Spacer(Modifier.height(12.dp))
                 if (servers.isNotEmpty()) {
-                    Button(onClick = {
-                        val hosts = servers.joinToString("\n") {
-                            "- ${it.name} ${it.address}"
-                        }
-                        onDiscuss(
-                            "巡检这些服务器，只看负载、内存、磁盘、证书到期；有异常才告诉我，没异常一句话都别说。" +
-                                "读操作你自己跑，写操作逐条列给我点确认，一次点一条：\n" + hosts,
-                        )
-                    }) {
+                    Button(onClick = { onDiscuss(inspectPrompt(servers)) }) {
                         Text(t("让 Agent 巡检", "Ask Agent to inspect"))
                     }
                     Spacer(Modifier.height(12.dp))
