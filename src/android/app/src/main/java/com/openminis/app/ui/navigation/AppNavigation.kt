@@ -594,6 +594,13 @@ fun AppNavigation(
         onMcp = { navController.safeNavigate(Routes.MCP) },
         onLegacy = { navController.safeNavigate(Routes.SESSION_LIST) },
         onIndex = { navController.safeNavigate("destiny_spec") },
+        // [destiny] 能力格直达真实功能页。
+        onPhoneControl = { navController.safeNavigate(com.openminis.app.mibot.phone.VdRoutes.PAGE) },
+        onWechat = { navController.safeNavigate(Routes.MIBOT_WECHAT) },
+        onAppAccess = { navController.safeNavigate(Routes.MIBOT_APP_ACCESS) },
+        onWallet = { navController.safeNavigate(Routes.MIBOT_WALLET) },
+        onSandbox = { navController.safeNavigate(com.openminis.app.mibot.sandbox.SandboxRoutes.SANDBOX) },
+        onMonitor = { navController.safeNavigate(com.openminis.app.mibot.settings.DiagnosticsRoutes.DIAGNOSTICS) },
     )
     // [fork/mibot-v2] One shared backdrop behind every screen; the Mibot
     // scheme makes Scaffold containers transparent so it shows through.

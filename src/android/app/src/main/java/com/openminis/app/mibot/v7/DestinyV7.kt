@@ -117,6 +117,13 @@ data class V7Actions(
     val onMcp: () -> Unit = {},
     val onLegacy: () -> Unit = {},
     val onIndex: () -> Unit = {},
+    // [destiny] 能力格直达真实功能页（不是让 Agent 打开）。
+    val onPhoneControl: () -> Unit = {},
+    val onWechat: () -> Unit = {},
+    val onAppAccess: () -> Unit = {},
+    val onWallet: () -> Unit = {},
+    val onSandbox: () -> Unit = {},
+    val onMonitor: () -> Unit = {},
 )
 
 @Composable
@@ -193,12 +200,12 @@ fun DestinyV7Home(
             if (screen.id == "03") {
                 item {
                     DestinyHomeHeader(
-                        onPhoneControl = { draft("打开手机操控（虚拟屏多开）") },
-                        onWechat = { draft("打开微信（ilinkai 绑定与收发）") },
-                        onAppAccess = { draft("打开应用访问（per-app 允许/禁用）") },
-                        onWallet = { draft("打开钱包（卡片与订阅）") },
-                        onSandbox = { draft("打开沙箱（镜像源与终端）") },
-                        onMonitor = { draft("打开监控（通道与用量）") },
+                        onPhoneControl = actions.onPhoneControl,
+                        onWechat = actions.onWechat,
+                        onAppAccess = actions.onAppAccess,
+                        onWallet = actions.onWallet,
+                        onSandbox = actions.onSandbox,
+                        onMonitor = actions.onMonitor,
                         onSettings = { draft("打开设置") },
                     )
                     Spacer(Modifier.height(6.dp))
