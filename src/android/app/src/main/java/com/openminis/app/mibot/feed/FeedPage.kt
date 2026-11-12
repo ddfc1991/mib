@@ -45,6 +45,7 @@ import com.openminis.app.mibot.design.LineGlyph
 import com.openminis.app.mibot.design.LineIcons
 import com.openminis.app.mibot.design.MibotCard
 import com.openminis.app.mibot.design.MibotPageTitle
+import com.openminis.app.mibot.home.DestinyHomeHeader
 import com.openminis.app.mibot.design.MibotTokens
 import com.openminis.app.mibot.design.MibotType
 import com.openminis.app.mibot.design.t
@@ -92,6 +93,18 @@ fun FeedPage(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { MibotPageTitle(t("动态", "Feed"), t("应用里发生的事，最新的在最上面", "What happened in the app, newest first")) }
+        item {
+            DestinyHomeHeader(
+                onPhoneControl = { onDiscuss("打开手机操控（虚拟屏多开）") },
+                onWechat = { onDiscuss("打开微信（ilinkai 绑定与收发）") },
+                onAppAccess = { onDiscuss("打开应用访问（per-app 允许/禁用）") },
+                onWallet = { onDiscuss("打开钱包（卡片与订阅）") },
+                onSandbox = { onDiscuss("打开沙箱（镜像源与终端）") },
+                onMonitor = { onDiscuss("打开监控（通道与用量）") },
+                onSettings = { onDiscuss("打开设置") },
+            )
+            Spacer(Modifier.height(4.dp))
+        }
         if (entries.isEmpty()) {
             item { FeedEmpty() }
         } else {
