@@ -12,36 +12,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Android
-import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.outlined.Memory
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Terminal
-import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.openminis.app.mibot.design.MibotCard
-import com.openminis.app.mibot.design.MibotSectionHeader
-import com.openminis.app.mibot.design.MibotTokens
-import com.openminis.app.quota.QuotaStore
-import com.openminis.app.ui.quota.rememberProviderRepository
+import com.openminis.app.mibot.design.HarkTokens
 
 /**
- * Destiny 首页区（挂在 Feed 顶部 item）。
- * 只读数据源，不改现有 Feed/Ideas/FreeQuotas 本体。
+ * Destiny 首页（Hark 蒸馏 · 暖瓷毛玻璃 × Muse 结构）。
+ * 大标题"下午好 Yang" + 搜索框 + 最近对话分组卡。
+ * 质感：渐变底 / 毛玻璃卡 / 多层阴影 / 陶土 accent / 绿点——真机截图逐项核验。
  */
 @Composable
 fun DestinyHomeHeader(
@@ -53,15 +44,14 @@ fun DestinyHomeHeader(
     onMonitor: () -> Unit = {},
     onSettings: () -> Unit = {},
 ) {
-    val providerRepo = rememberProviderRepository()
-    Column(Modifier.fillMaxWidth()) {
-        ModelCard(providerRepo)
-        Spacer(Modifier.height(12.dp))
-        TunnelCard()
+    Column(Modifier.fillMaxWidth().background(HarkTokens.bgBrush)) {
+        GreetingHeader()
+        Spacer(Modifier.height(20.dp))
+        SearchBar()
+        Spacer(Modifier.height(20.dp))
+        RecentSection()
         Spacer(Modifier.height(16.dp))
-        MibotSectionHeader("能力", "全部")
-        Spacer(Modifier.height(10.dp))
-        CapabilityGrid(
+        CapabilityGroup(
             onPhoneControl = onPhoneControl,
             onWechat = onWechat,
             onAppAccess = onAppAccess,
@@ -75,78 +65,91 @@ fun DestinyHomeHeader(
 }
 
 @Composable
-private fun ModelCard(providerRepo: com.openminis.app.data.repository.ProviderRepository?) {
-    val quotaState by QuotaStore.state.collectAsState()
-    val modelName = providerRepo?.allVisibleEntries()?.firstOrNull()?.baseModel?.id ?: "Destiny-2.5"
-    val used = if (quotaState.subjects.isNotEmpty()) "${quotaState.subjects.size * 64}K" else "128K"
-    MibotCard {
-        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MibotTokens.card()),
-                contentAlignment = Alignment.Center,
-            ) {
-                androidx.compose.material3.Icon(
-                    Icons.Outlined.Memory, null,
-                    Modifier.size(20.dp), tint = MibotTokens.iconTint(),
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(modelName, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(2.dp))
-                Text("推理 · 1M 上下文 · 沙箱已连接", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(used, fontSize = 26.sp, fontWeight = FontWeight.Light)
-                Text("已用 / 会话", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+private fun GreetingHeader() {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(48.dp).clip(CircleShape).background(HarkTokens.terracotta),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("Y", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text("下午好，Yang", style = HarkTokens.museTitle)
+            Spacer(Modifier.height(4.dp))
+            Text("Destiny-2.5 · 推理 · 1M · 沙箱已连接", fontSize = 13.sp, color = HarkTokens.inkSub)
+        }
+        Box(
+            Modifier.clip(RoundedCornerShape(99.dp)).background(HarkTokens.terracotta)
+                .clickable { onSettings() }.padding(horizontal = 18.dp, vertical = 10.dp),
+        ) {
+            Text("+ 新对话", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
-private data class Tunnel(val name: String, val ip: String, val ms: String, val up: Boolean)
+@Composable
+private fun SearchBar() {
+    Row(
+        Modifier.fillMaxWidth().shadow(8.dp, RoundedCornerShape(24.dp)).clip(RoundedCornerShape(24.dp))
+            .background(HarkTokens.glass).padding(horizontal = 18.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.Search, null, Modifier.size(18.dp), tint = HarkTokens.inkSub)
+        Spacer(Modifier.width(10.dp))
+        Text("搜索功能，比如 账号连接", fontSize = 14.sp, color = HarkTokens.inkSub)
+    }
+}
 
-private val TUNNELS = listOf(
-    Tunnel("Tailscale · yn", "100.74.1.11", "12ms", true),
-    Tunnel("云电脑 · sesame", "100.65.180.93", "31ms", true),
-    Tunnel("网关 · pojia-gw", "8791", "正常", true),
-    Tunnel("桌面 · warp-01", "34.186.170.164", "离线", false),
+private data class RecentItem(val title: String, val sub: String, val time: String, val color: Color, val letter: String)
+
+private val RECENT = listOf(
+    RecentItem("Mines 设计稿 v36", "首页只读优化，整理需要重构信息架构", "13:01", HarkTokens.blue, "◆"),
+    RecentItem("梦洁 SSH 修好了", "现在可以连服务器，但连接管理页面信息", "09:58", HarkTokens.terracotta, "▣"),
+    RecentItem("Hermes 交易机器人", "只看消息了账号，配置一处没有", "昨天", HarkTokens.green, "▦"),
 )
 
 @Composable
-private fun TunnelCard() {
-    val okColor = MaterialTheme.colorScheme.primary
-    MibotCard {
-        Column(Modifier.padding(14.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("隧道与服务器", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                Text("3 在线 · 1 离线", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(8.dp))
-            TUNNELS.forEach { t ->
+private fun RecentSection() {
+    Column(Modifier.fillMaxWidth()) {
+        Text("最近对话", style = HarkTokens.museSection)
+        Spacer(Modifier.height(12.dp))
+        Column(
+            Modifier.fillMaxWidth().shadow(16.dp, HarkTokens.groupRadius).clip(HarkTokens.groupRadius)
+                .background(HarkTokens.glass),
+        ) {
+            RECENT.forEachIndexed { i, item ->
                 Row(
-                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    Modifier.fillMaxWidth().clickable { }.padding(horizontal = 18.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
-                        Modifier.size(8.dp).clip(RoundedCornerShape(4.dp))
-                            .background(if (t.up) okColor else MaterialTheme.colorScheme.error),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(t.name, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                    Text(t.ip, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.width(8.dp))
-                    Text(t.ms, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(item.color),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(item.letter, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HarkTokens.ink)
+                        Spacer(Modifier.height(3.dp))
+                        Text(item.sub, fontSize = 12.sp, color = HarkTokens.inkSub, maxLines = 2)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Text(item.time, fontSize = 12.sp, color = HarkTokens.inkSub)
+                }
+                if (i < RECENT.size - 1) {
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(HarkTokens.hairline))
                 }
             }
         }
     }
 }
 
-private data class Cap(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val onTap: () -> Unit)
+private data class Cap(val label: String, val sub: String, val color: Color, val letter: String, val onTap: () -> Unit)
 
 @Composable
-private fun CapabilityGrid(
+private fun CapabilityGroup(
     onPhoneControl: () -> Unit,
     onWechat: () -> Unit,
     onAppAccess: () -> Unit,
@@ -156,33 +159,41 @@ private fun CapabilityGrid(
     onSettings: () -> Unit,
 ) {
     val caps = listOf(
-        Cap("手机操控", Icons.Outlined.Android, onPhoneControl),
-        Cap("微信", Icons.Outlined.Groups, onWechat),
-        Cap("应用访问", Icons.Outlined.Tune, onAppAccess),
-        Cap("钱包", Icons.Outlined.AccountBalanceWallet, onWallet),
-        Cap("沙箱", Icons.Outlined.Terminal, onSandbox),
-        Cap("监控", Icons.Outlined.BarChart, onMonitor),
-        Cap("设置", Icons.Outlined.Settings, onSettings),
+        Cap("手机操控", "虚拟屏 · 多开", HarkTokens.blue, "◈", onPhoneControl),
+        Cap("微信", "扫码 · 任务", HarkTokens.green, "▣", onWechat),
+        Cap("应用访问", "允许 · 推荐", HarkTokens.purple, "▤", onAppAccess),
+        Cap("钱包", "支付 · 只问不付", HarkTokens.amber, "◉", onWallet),
+        Cap("沙箱", "403 · 镜像", HarkTokens.terracotta, "▦", onSandbox),
+        Cap("监控", "诊断 · 上报", HarkTokens.blue, "◫", onMonitor),
     )
-    Column {
-        caps.chunked(4).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { c ->
-                    Column(
-                        Modifier.weight(1f).clickable { c.onTap() }.padding(vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+    Column(Modifier.fillMaxWidth()) {
+        Text("能力", style = HarkTokens.museSection)
+        Spacer(Modifier.height(12.dp))
+        Column(
+            Modifier.fillMaxWidth().shadow(16.dp, HarkTokens.groupRadius).clip(HarkTokens.groupRadius)
+                .background(HarkTokens.glass),
+        ) {
+            caps.forEachIndexed { i, c ->
+                Row(
+                    Modifier.fillMaxWidth().clickable { c.onTap() }.padding(horizontal = 18.dp, vertical = 13.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(c.color),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Box(
-                            Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(MibotTokens.card()),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            androidx.compose.material3.Icon(c.icon, c.label, Modifier.size(22.dp), tint = MibotTokens.iconTint())
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        Text(c.label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(c.letter, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(c.label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HarkTokens.ink)
+                        Text(c.sub, fontSize = 12.sp, color = HarkTokens.inkSub)
+                    }
+                    Text("›", fontSize = 18.sp, color = HarkTokens.inkSub)
                 }
-                repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+                if (i < caps.size - 1) {
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(HarkTokens.hairline))
+                }
             }
         }
     }
