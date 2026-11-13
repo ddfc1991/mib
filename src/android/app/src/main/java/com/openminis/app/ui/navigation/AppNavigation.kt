@@ -890,6 +890,13 @@ fun AppNavigation(
             }
         }
 
+        // [destiny/queue-real] 真实任务队列页（AgentJobRegistry），设置 › 任务队列
+        // 与对话页「查看全部」都落到这里。
+        composable("destiny_queue") {
+            com.openminis.app.mibot.v7.DestinyV7QueueScreen(
+                onBack = { navController.safePopBackStack() },
+            )
+        }
         // [destiny/v7-full] The 56-screen design spec, rendered as the app's
         // REAL interface: structured V7 elements, dark palette, four tabs.
         composable("destiny_v7_home") {

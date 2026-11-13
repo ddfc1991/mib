@@ -37,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -107,7 +108,16 @@ fun V7MaterialWrap(content: @Composable () -> Unit) {
             error = V7.Er,
         ),
     ) {
-        Box(Modifier.fillMaxSize().background(V7.Bg)) { content() }
+        // [v7-real-contrast] Legacy screens paint their cards through
+        // Modifier.frosted(), which decides dark/light from LocalMibotDark — NOT
+        // from MaterialTheme. Re-binding only colorScheme left a white frosted
+        // card under white onSurface text (unreadable roster rows). Publish the
+        // dark flag too so the frosted tokens match the scheme above.
+        CompositionLocalProvider(
+            com.openminis.app.ui.theme.LocalMibotDark provides true,
+        ) {
+            Box(Modifier.fillMaxSize().background(V7.Bg)) { content() }
+        }
     }
 }
 
@@ -264,22 +274,28 @@ fun DestinyV7Home(
             }
             if (realSessions != null) {
                 // Screen 01 with the REAL session database — sample rows are gone.
+                // [v7-real-clean] No spec links and no「第 01 组 · 01 屏」caption
+                // here: this tab is the app's real conversation list, not a
+                // design-spec page, and the caption made it read like a mockup.
+                // [destiny/queue-real] 多任务排队就地体现：真实作业表里的
+                // 执行中 / 排队中，不藏到二级页面里。
+                item { V7QueuePanel(onOpen = { actions.onNavigate("destiny_queue") }) }
                 v7RealSessions(realSessions, actions)
             } else {
-            items(screen.elems.size) { i ->
-                V7Element(screen.elems[i], screen, draft, actions)
-            }
-            }
-            item {
-                Spacer(Modifier.height(20.dp))
-                V7FeatureLinks(screen, actions)
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "第 ${screen.group} 组 · ${screen.id} 屏" +
-                        (if (realSessions != null) " · 真实会话数据" else " · ${screen.elems.size} 个元素 · 点任一行交给 Agent"),
-                    fontSize = 10.sp,
-                    color = V7.Tx3,
-                )
+                items(screen.elems.size) { i ->
+                    V7Element(screen.elems[i], screen, draft, actions)
+                }
+                item {
+                    Spacer(Modifier.height(20.dp))
+                    V7FeatureLinks(screen, actions)
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "第 ${screen.group} 组 · ${screen.id} 屏" +
+                            " · ${screen.elems.size} 个元素 · 点任一行交给 Agent",
+                        fontSize = 10.sp,
+                        color = V7.Tx3,
+                    )
+                }
             }
             }
         }
@@ -734,7 +750,7 @@ private fun v7SettingsCatalog(): List<Pair<String, List<V7SettingEntry>>> = list
         V7SettingEntry("语音", "转写 · 朗读 · 唤醒", Routes.MIBOT_VOICE),
         V7SettingEntry("手机控制", "无障碍 · 屏幕 · 点击", Routes.MIBOT_APP_ACCESS),
         V7SettingEntry("微信", "消息派单通道", Routes.MIBOT_WECHAT),
-        V7SettingEntry("任务队列", "后台任务与进度", Routes.MIBOT_TASK_QUEUE),
+        V7SettingEntry("任务队列", "真实作业 · 执行中 · 排队", "destiny_queue"),
         V7SettingEntry("钱包", "余额与充值记录", Routes.MIBOT_WALLET),
     ),
     "存储与文件" to listOf(
@@ -809,4 +825,173 @@ private fun V7SettingRow(e: V7SettingEntry, onClick: () -> Unit) {
         Text("\u203A", fontSize = 17.sp, color = V7.Tx3)
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+}
+
+// ─── [destiny/queue-real] 真实多任务队列 ─────────────────────────────────────
+//
+// 数据源是全局的 AgentJobRegistry.jobs（StateFlow<Map<String, AgentJob>>）：
+// PENDING = 排队，RUNNING = 正在执行。它是派单 / 子 Agent / 定时任务真正在用的
+// 那张表，所以这里显示的排队条数就是 App 此刻真实的排队量，不是示例数据。
+// 队列空闲时也照实说「空闲」，不假装有任务。
+
+private fun v7Dur(ms: Long): String {
+    val s = (ms / 1000).coerceAtLeast(0)
+    return when {
+        s < 60 -> "${s}s"
+        s < 3600 -> "${s / 60}m ${s % 60}s"
+        else -> "${s / 3600}h ${(s % 3600) / 60}m"
+    }
+}
+
+@Composable
+private fun v7ActiveJobs(): List<com.openminis.app.agent.jobs.AgentJob> {
+    val all by com.openminis.app.agent.jobs.AgentJobRegistry.jobs.collectAsState()
+    return all.values
+        .filter { it.isActive }
+        .sortedWith(
+            compareBy(
+                { if (it.state == com.openminis.app.agent.jobs.AgentJobState.RUNNING) 0 else 1 },
+                { it.createdAtMs },
+            ),
+        )
+}
+
+@Composable
+private fun V7JobRow(job: com.openminis.app.agent.jobs.AgentJob) {
+    val running = job.state == com.openminis.app.agent.jobs.AgentJobState.RUNNING
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(7.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(if (running) V7.Ok else V7.Wa),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                (job.title.ifBlank { job.prompt ?: "任务" }).replace("\n", " ").take(30),
+                fontSize = 13.sp,
+                color = V7.Tx,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val waited = job.startedAtMs?.let { System.currentTimeMillis() - it }
+            Text(
+                when {
+                    running && waited != null -> "执行中 · " + v7Dur(waited)
+                    running -> "执行中"
+                    waited == null -> "排队中"
+                    else -> "排队中"
+                },
+                fontSize = 11.sp,
+                color = V7.Tx3,
+            )
+        }
+        if (!running) V7Chip("排队", "wa")
+    }
+    Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+}
+
+/** 对话页顶部的队列条：一行状态 + 前几条任务；点「查看全部」进任务队列页。 */
+@Composable
+private fun V7QueuePanel(onOpen: () -> Unit, expanded: Boolean = false) {
+    val active = v7ActiveJobs()
+    val running = active.count { it.state == com.openminis.app.agent.jobs.AgentJobState.RUNNING }
+    val pending = active.size - running
+    Column(Modifier.fillMaxWidth().padding(top = 18.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("任务队列", fontSize = 12.sp, color = V7.Tx2, letterSpacing = 0.4.sp)
+            Spacer(Modifier.width(8.dp))
+            Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                when {
+                    active.isEmpty() -> "空闲"
+                    pending == 0 -> "$running 执行中"
+                    running == 0 -> "$pending 排队"
+                    else -> "$running 执行 · $pending 排队"
+                },
+                fontSize = 11.sp,
+                color = if (active.isEmpty()) V7.Tx3 else V7.Cu,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        if (active.isEmpty()) {
+            Text(
+                "现在没有任务在跑。发消息时如果一个任务还没跑完，新消息会排队，做完自动接下一个。",
+                fontSize = 11.5.sp,
+                color = V7.Tx3,
+                lineHeight = 18.sp,
+            )
+        } else {
+            val shown = if (expanded) active else active.take(3)
+            shown.forEach { job -> V7JobRow(job) }
+            if (!expanded && active.size > 3) {
+                Text(
+                    "查看全部 ${active.size} 项 \u203A",
+                    fontSize = 12.sp,
+                    color = V7.Cu,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onOpen)
+                        .padding(vertical = 8.dp),
+                )
+            } else if (expanded) {
+                Text(
+                    "共 ${active.size} 项 · 执行中 $running · 排队 $pending",
+                    fontSize = 11.sp,
+                    color = V7.Tx3,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+/** 任务队列整页：真实作业 + 真实状态。 */
+@Composable
+fun DestinyV7QueueScreen(onBack: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(V7.Bg)
+            .statusBarsPadding(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = 8.dp, end = 18.dp, top = 8.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = V7.Tx)
+            }
+            Text(
+                "任务队列",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = V7.Tx,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+        LazyColumn(
+            Modifier.weight(1f),
+            contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 4.dp, bottom = 24.dp),
+        ) {
+            item { V7QueuePanel(onOpen = {}, expanded = true) }
+            item {
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    "这一页读的是派单引擎真实的作业表：每个子 Agent、每条后台任务都在里面。" +
+                        "一个任务没跑完时新任务只会排队（PENDING），不会把上一条顶掉；" +
+                        "跑完自动接下一个。",
+                    fontSize = 11.5.sp,
+                    color = V7.Tx3,
+                    lineHeight = 18.sp,
+                )
+            }
+        }
+    }
 }

@@ -202,3 +202,51 @@ jobs:
           name: smoke-screenshots-api${{ matrix.api }}
           path: screens/
           retention-days: 14
+
+  # [destiny/v7-audit] 逐功能体检：4 个 tab + 设置里 29 个入口逐个点开截图，
+  # 出 audit.tsv 判定表。这是「先验完再交」的机器证据，不靠嘴说。
+  audit:
+    name: V7 screen audit (API ${{ matrix.api }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [31]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: minis-debug-apk
+          path: apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run emulator + audit script
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disk-size: 6000M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash .github/ci/v7_audit.sh apk/minis-debug.apk audit
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v7-audit-api${{ matrix.api }}
+          path: audit/
+          retention-days: 14
