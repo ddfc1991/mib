@@ -601,6 +601,8 @@ fun AppNavigation(
         onWallet = { navController.safeNavigate(Routes.MIBOT_WALLET) },
         onSandbox = { navController.safeNavigate(com.openminis.app.mibot.sandbox.SandboxRoutes.SANDBOX) },
         onMonitor = { navController.safeNavigate(com.openminis.app.mibot.settings.DiagnosticsRoutes.DIAGNOSTICS) },
+        // [destiny/v7-real] Screen 01 rows open REAL sessions.
+        onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
     )
     // [fork/mibot-v2] One shared backdrop behind every screen; the Mibot
     // scheme makes Scaffold containers transparent so it shows through.
@@ -889,7 +891,7 @@ fun AppNavigation(
         // [destiny/v7-full] The 56-screen design spec, rendered as the app's
         // REAL interface: structured V7 elements, dark palette, four tabs.
         composable("destiny_v7_home") {
-            com.openminis.app.mibot.v7.DestinyV7Home(v7Actions)
+            com.openminis.app.mibot.v7.DestinyV7Home(v7Actions, chatRepository = chatRepository)
         }
         composable(
             route = "destiny_v7_screen/{id}",
@@ -898,12 +900,13 @@ fun AppNavigation(
             com.openminis.app.mibot.v7.DestinyV7Home(
                 actions = v7Actions,
                 initialScreen = entry.arguments?.getString("id") ?: "01",
+                chatRepository = chatRepository,
             )
         }
         // Legacy routes now show the V7 UI too, so every entry point is the
         // design spec — no path lands on the old text-only spec list any more.
         composable("destiny_spec") {
-            com.openminis.app.mibot.v7.DestinyV7Home(v7Actions, initialIndex = true)
+            com.openminis.app.mibot.v7.DestinyV7Home(v7Actions, initialIndex = true, chatRepository = chatRepository)
         }
         composable(
             route = "destiny_spec/{id}",
@@ -912,6 +915,7 @@ fun AppNavigation(
             com.openminis.app.mibot.v7.DestinyV7Home(
                 actions = v7Actions,
                 initialScreen = entry.arguments?.getString("id") ?: "01",
+                chatRepository = chatRepository,
             )
         }
 

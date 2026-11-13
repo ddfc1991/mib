@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import com.openminis.app.mibot.home.DestinyHomeHeader
@@ -36,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openminis.app.data.db.ChatSessionEntity
+import com.openminis.app.data.repository.ChatRepository
 
 /**
  * [destiny/v7-full] The 56-screen design spec, rendered as NATIVE Compose UI.
@@ -124,6 +128,8 @@ data class V7Actions(
     val onWallet: () -> Unit = {},
     val onSandbox: () -> Unit = {},
     val onMonitor: () -> Unit = {},
+    // [destiny/v7-real] Open a REAL session from the real database.
+    val onOpenSession: (String) -> Unit = {},
 )
 
 @Composable
@@ -131,6 +137,7 @@ fun DestinyV7Home(
     actions: V7Actions,
     initialScreen: String? = null,
     initialIndex: Boolean = false,
+    chatRepository: ChatRepository? = null,
 ) {
     var tab by remember { mutableStateOf(0) }
     var screenId by remember { mutableStateOf(initialScreen ?: V7_TAB_SCREENS[0]) }
@@ -148,6 +155,13 @@ fun DestinyV7Home(
     val screen = v7Screen(screenId) ?: v7Screen(V7_TAB_SCREENS[tab]) ?: return
     val header = screen.elems.firstOrNull { it.kind == "H" }?.a ?: screen.title
     val draft = { s: String -> actions.onAction("【${screen.title}】$s\n按这一条执行；需要先确认的先列给我。") }
+
+    // [destiny/v7-real] Screen 01 is wired to the REAL session database — no
+    // sample rows. When a repository is provided the design-spec conversation
+    // list is replaced by live data; empty state tells the truth.
+    val realSessions = if (screen.id == "01" && chatRepository != null) {
+        chatRepository.observeSessions().collectAsState(initial = null).value
+    } else null
 
     Column(
         Modifier
@@ -211,15 +225,21 @@ fun DestinyV7Home(
                     Spacer(Modifier.height(6.dp))
                 }
             }
+            if (realSessions != null) {
+                // Screen 01 with the REAL session database — sample rows are gone.
+                v7RealSessions(realSessions, actions)
+            } else {
             items(screen.elems.size) { i ->
                 V7Element(screen.elems[i], screen, draft, actions)
+            }
             }
             item {
                 Spacer(Modifier.height(20.dp))
                 V7FeatureLinks(screen, actions)
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "第 ${screen.group} 组 · ${screen.id} 屏 · ${screen.elems.size} 个元素 · 点任一行交给 Agent",
+                    "第 ${screen.group} 组 · ${screen.id} 屏" +
+                        (if (realSessions != null) " · 真实会话数据" else " · ${screen.elems.size} 个元素 · 点任一行交给 Agent"),
                     fontSize = 10.sp,
                     color = V7.Tx3,
                 )
@@ -284,6 +304,110 @@ private fun V7Element(
             modifier = Modifier.padding(vertical = 5.dp).clickable { draft(e.a) },
         )
         else -> V7Text(e.a, e.c) { draft(e.a) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// [destiny/v7-real] Screen 01 backed by the real session database.
+// ---------------------------------------------------------------------------
+
+private fun LazyListScope.v7RealSessions(
+    sessions: List<ChatSessionEntity>?,
+    actions: V7Actions,
+) {
+    if (sessions == null) {
+        item {
+            Text(
+                "读取会话中…", fontSize = 12.sp, color = V7.Tx3,
+                modifier = Modifier.padding(vertical = 20.dp),
+            )
+        }
+        return
+    }
+    if (sessions.isEmpty()) {
+        item {
+            V7Section("最近", "0 条")
+            Text(
+                "还没有真实对话。点右上角 ＋ 或下方按钮新建一个 —— 对话真实保存在本机数据库，之后会出现在这里。",
+                fontSize = 12.5.sp, color = V7.Tx2, lineHeight = 20.sp,
+            )
+            Spacer(Modifier.height(14.dp))
+            V7Button("＋ 新建真实对话") { actions.onNewChat() }
+        }
+        return
+    }
+    val pinned = sessions.filter { it.pinnedAt != null }.sortedByDescending { it.pinnedAt ?: 0L }
+    val rest = sessions.filter { it.pinnedAt == null }.sortedByDescending { it.updatedAt }
+    if (pinned.isNotEmpty()) {
+        item { V7Section("置顶", "${pinned.size}") }
+        items(pinned, key = { "pinned-" + it.id }) { s -> V7SessionRow(s) { actions.onOpenSession(s.id) } }
+    }
+    item { V7Section("最近", "${rest.size}") }
+    items(rest.take(80), key = { it.id }) { s -> V7SessionRow(s) { actions.onOpenSession(s.id) } }
+}
+
+@Composable
+private fun V7SessionRow(s: ChatSessionEntity, onClick: () -> Unit) {
+    val title = s.title?.takeIf { it.isNotBlank() } ?: "未命名对话"
+    val sub = s.lastMessage?.takeIf { it.isNotBlank() } ?: s.modelId
+    val time = v7RelTime(s.updatedAt)
+    val toneKey = "c" + (1 + ((title.hashCode() and 0x7FFFFFFF) % 8))
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 13.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(V7.tone(toneKey)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(title.take(2), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = V7.Tx)
+            }
+            Spacer(Modifier.width(13.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = V7.Tx,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                if (sub.isNotBlank()) {
+                    Text(
+                        sub, fontSize = 11.5.sp, color = V7.Tx2,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (time.isNotBlank()) {
+                Spacer(Modifier.width(8.dp))
+                Text(time, fontSize = 10.5.sp, color = V7.Tx3)
+            }
+        }
+    }
+    Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+}
+
+private fun v7IsSameDay(a: Long, b: Long): Boolean {
+    val ca = java.util.Calendar.getInstance().apply { timeInMillis = a }
+    val cb = java.util.Calendar.getInstance().apply { timeInMillis = b }
+    return ca.get(java.util.Calendar.YEAR) == cb.get(java.util.Calendar.YEAR) &&
+        ca.get(java.util.Calendar.DAY_OF_YEAR) == cb.get(java.util.Calendar.DAY_OF_YEAR)
+}
+
+private fun v7RelTime(ms: Long): String {
+    if (ms <= 0) return ""
+    val now = System.currentTimeMillis()
+    val diff = now - ms
+    return when {
+        diff < 60_000 -> "刚刚"
+        diff < 3_600_000 -> "${diff / 60_000} 分钟前"
+        v7IsSameDay(now, ms) ->
+            "今天 " + java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(ms))
+        v7IsSameDay(now - 86_400_000L, ms) -> "昨天"
+        else -> java.text.SimpleDateFormat("MM-dd", java.util.Locale.getDefault()).format(java.util.Date(ms))
     }
 }
 
