@@ -24,7 +24,8 @@ fail=0
 shot() { sleep "${2:-2}"; adb exec-out screencap -p > "$OUT/$1.png"; echo "shot: $1 ($(stat -c%s "$OUT/$1.png" 2>/dev/null || echo 0) bytes)"; }
 alive() { [ -n "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')" ]; }
 tap() { python3 "$HERE/tap.py" "$@"; }
-row() { printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" >> "$OUT/audit.tsv"; }
+# 7 列：入口 / 截图 / 判定 / 说明 / 文本节点数 / 可点节点数 / 备注
+row() { printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" "${5:-}" "${6:-}" "${7:-}" >> "$OUT/audit.tsv"; }
 
 # One uiautomator dump, then three cheap queries over the saved file.
 snap() {
@@ -33,6 +34,9 @@ snap() {
   [ -s "$OUT/.ui.xml" ]
 }
 sig() { tr '>' '\n' < "$OUT/.ui.xml" | grep -o 'text="[^"]*"' | md5sum | cut -d' ' -f1; }
+# 页面里有多少个非空文本、多少个 clickable=true —— 用来判断"这页是不是空壳"
+ntext() { tr '>' '\n' < "$OUT/.ui.xml" | grep -o 'text="[^"]*"' | grep -vc 'text=""' || true; }
+nclick() { tr '>' '\n' < "$OUT/.ui.xml" | grep -c 'clickable="true"' || true; }
 has() { tr '>' '\n' < "$OUT/.ui.xml" | grep -q "text=\"$1\""; }
 # Still on the V7 home? The bottom tab bar is content-desc based and always shows
 # all four tabs, so >=3 of them present is an unambiguous "we never left" signal.
@@ -103,7 +107,12 @@ for t in 对话 动态 群聊 设置; do
     if ! alive; then
       row "$t tab" "$n.png" "DEAD" "crash on tab switch"; fail=1
     else
-      row "$t tab" "$n.png" "OK" "-"
+      tx="$(ntext)"; ck="$(nclick)"
+      if [ "${tx:-0}" -le 2 ]; then
+        row "$t tab" "$n.png" "EMPTY" "tab renders almost no content" "$tx" "$ck" "shell"; fail=1
+      else
+        row "$t tab" "$n.png" "OK" "-" "$tx" "$ck" ""
+      fi
     fi
   else
     row "$t tab" "-" "MISSING" "tab label not found"; fail=1
@@ -168,10 +177,16 @@ for e in "${ENTRIES[@]}"; do
       row "$label" "$n.png" "NOCHANGE" "still on settings home — tap opened nothing"; fail=1
     elif [ "$after" = "$before" ]; then
       row "$label" "$n.png" "NOCHANGE" "screen identical before/after"; fail=1
-    elif has "$label"; then
-      row "$label" "$n.png" "OK" "-"
     else
-      row "$label" "$n.png" "OK" "opened, title differs from row label"
+      tx="$(ntext)"; ck="$(nclick)"
+      if [ "${tx:-0}" -le 2 ]; then
+        row "$label" "$n.png" "EMPTY" "opened but renders almost no content" "$tx" "$ck" "shell"
+        fail=1
+      elif has "$label"; then
+        row "$label" "$n.png" "OK" "-" "$tx" "$ck" ""
+      else
+        row "$label" "$n.png" "OK" "opened, title differs from row label" "$tx" "$ck" ""
+      fi
     fi
   else
     row "$label" "-" "MISSING" "tap failed on subtitle: $sub"; fail=1
