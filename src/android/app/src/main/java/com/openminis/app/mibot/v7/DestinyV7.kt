@@ -890,9 +890,27 @@ private fun V7JobRow(job: com.openminis.app.agent.jobs.AgentJob) {
                 color = V7.Tx3,
             )
         }
-        if (!running) V7Chip("排队", "wa")
+        if (!running) V7Tag("排队", V7.Wa)
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+}
+
+/**
+ * [destiny/queue-real] 行内小标签。
+ *
+ * 不能用 V7Chip：它是 fillMaxWidth 的整行组件（给设置列表一行一个徽标用的），
+ * 塞进 Row 里会把整行撑满、把左侧文字挤成零宽。这里必须是 wrap-content。
+ */
+@Composable
+private fun V7Tag(text: String, color: Color) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.14f))
+            .padding(horizontal = 7.dp, vertical = 3.dp),
+    ) {
+        Text(text, fontSize = 10.sp, color = color, fontWeight = FontWeight.Medium)
+    }
 }
 
 /** 对话页顶部的队列条：一行状态 + 前几条任务；点「查看全部」进任务队列页。 */
@@ -1033,7 +1051,7 @@ fun DestinyV7NotWired(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = V7.Tx)
             }
             Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = V7.Tx, modifier = Modifier.weight(1f))
-            V7Chip("未接入", "wa")
+            V7Tag("未接入", V7.Wa)
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
         Column(Modifier.weight(1f).padding(horizontal = 22.dp)) {
