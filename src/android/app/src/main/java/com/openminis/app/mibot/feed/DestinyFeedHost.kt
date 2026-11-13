@@ -47,6 +47,11 @@ fun DestinyFeedHost(
     onOpenSession: (String) -> Unit,
     onOpenGroup: (String) -> Unit,
     onChat: (String) -> Unit,
+    // [destiny/real-home] 首页区的真实数据：最近会话 + 状态行 + 新建对话。
+    recents: List<com.openminis.app.mibot.home.HomeRecent> = emptyList(),
+    statusLine: String = "",
+    onNewChat: () -> Unit = {},
+    dark: Boolean = false,
 ) {
     var mode by rememberSaveable { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize()) {
@@ -57,6 +62,10 @@ fun DestinyFeedHost(
                     onDiscuss = onDiscuss,
                     onOpenSession = onOpenSession,
                     onOpenGroup = onOpenGroup,
+                    recents = recents,
+                    statusLine = statusLine,
+                    onNewChat = onNewChat,
+                    dark = dark,
                 )
                 1 -> IdeasPage(onChat = onChat)
                 else -> FreeQuotasPage(onDiscuss = onDiscuss)

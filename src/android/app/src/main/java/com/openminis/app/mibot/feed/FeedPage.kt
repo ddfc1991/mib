@@ -73,6 +73,12 @@ fun FeedPage(
     onDiscuss: (String) -> Unit,
     onOpenSession: (String) -> Unit = {},
     onOpenGroup: (String) -> Unit = {},
+    // [destiny/real-home] 首页区（问候/最近对话/新对话）要真实数据，由调用方
+    // 从会话库和当前状态算好传进来，这里只负责往下递。
+    recents: List<com.openminis.app.mibot.home.HomeRecent> = emptyList(),
+    statusLine: String = "",
+    onNewChat: () -> Unit = {},
+    dark: Boolean = false,
 ) {
     val ctx = LocalContext.current
     val bottom = LocalGlassBottomInset.current
@@ -95,6 +101,11 @@ fun FeedPage(
         item { MibotPageTitle(t("动态", "Feed"), t("应用里发生的事，最新的在最上面", "What happened in the app, newest first")) }
         item {
             DestinyHomeHeader(
+                recents = recents,
+                onOpenRecent = onOpenSession,
+                statusLine = statusLine,
+                onNewChat = onNewChat,
+                dark = dark,
                 onPhoneControl = { onDiscuss("打开手机操控（虚拟屏多开）") },
                 onWechat = { onDiscuss("打开微信（ilinkai 绑定与收发）") },
                 onAppAccess = { onDiscuss("打开应用访问（per-app 允许/禁用）") },

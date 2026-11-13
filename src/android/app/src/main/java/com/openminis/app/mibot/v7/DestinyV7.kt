@@ -188,9 +188,27 @@ fun DestinyV7Home(
     // [destiny/v7-real] Screen 01 is wired to the REAL session database — no
     // sample rows. When a repository is provided the design-spec conversation
     // list is replaced by live data; empty state tells the truth.
-    val realSessions = if (screen.id == "01" && chatRepository != null) {
+    // [destiny/real-home] 只订阅一次会话表：对话 tab 列全量，动态 tab 的首页区
+    // 取前三条当「最近对话」。以前动态页那块是写死的样张，现在吃同一份真数据。
+    val allSessions = if (chatRepository != null) {
         chatRepository.observeSessions().collectAsState(initial = null).value
     } else null
+    val realSessions = if (screen.id == "01") allSessions else null
+    val homeRecents = allSessions.orEmpty()
+        .sortedByDescending { it.updatedAt }
+        .take(3)
+        .mapIndexed { i, sess ->
+            val t = sess.title?.takeIf { it.isNotBlank() } ?: "未命名对话"
+            com.openminis.app.mibot.home.HomeRecent(
+                id = sess.id,
+                title = t,
+                sub = sess.lastMessage?.takeIf { it.isNotBlank() } ?: sess.modelId,
+                time = v7RelTime(sess.updatedAt),
+                color = V7_RECENT_TONES[i % V7_RECENT_TONES.size],
+                letter = t.take(1),
+            )
+        }
+    val homeStatus = allSessions?.let { "${it.size} 个对话 · 都存在本机数据库" } ?: ""
 
     Column(
         Modifier
@@ -249,6 +267,10 @@ fun DestinyV7Home(
                             actions.onNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id))
                         },
                         onChat = { actions.onAction(it) },
+                        recents = homeRecents,
+                        statusLine = homeStatus,
+                        onNewChat = { actions.onNewChat() },
+                        dark = true,
                     )
                 }
             }
@@ -385,6 +407,15 @@ private fun V7Element(
 // ---------------------------------------------------------------------------
 // [destiny/v7-real] Screen 01 backed by the real session database.
 // ---------------------------------------------------------------------------
+
+// 最近对话图标底色：跟 V7 其它页同一套色板，按顺序取，不按标题编颜色。
+private val V7_RECENT_TONES = listOf(
+    com.openminis.app.mibot.design.HarkTokens.blue,
+    com.openminis.app.mibot.design.HarkTokens.terracotta,
+    com.openminis.app.mibot.design.HarkTokens.green,
+    com.openminis.app.mibot.design.HarkTokens.purple,
+    com.openminis.app.mibot.design.HarkTokens.amber,
+)
 
 private fun LazyListScope.v7RealSessions(
     sessions: List<ChatSessionEntity>?,

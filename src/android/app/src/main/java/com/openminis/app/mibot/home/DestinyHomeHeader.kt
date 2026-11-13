@@ -2,7 +2,6 @@ package com.openminis.app.mibot.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,11 +13,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,12 +25,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openminis.app.mibot.design.HarkTokens
+import java.util.Calendar
 
 /**
- * Destiny 首页（Hark 蒸馏 · 暖瓷毛玻璃 × Muse 结构）。
- * 大标题"下午好 Yang" + 搜索框 + 最近对话分组卡。
- * 质感：渐变底 / 毛玻璃卡 / 多层阴影 / 陶土 accent / 绿点——真机截图逐项核验。
+ * 动态页顶部的首页区。
+ *
+ * [destiny/real-home] 这里以前是写死的样张：「下午好，Yang」、副标题
+ * 「Destiny-2.5 · 推理 · 1M · 沙箱已连接」、三条编造的最近对话（Mines 设计稿
+ * v36 / 梦洁 SSH 修好了 / Hermes 交易机器人），还有一个点了没任何反应的搜索框。
+ * 现在全部换成调用方传进来的真实数据：
+ *   - 问候语按当前小时算，不编名字；
+ *   - 副标题由调用方给出真实状态，给空就不显示；
+ *   - 「最近对话」是真实会话表的前几条，点了真能进那个会话；
+ *   - 真没有会话就如实写空态，不摆假条目；
+ *   - 搜索框删掉——没有搜索后端的输入框只是骗人。
+ *
+ * [destiny/home-dark] HarkTokens 是浅色「暖瓷」一套令牌，直接贴进 V7 的深色壳里
+ * 会是一块白板。dark=true 时整体换深色等价色，深色页里不再有白卡。
  */
+data class HomeRecent(
+    val id: String,
+    val title: String,
+    val sub: String,
+    val time: String,
+    val color: Color,
+    val letter: String,
+)
+
 @Composable
 fun DestinyHomeHeader(
     onPhoneControl: () -> Unit = {},
@@ -43,15 +61,20 @@ fun DestinyHomeHeader(
     onSandbox: () -> Unit = {},
     onMonitor: () -> Unit = {},
     onSettings: () -> Unit = {},
+    recents: List<HomeRecent> = emptyList(),
+    onOpenRecent: (String) -> Unit = {},
+    statusLine: String = "",
+    onNewChat: () -> Unit = {},
+    dark: Boolean = false,
 ) {
-    Column(Modifier.fillMaxWidth().background(HarkTokens.bgBrush)) {
-        GreetingHeader(onSettings)
+    val p = homePalette(dark)
+    Column(Modifier.fillMaxWidth().background(p.card)) {
+        GreetingHeader(p, statusLine = statusLine, onNewChat = onNewChat)
         Spacer(Modifier.height(20.dp))
-        SearchBar()
-        Spacer(Modifier.height(20.dp))
-        RecentSection()
+        RecentSection(p, recents = recents, onOpenRecent = onOpenRecent)
         Spacer(Modifier.height(16.dp))
         CapabilityGroup(
+            p = p,
             onPhoneControl = onPhoneControl,
             onWechat = onWechat,
             onAppAccess = onAppAccess,
@@ -64,82 +87,115 @@ fun DestinyHomeHeader(
     }
 }
 
+/** 首页区配色：默认浅色暖瓷；V7 深色壳里传 dark=true。 */
+private data class HomePalette(
+    val card: Color,
+    val ink: Color,
+    val inkSub: Color,
+    val line: Color,
+)
+
+private fun homePalette(dark: Boolean) = if (dark) {
+    HomePalette(
+        card = Color(0xFF171719),
+        ink = Color(0xFFF2F0EB),
+        inkSub = Color(0xFFA3A099),
+        line = Color(0x1FFFFFFF),
+    )
+} else {
+    HomePalette(
+        card = HarkTokens.glass,
+        ink = HarkTokens.ink,
+        inkSub = HarkTokens.inkSub,
+        line = HarkTokens.hairline,
+    )
+}
+
 @Composable
-private fun GreetingHeader(onSettings: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+private fun GreetingHeader(p: HomePalette, statusLine: String, onNewChat: () -> Unit) {
+    val greeting = remember {
+        when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+            in 0..4 -> "凌晨好"
+            in 5..10 -> "上午好"
+            in 11..13 -> "中午好"
+            in 14..17 -> "下午好"
+            else -> "晚上好"
+        }
+    }
+    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(
-            Modifier.size(48.dp).clip(CircleShape).background(HarkTokens.terracotta),
+            Modifier.size(44.dp).clip(CircleShape).background(HarkTokens.terracotta),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Y", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("D", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
         }
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(13.dp))
         Column(Modifier.weight(1f)) {
-            Text("下午好，Yang", style = HarkTokens.museTitle)
-            Spacer(Modifier.height(4.dp))
-            Text("Destiny-2.5 · 推理 · 1M · 沙箱已连接", fontSize = 13.sp, color = HarkTokens.inkSub)
+            Text(greeting, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = p.ink)
+            if (statusLine.isNotBlank()) {
+                Spacer(Modifier.height(3.dp))
+                Text(statusLine, fontSize = 12.5.sp, color = p.inkSub)
+            }
         }
         Box(
             Modifier.clip(RoundedCornerShape(99.dp)).background(HarkTokens.terracotta)
-                .clickable { onSettings() }.padding(horizontal = 18.dp, vertical = 10.dp),
+                .clickable { onNewChat() }.padding(horizontal = 16.dp, vertical = 9.dp),
         ) {
-            Text("+ 新对话", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text("+ 新对话", color = Color.White, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
-private fun SearchBar() {
-    Row(
-        Modifier.fillMaxWidth().shadow(8.dp, RoundedCornerShape(24.dp)).clip(RoundedCornerShape(24.dp))
-            .background(HarkTokens.glass).padding(horizontal = 18.dp, vertical = 15.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(Icons.Outlined.Search, null, Modifier.size(18.dp), tint = HarkTokens.inkSub)
-        Spacer(Modifier.width(10.dp))
-        Text("搜索功能，比如 账号连接", fontSize = 14.sp, color = HarkTokens.inkSub)
-    }
-}
-
-private data class RecentItem(val title: String, val sub: String, val time: String, val color: Color, val letter: String)
-
-private val RECENT = listOf(
-    RecentItem("Mines 设计稿 v36", "首页只读优化，整理需要重构信息架构", "13:01", HarkTokens.blue, "◆"),
-    RecentItem("梦洁 SSH 修好了", "现在可以连服务器，但连接管理页面信息", "09:58", HarkTokens.terracotta, "▣"),
-    RecentItem("Hermes 交易机器人", "只看消息了账号，配置一处没有", "昨天", HarkTokens.green, "▦"),
-)
-
-@Composable
-private fun RecentSection() {
+private fun RecentSection(p: HomePalette, recents: List<HomeRecent>, onOpenRecent: (String) -> Unit) {
     Column(Modifier.fillMaxWidth()) {
-        Text("最近对话", style = HarkTokens.museSection)
-        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("最近对话", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = p.ink)
+            Spacer(Modifier.width(8.dp))
+            Text("${recents.size}", fontSize = 12.sp, color = p.inkSub)
+        }
+        Spacer(Modifier.height(10.dp))
         Column(
-            Modifier.fillMaxWidth().shadow(16.dp, HarkTokens.groupRadius).clip(HarkTokens.groupRadius)
-                .background(HarkTokens.glass),
+            Modifier.fillMaxWidth().shadow(10.dp, RoundedCornerShape(20.dp)).clip(RoundedCornerShape(20.dp))
+                .background(p.card),
         ) {
-            RECENT.forEachIndexed { i, item ->
-                Row(
-                    Modifier.fillMaxWidth().clickable { }.padding(horizontal = 18.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(item.color),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(item.letter, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HarkTokens.ink)
-                        Spacer(Modifier.height(3.dp))
-                        Text(item.sub, fontSize = 12.sp, color = HarkTokens.inkSub, maxLines = 2)
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Text(item.time, fontSize = 12.sp, color = HarkTokens.inkSub)
+            if (recents.isEmpty()) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 18.dp)) {
+                    Text("还没有对话", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = p.ink)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "对话保存在本机数据库；新建之后会出现在这里，点一下就能接着聊。",
+                        fontSize = 12.sp,
+                        color = p.inkSub,
+                    )
                 }
-                if (i < RECENT.size - 1) {
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(HarkTokens.hairline))
+            } else {
+                recents.forEachIndexed { i, item ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { onOpenRecent(item.id) }
+                            .padding(horizontal = 16.dp, vertical = 13.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(item.color),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(item.letter, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.width(13.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(item.title, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = p.ink)
+                            if (item.sub.isNotBlank()) {
+                                Spacer(Modifier.height(3.dp))
+                                Text(item.sub, fontSize = 12.sp, color = p.inkSub, maxLines = 2)
+                            }
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text(item.time, fontSize = 12.sp, color = p.inkSub)
+                    }
+                    if (i < recents.size - 1) {
+                        Box(Modifier.fillMaxWidth().height(1.dp).background(p.line))
+                    }
                 }
             }
         }
@@ -150,6 +206,7 @@ private data class Cap(val label: String, val sub: String, val color: Color, val
 
 @Composable
 private fun CapabilityGroup(
+    p: HomePalette,
     onPhoneControl: () -> Unit,
     onWechat: () -> Unit,
     onAppAccess: () -> Unit,
@@ -167,32 +224,32 @@ private fun CapabilityGroup(
         Cap("监控", "诊断 · 上报", HarkTokens.blue, "◫", onMonitor),
     )
     Column(Modifier.fillMaxWidth()) {
-        Text("能力", style = HarkTokens.museSection)
-        Spacer(Modifier.height(12.dp))
+        Text("能力", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = p.ink)
+        Spacer(Modifier.height(10.dp))
         Column(
-            Modifier.fillMaxWidth().shadow(16.dp, HarkTokens.groupRadius).clip(HarkTokens.groupRadius)
-                .background(HarkTokens.glass),
+            Modifier.fillMaxWidth().shadow(10.dp, RoundedCornerShape(20.dp)).clip(RoundedCornerShape(20.dp))
+                .background(p.card),
         ) {
             caps.forEachIndexed { i, c ->
                 Row(
-                    Modifier.fillMaxWidth().clickable { c.onTap() }.padding(horizontal = 18.dp, vertical = 13.dp),
+                    Modifier.fillMaxWidth().clickable { c.onTap() }.padding(horizontal = 16.dp, vertical = 13.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
-                        Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(c.color),
+                        Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(c.color),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(c.letter, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(c.letter, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
-                    Spacer(Modifier.width(14.dp))
+                    Spacer(Modifier.width(13.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(c.label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HarkTokens.ink)
-                        Text(c.sub, fontSize = 12.sp, color = HarkTokens.inkSub)
+                        Text(c.label, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = p.ink)
+                        Text(c.sub, fontSize = 12.sp, color = p.inkSub)
                     }
-                    Text("›", fontSize = 18.sp, color = HarkTokens.inkSub)
+                    Text("›", fontSize = 18.sp, color = p.inkSub)
                 }
                 if (i < caps.size - 1) {
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(HarkTokens.hairline))
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(p.line))
                 }
             }
         }

@@ -131,6 +131,27 @@ for t in 对话 动态 群聊 设置; do
       else
         row "$t tab" "$n.png" "OK" "-" "$tx" "$ck" ""
       fi
+      # 动态 tab 里还有三个子栏（在看 / 想到的 / 能领的），也得逐个点开看。
+      if [ "$t" = "动态" ]; then
+        for pair in "想到的:feed-ideas" "能领的:feed-quotas"; do
+          lbl="${pair%%:*}"; f="${pair##*:}"
+          if tap text "$lbl" > /dev/null 2>&1; then
+            sleep 2
+            shot "$f" 1
+            snap || true
+            stx="$(ntext)"; sck="$(nclick)"
+            if [ "${stx:-0}" -le 3 ] && [ "${sck:-0}" -le 1 ]; then
+              row "动态 › $lbl" "$f.png" "EMPTY" "sub-tab renders almost no content" "$stx" "$sck" "shell"
+              fail=1
+            else
+              row "动态 › $lbl" "$f.png" "OK" "-" "$stx" "$sck" ""
+            fi
+          else
+            row "动态 › $lbl" "-" "MISSING" "sub-tab label not found"; fail=1
+          fi
+        done
+        tap text "在看" > /dev/null 2>&1 || true
+      fi
     fi
   else
     row "$t tab" "-" "MISSING" "tab label not found"; fail=1
