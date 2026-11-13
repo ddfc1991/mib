@@ -723,7 +723,7 @@
             android:exported="false"
             android:grantUriPermissions="true" />
         <receiver
-            android:name="com.mibot.cap.phone.shell.BootRestoreHandler"
+            android:name="com.mibot.cap.phone.setup.BootRestoreHandler"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
