@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openminis.app.data.db.ChatSessionEntity
 import com.openminis.app.data.repository.ChatRepository
+import com.openminis.app.ui.navigation.Routes
 
 /**
  * [destiny/v7-full] The 56-screen design spec, rendered as NATIVE Compose UI.
@@ -130,6 +131,10 @@ data class V7Actions(
     val onMonitor: () -> Unit = {},
     // [destiny/v7-real] Open a REAL session from the real database.
     val onOpenSession: (String) -> Unit = {},
+    // [destiny/v7-real] Navigate to any REAL route (providers / skills / MCP /
+    // memory / storage / network / …). The settings tab is built from this:
+    // every row below it opens the actual app screen, nothing is a mock.
+    val onNavigate: (String) -> Unit = {},
 )
 
 @Composable
@@ -203,11 +208,43 @@ fun DestinyV7Home(
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
 
-        LazyColumn(
-            Modifier.weight(1f),
-            contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 6.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-        ) {
+        // [destiny/v7-real] The four tabs are the app's REAL surfaces now:
+        //   0 对话 = real session database (observeSessions)
+        //   1 动态 = real feed store (DestinyFeedHost)
+        //   2 群聊 = real sub-agent roster (SubAgentsScreen)
+        //   3 设置 = real routes, every row opens an existing screen
+        // The 56 design screens are still reachable from the top-bar menu,
+        // but they are no longer what the app *is*.
+        when (tab) {
+            1 -> Box(Modifier.weight(1f)) {
+                V7MaterialWrap {
+                    com.openminis.app.mibot.feed.DestinyFeedHost(
+                        onDiscuss = { actions.onAction(it) },
+                        onOpenSession = { actions.onOpenSession(it) },
+                        onOpenGroup = { actions.onAgents() },
+                        onChat = { actions.onAction(it) },
+                    )
+                }
+            }
+            2 -> Box(Modifier.weight(1f)) {
+                V7MaterialWrap {
+                    com.openminis.app.ui.settings.SubAgentsScreen(
+                        onBack = {},
+                        onOpen = { id -> actions.onNavigate("sub_agent/" + id) },
+                    )
+                }
+            }
+            3 -> LazyColumn(
+                Modifier.weight(1f),
+                contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 6.dp, bottom = 24.dp),
+            ) {
+                v7RealSettings(actions) { showIndex = true }
+            }
+            else -> LazyColumn(
+                Modifier.weight(1f),
+                contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 6.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
             // Screens without a big header already show their title in the
             // top bar — do not repeat it in the content area.
             // [destiny] 动态屏(03) 顶部插首页区：模型卡/隧道死活/能力网格。
@@ -243,6 +280,7 @@ fun DestinyV7Home(
                     fontSize = 10.sp,
                     color = V7.Tx3,
                 )
+            }
             }
         }
 
@@ -666,4 +704,109 @@ private fun DestinyV7Index(
             }
         }
     }
+}
+
+
+// ---------------------------------------------------------------------------
+// [destiny/v7-real] Settings tab — the app's REAL screens, grouped by domain.
+// Every row navigates to a route that already exists in AppNavigation.
+// Nothing in this catalog is a mock: if a row is here, tapping it opens the
+// real screen (providers, model groups, skills, memory, MCP, storage,
+// network, backup, logs, permissions, ...).
+// ---------------------------------------------------------------------------
+
+private data class V7SettingEntry(val label: String, val hint: String, val route: String)
+
+private fun v7SettingsCatalog(): List<Pair<String, List<V7SettingEntry>>> = listOf(
+    "模型" to listOf(
+        V7SettingEntry("模型服务商", "API Key · 账号 · 余额", Routes.PROVIDER_LIST),
+        V7SettingEntry("模型组", "主模型 · 备用 · 路由顺序", Routes.MODEL_GROUPS),
+        V7SettingEntry("用量统计", "token · 调用次数 · 花费", Routes.USAGE_STATS),
+    ),
+    "能力" to listOf(
+        V7SettingEntry("子 Agent", "派单用的 Agent 花名册", Routes.AGENTS),
+        V7SettingEntry("技能", "装在设备上的技能包", Routes.SKILLS),
+        V7SettingEntry("记忆", "长期记忆与文件", Routes.MEMORY),
+        V7SettingEntry("MCP 服务器", "外部工具接入", Routes.MCP),
+        V7SettingEntry("环境变量", "注入到运行时的变量", Routes.ENV_VARS),
+    ),
+    "设备与手机" to listOf(
+        V7SettingEntry("语音", "转写 · 朗读 · 唤醒", Routes.MIBOT_VOICE),
+        V7SettingEntry("手机控制", "无障碍 · 屏幕 · 点击", Routes.MIBOT_APP_ACCESS),
+        V7SettingEntry("微信", "消息派单通道", Routes.MIBOT_WECHAT),
+        V7SettingEntry("任务队列", "后台任务与进度", Routes.MIBOT_TASK_QUEUE),
+        V7SettingEntry("钱包", "余额与充值记录", Routes.MIBOT_WALLET),
+    ),
+    "存储与文件" to listOf(
+        V7SettingEntry("存储", "占用 · 清理", Routes.STORAGE),
+        V7SettingEntry("根文件系统", "容器镜像", Routes.ROOTFS_MANAGEMENT),
+        V7SettingEntry("挂载目录", "宿主机目录映射", Routes.MOUNTED_FOLDERS),
+        V7SettingEntry("文件浏览器", "浏览容器内文件", Routes.FILE_BROWSER),
+        V7SettingEntry("备份", "导出 · 导入 · 目标", Routes.BACKUP),
+    ),
+    "网络" to listOf(
+        V7SettingEntry("网络", "连通性 · DNS", Routes.NETWORK),
+        V7SettingEntry("代理", "HTTP / SOCKS 代理", Routes.NETWORK_PROXIES),
+        V7SettingEntry("Tailscale", "组网与设备", Routes.NETWORK_TAILSCALE),
+        V7SettingEntry("容器 DNS", "容器内解析", Routes.CONTAINER_DNS),
+    ),
+    "系统" to listOf(
+        V7SettingEntry("外观", "主题 · 字体 · 图标", Routes.APPEARANCE),
+        V7SettingEntry("背景", "壁纸与模糊", Routes.BACKGROUND),
+        V7SettingEntry("权限", "系统权限总览", Routes.PERMISSIONS),
+        V7SettingEntry("日志", "运行日志与诊断", Routes.LOGS),
+        V7SettingEntry("定时任务", "Cron 与触发", Routes.SCHEDULED_TASKS),
+        V7SettingEntry("关于", "版本 · 构建 · 许可", Routes.ABOUT),
+    ),
+)
+
+private fun LazyListScope.v7RealSettings(actions: V7Actions, onSpec: () -> Unit) {
+    val catalog = v7SettingsCatalog()
+    item {
+        Text(
+            "以下每一项都是真实功能页 —— 点进去是该功能的实际界面，不是示意图。",
+            fontSize = 12.sp,
+            color = V7.Tx2,
+            lineHeight = 19.sp,
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+        )
+    }
+    catalog.forEach { (title, items) ->
+        item { V7Section(title, "${items.size} 项") }
+        items(items, key = { "set-" + it.route }) { e ->
+            V7SettingRow(e) { actions.onNavigate(e.route) }
+        }
+    }
+    item {
+        Spacer(Modifier.height(26.dp))
+        V7Section("设计规格", "56 屏")
+        Text(
+            "这套 56 屏是产品设计稿（V7 规格），用来对齐视觉与信息架构，不是功能页。" +
+                "上面那些入口才是能真正干活的地方。",
+            fontSize = 12.sp,
+            color = V7.Tx2,
+            lineHeight = 19.sp,
+        )
+        Spacer(Modifier.height(12.dp))
+        V7Button("查看 56 屏设计规格") { onSpec() }
+        Spacer(Modifier.height(28.dp))
+    }
+}
+
+@Composable
+private fun V7SettingRow(e: V7SettingEntry, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(e.label, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = V7.Tx)
+            Text(e.hint, fontSize = 11.5.sp, color = V7.Tx3)
+        }
+        Text("\u203A", fontSize = 17.sp, color = V7.Tx3)
+    }
+    Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
 }

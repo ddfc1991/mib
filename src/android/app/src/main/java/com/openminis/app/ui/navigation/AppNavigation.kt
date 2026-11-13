@@ -603,6 +603,8 @@ fun AppNavigation(
         onMonitor = { navController.safeNavigate(com.openminis.app.mibot.settings.DiagnosticsRoutes.DIAGNOSTICS) },
         // [destiny/v7-real] Screen 01 rows open REAL sessions.
         onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
+        // [destiny/v7-real] Settings tab rows open the REAL screens.
+        onNavigate = { route -> navController.safeNavigate(route) },
     )
     // [fork/mibot-v2] One shared backdrop behind every screen; the Mibot
     // scheme makes Scaffold containers transparent so it shows through.
