@@ -8,8 +8,9 @@
 set -u
 APK="$1"
 OUT="${2:-audit}"
-PKG=com.openminis.app
-TAP="python3 .github/ci/tap.py"
+PKG=com.destiny.mika   # applicationId; the activity classes stay in com.openminis.app
+HERE="$(cd "$(dirname "$0")" && pwd)"
+tap() { python3 "$HERE/tap.py" "$@"; }
 
 mkdir -p "$OUT"
 : > "$OUT/audit.tsv"
@@ -38,13 +39,19 @@ row() { # label, shot, status, note
 }
 
 echo "== install"
-adb install -r -d "$APK" > "$OUT/install.txt" 2>&1 || { echo "::error::install failed"; cat "$OUT/install.txt"; exit 1; }
+adb install -r -g "$APK" > "$OUT/install.txt" 2>&1 || true
+grep -q Success "$OUT/install.txt" || { echo "::error::install failed"; cat "$OUT/install.txt"; exit 1; }
 
 echo "== launch"
+adb logcat -c || true
+adb shell settings put system screen_off_timeout 1800000 || true
+adb shell svc power stayon true || true
+adb shell input keyevent KEYCODE_WAKEUP || true
+adb shell wm dismiss-keyguard || true
 adb shell pm clear "$PKG" >/dev/null 2>&1 || true
 adb shell am start -W -n "$PKG/com.openminis.app.MainActivity" \
-  --es ci_lang zh-CN --ez ci_vault_demo true > "$OUT/start.txt" 2>&1
-sleep 14
+  --es ci_lang zh-CN > "$OUT/start.txt" 2>&1
+sleep 25
 
 if ! alive; then
   echo "::error::app is not running after launch"
@@ -55,7 +62,7 @@ fi
 echo "== tabs"
 for t in 对话 动态 群聊 设置; do
   before="$(sig)"
-  if $TAP desc "$t" > /dev/null 2>&1; then
+  if tap desc "$t" > /dev/null 2>&1; then
     sleep 3
     n="tab-$t"
     shot "$n" 1
@@ -76,7 +83,7 @@ for t in 对话 动态 群聊 设置; do
 done
 
 # Back to settings for the entry sweep.
-$TAP desc "设置" > /dev/null 2>&1 || true
+tap desc "设置" > /dev/null 2>&1 || true
 sleep 3
 
 # The settings list is 29 rows long; only ~10 fit on screen. Walk forward with
@@ -84,7 +91,7 @@ sleep 3
 tap_scrolled() {
   local label="$1" tries=0
   while [ $tries -lt 8 ]; do
-    if $TAP text "$label" > /dev/null 2>&1; then return 0; fi
+    if tap text "$label" > /dev/null 2>&1; then return 0; fi
     adb shell input swipe 540 1800 540 1050 320; sleep 1
     tries=$((tries + 1))
   done
@@ -130,7 +137,7 @@ for label in "${ENTRIES[@]}"; do
     fail=1
   fi
   # Resync to the settings tab (scroll position may have moved).
-  $TAP desc "设置" > /dev/null 2>&1 || true
+  tap desc "设置" > /dev/null 2>&1 || true
   sleep 1
 done
 
