@@ -108,7 +108,7 @@ for t in 对话 动态 群聊 设置; do
       row "$t tab" "$n.png" "DEAD" "crash on tab switch"; fail=1
     else
       tx="$(ntext)"; ck="$(nclick)"
-      if [ "${tx:-0}" -le 2 ]; then
+      if [ "${tx:-0}" -le 3 ] && [ "${ck:-0}" -le 1 ]; then
         row "$t tab" "$n.png" "EMPTY" "tab renders almost no content" "$tx" "$ck" "shell"; fail=1
       else
         row "$t tab" "$n.png" "OK" "-" "$tx" "$ck" ""
@@ -179,7 +179,10 @@ for e in "${ENTRIES[@]}"; do
       row "$label" "$n.png" "NOCHANGE" "screen identical before/after"; fail=1
     else
       tx="$(ntext)"; ck="$(nclick)"
-      if [ "${tx:-0}" -le 2 ]; then
+      # A legit empty-state page still carries a title and controls (e.g.
+      # "No scheduled tasks yet" + back/menu/FAB = 2 texts / 3 clickables).
+      # An unwired shell has neither. Require BOTH counts to be tiny.
+      if [ "${tx:-0}" -le 3 ] && [ "${ck:-0}" -le 1 ]; then
         row "$label" "$n.png" "EMPTY" "opened but renders almost no content" "$tx" "$ck" "shell"
         fail=1
       elif has "$label"; then

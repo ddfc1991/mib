@@ -1456,7 +1456,24 @@ fun AppNavigation(
         }
 
         composable(Routes.FILE_BROWSER) {
-            val vm = FilePreviewHolder.fileBrowserViewModel ?: return@composable
+            // [T-filebrowser-standalone] Settings → 文件浏览器 navigates here
+            // without any chat session having primed FilePreviewHolder, which
+            // used to `return@composable` and paint a blank white screen. Build
+            // a rootfs-rooted view model on demand so the entry always renders
+            // a real directory listing.
+            val appCtx = androidx.compose.ui.platform.LocalContext.current.applicationContext
+            val vm = FilePreviewHolder.fileBrowserViewModel ?: remember(appCtx) {
+                val rootfs = RootfsManager.getInstance(appCtx)
+                val varMinis = java.io.File(rootfs.rootfsDir, "var/minis")
+                FileBrowserViewModel(
+                    rootPath = rootfs.rootfsDir,
+                    initialPath = varMinis.takeIf { it.exists() },
+                    rootLabel = "/",
+                    linuxRootPath = "/",
+                    sessionId = null,
+                    appContext = appCtx,
+                ).also { FilePreviewHolder.fileBrowserViewModel = it }
+            }
             FileBrowserScreen(
                 viewModel = vm,
                 onBack = { navController.safePopBackStack() },
