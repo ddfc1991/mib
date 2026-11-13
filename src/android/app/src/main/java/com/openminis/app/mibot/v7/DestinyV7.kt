@@ -157,11 +157,16 @@ fun DestinyV7Home(
     var tab by remember { mutableStateOf(0) }
     var screenId by remember { mutableStateOf(initialScreen ?: V7_TAB_SCREENS[0]) }
     var showIndex by remember { mutableStateOf(initialIndex) }
+    // [destiny/v7-real] True only while looking at a design-spec screen (opened
+    // from the 56-screen index or a v7-screen deep link). screenId is never
+    // null — it defaults to the tab's design screen — so it cannot be used to
+    // tell "real tab" from "design page"; this flag can.
+    var designMode by remember { mutableStateOf(initialScreen != null) }
 
     if (showIndex) {
         DestinyV7Index(
             onBack = { showIndex = false },
-            onOpen = { id -> screenId = id; showIndex = false },
+            onOpen = { id -> screenId = id; showIndex = false; designMode = true },
             actions = actions,
         )
         return
@@ -173,7 +178,7 @@ fun DestinyV7Home(
     // "Bots 群聊" (a design-spec title) even though the tab is the real
     // GroupChatsPage. Design headers only apply while browsing a design screen.
     val tabLabels = listOf("对话", "动态", "群聊", "设置")
-    val header = if (screenId == null) {
+    val header = if (!designMode) {
         tabLabels.getOrNull(tab) ?: screen.title
     } else {
         screen.elems.firstOrNull { it.kind == "H" }?.a ?: screen.title
@@ -316,7 +321,7 @@ fun DestinyV7Home(
             }
         }
 
-        V7TabBar(tab) { i -> tab = i; screenId = V7_TAB_SCREENS[i] }
+        V7TabBar(tab) { i -> tab = i; screenId = V7_TAB_SCREENS[i]; designMode = false }
     }
 }
 

@@ -47,8 +47,14 @@ on_home() {
   [ "${c:-0}" -ge 3 ]
 }
 
+# [destiny/audit-locale] The app is bilingual (t(zh,en) picks by activity
+# locale) and V7's own shell is hardcoded Chinese, so an en-US emulator shows a
+# half-Chinese/half-English blend. ci_lang/ci_theme seed the prefs the
+# Appearance screen uses; pinning them here makes the audit reflect what a
+# Chinese user actually sees.
+CI_EXTRAS="--es ci_lang zh-CN --ei ci_theme 2"
 launch() {
-  adb shell am start -W -n "$ACT" --es ci_lang zh-CN > /dev/null 2>&1
+  adb shell am start -W -n "$ACT" $CI_EXTRAS > /dev/null 2>&1
   sleep "${1:-10}"
 }
 
@@ -89,7 +95,19 @@ adb shell svc power stayon true || true
 adb shell input keyevent KEYCODE_WAKEUP || true
 adb shell wm dismiss-keyguard || true
 adb shell pm clear "$PKG" > /dev/null 2>&1 || true
-launch 25
+# Seeding prefs needs one launch; on API < 33 attachBaseContext reads them, so
+# the process must be restarted for zh-CN + dark to actually apply.
+launch 12
+adb shell am force-stop "$PKG"; sleep 2
+launch 22
+# Prove the pin actually landed; the audit is worthless if every page still
+# renders the en fallback of t(zh,en).
+langline="$(adb shell run-as "$PKG" cat shared_prefs/appearance_prefs.xml 2>/dev/null | tr -d '\r' | grep -o 'app_language[^/]*' | head -1)"
+echo "pinned prefs: ${langline:-<unreadable>}"
+case "$langline" in
+  *zh*) ;;
+  *) echo "::warning::could not confirm zh-CN pin — screenshots may fall back to English" ;;
+esac
 
 if ! alive; then
   echo "::error::app is not running after launch"
