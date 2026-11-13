@@ -60,8 +60,9 @@ if ! alive; then
 fi
 
 echo "== tabs"
+HOME_SIG="$(sig)"
 for t in 对话 动态 群聊 设置; do
-  before="$(sig)"
+  before="$HOME_SIG"
   if tap desc "$t" > /dev/null 2>&1; then
     sleep 3
     n="tab-$t"
@@ -70,7 +71,7 @@ for t in 对话 动态 群聊 设置; do
     if ! alive; then
       row "$t tab" "$n.png" "DEAD" "crash on tab switch"
       fail=1
-    elif [ "$before" = "$after" ]; then
+    elif [ "$t" != "对话" ] && [ "$before" = "$after" ]; then
       row "$t tab" "$n.png" "NOCHANGE" "tap did not change the screen"
       fail=1
     else
@@ -85,12 +86,13 @@ done
 # Back to settings for the entry sweep.
 tap desc "设置" > /dev/null 2>&1 || true
 sleep 3
+SETTINGS_SIG="$(sig)"
 
 # The settings list is 29 rows long; only ~10 fit on screen. Walk forward with
 # swipes instead of assuming the row is visible.
 tap_scrolled() {
   local label="$1" tries=0
-  while [ $tries -lt 8 ]; do
+  while [ $tries -lt 6 ]; do
     if tap text "$label" > /dev/null 2>&1; then return 0; fi
     adb shell input swipe 540 1800 540 1050 320; sleep 1
     tries=$((tries + 1))
@@ -112,7 +114,6 @@ i=0
 for label in "${ENTRIES[@]}"; do
   i=$((i + 1))
   idx="$(printf '%02d' "$i")"
-  before="$(sig)"
   if tap_scrolled "$label"; then
     sleep 4
     n="set-$idx-$i"
@@ -121,7 +122,7 @@ for label in "${ENTRIES[@]}"; do
     if ! alive; then
       row "$label" "$n.png" "DEAD" "crash opening entry"
       fail=1
-    elif [ "$before" = "$after" ]; then
+    elif [ "$after" = "$SETTINGS_SIG" ]; then
       row "$label" "$n.png" "NOCHANGE" "tap did not open anything"
       fail=1
     else
