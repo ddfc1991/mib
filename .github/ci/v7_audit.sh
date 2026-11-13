@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
-# [destiny/v7-audit] 逐项体检：4 个 tab + 设置里 29 个入口逐个点开，截图 + 判定。
-# 判据：App 还活着、这一屏和点之前不是同一屏（文本签名不同）、没有 crash。
-# 用法: bash .github/ci/v7_audit.sh <apk> <outdir>   产出 <outdir>/audit.tsv
+# [destiny/v7-audit] 逐项体检：4 个 tab + 设置里 28 个入口逐个点开，截图 + 判定。
+#
+# 判据（严格版）：
+#   1. App 进程还活着
+#   2. 点完之后**已经离开设置首页**——首页底部四个 tab 的 content-desc 必须消失；
+#      不消失就说明这一点根本没打开任何页面（上一版只看“文字签名变了”，
+#      被分组标题「网络」吸收点击、列表滚动一下就误判成 OK，已废掉）
+#   3. 截图存证，人能复核
+#
+# 点击目标改用**副标题**而不是标题：设置里的分组标题和条目名会重名（「网络」），
+# 按标题点会先命中不可点的分组标题。副标题（如「连通性 · DNS」）在整张列表里唯一。
 set -u
 APK="$1"
 OUT="${2:-audit}"
@@ -13,16 +21,27 @@ mkdir -p "$OUT"
 : > "$OUT/audit.tsv"
 fail=0
 
-shot() { sleep "${2:-2}"; adb exec-out screencap -p > "$OUT/$1.png"; echo "shot: $1 ($(stat -c%s "$OUT/$1.png") bytes)"; }
+shot() { sleep "${2:-2}"; adb exec-out screencap -p > "$OUT/$1.png"; echo "shot: $1 ($(stat -c%s "$OUT/$1.png" 2>/dev/null || echo 0) bytes)"; }
 alive() { [ -n "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')" ]; }
 tap() { python3 "$HERE/tap.py" "$@"; }
 row() { printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" >> "$OUT/audit.tsv"; }
 
-dump() { adb shell uiautomator dump /sdcard/audit.xml >/dev/null 2>&1; adb exec-out cat /sdcard/audit.xml 2>/dev/null; }
-# md5 of every text= attribute currently rendered — changes when the page changes.
-sig() { dump | tr '>' '\n' | grep -o 'text="[^"]*"' | md5sum | cut -d' ' -f1; }
-# Is this exact label on screen right now?
-has() { dump | tr '>' '\n' | grep -q "text=\"$1\""; }
+# One uiautomator dump, then three cheap queries over the saved file.
+snap() {
+  adb shell uiautomator dump /sdcard/audit.xml >/dev/null 2>&1
+  adb exec-out cat /sdcard/audit.xml > "$OUT/.ui.xml" 2>/dev/null
+  [ -s "$OUT/.ui.xml" ]
+}
+sig() { tr '>' '\n' < "$OUT/.ui.xml" | grep -o 'text="[^"]*"' | md5sum | cut -d' ' -f1; }
+has() { tr '>' '\n' < "$OUT/.ui.xml" | grep -q "text=\"$1\""; }
+# Still on the V7 home? The bottom tab bar is content-desc based and always shows
+# all four tabs, so >=3 of them present is an unambiguous "we never left" signal.
+# (Requiring 1 could false-positive on a sub-page that happens to label a node 对话.)
+on_home() {
+  local c
+  c="$(tr '>' '\n' < "$OUT/.ui.xml" | grep -cE 'content-desc="(对话|动态|群聊|设置)"')"
+  [ "${c:-0}" -ge 3 ]
+}
 
 launch() {
   adb shell am start -W -n "$ACT" --es ci_lang zh-CN > /dev/null 2>&1
@@ -33,23 +52,23 @@ launch() {
 # BACK if we are on a pushed sub-page, relaunch as the last resort.
 resync_settings() {
   local i=0
-  while [ $i -lt 3 ]; do
-    if tap desc "设置" > /dev/null 2>&1; then sleep 2; return 0; fi
+  while [ $i -lt 4 ]; do
+    if snap && tap desc "设置" > /dev/null 2>&1; then sleep 2; return 0; fi
     adb shell input keyevent KEYCODE_BACK; sleep 2
     i=$((i + 1))
   done
   adb shell am force-stop "$PKG"; sleep 2
-  launch 12
+  launch 14
   tap desc "设置" > /dev/null 2>&1 || true
   sleep 3
 }
 
-# Scroll the settings list until the label is rendered; never taps.
+# Scroll the settings list until the subtitle is rendered; never taps.
 scroll_to() {
-  local label="$1" tries=0
-  while [ $tries -lt 8 ]; do
-    has "$label" && return 0
-    adb shell input swipe 540 1750 540 1100 280; sleep 1
+  local sub="$1" tries=0
+  while [ $tries -lt 10 ]; do
+    snap && has "$sub" && return 0
+    adb shell input swipe 540 1800 540 1050 260; sleep 1
     tries=$((tries + 1))
   done
   return 1
@@ -75,17 +94,14 @@ if ! alive; then
 fi
 
 echo "== tabs"
-HOME_SIG="$(sig)"
 for t in 对话 动态 群聊 设置; do
+  n="tab-$t"
   if tap desc "$t" > /dev/null 2>&1; then
     sleep 3
-    n="tab-$t"
-    shot "$n"
-    after="$(sig)"
+    shot "$n" 1
+    snap || true
     if ! alive; then
       row "$t tab" "$n.png" "DEAD" "crash on tab switch"; fail=1
-    elif [ "$t" != "对话" ] && [ "$after" = "$HOME_SIG" ]; then
-      row "$t tab" "$n.png" "NOCHANGE" "tap did not change the screen"; fail=1
     else
       row "$t tab" "$n.png" "OK" "-"
     fi
@@ -95,43 +111,73 @@ for t in 对话 动态 群聊 设置; do
 done
 
 echo "== settings entries"
+# 标签|副标题 —— 副标题唯一，用它定位可避免命中同名的分组标题。
 ENTRIES=(
-  "模型服务商" "模型组" "用量统计"
-  "子 Agent" "技能" "记忆" "MCP 服务器" "环境变量"
-  "语音" "手机控制" "微信" "任务队列" "钱包"
-  "存储" "根文件系统" "挂载目录" "文件浏览器" "备份"
-  "网络" "代理" "Tailscale" "容器 DNS"
-  "外观" "背景" "权限" "日志" "定时任务" "关于"
+  "模型服务商|API Key · 账号 · 余额"
+  "模型组|主模型 · 备用 · 路由顺序"
+  "用量统计|token · 调用次数 · 花费"
+  "子 Agent|派单用的 Agent 花名册"
+  "技能|装在设备上的技能包"
+  "记忆|长期记忆与文件"
+  "MCP 服务器|外部工具接入"
+  "环境变量|注入到运行时的变量"
+  "语音|转写 · 朗读 · 唤醒"
+  "手机控制|无障碍 · 屏幕 · 点击"
+  "微信|未接入 · 不显示假账号"
+  "任务队列|真实作业 · 执行中 · 排队"
+  "钱包|未接入 · 不显示假余额"
+  "存储|占用 · 清理"
+  "根文件系统|容器镜像"
+  "挂载目录|宿主机目录映射"
+  "文件浏览器|浏览容器内文件"
+  "备份|导出 · 导入 · 目标"
+  "网络|连通性 · DNS"
+  "代理|HTTP / SOCKS 代理"
+  "Tailscale|组网与设备"
+  "容器 DNS|容器内解析"
+  "外观|主题 · 字体 · 图标"
+  "背景|壁纸与模糊"
+  "权限|系统权限总览"
+  "日志|运行日志与诊断"
+  "定时任务|Cron 与触发"
+  "关于|版本 · 构建 · 许可"
 )
 resync_settings
 i=0
-for label in "${ENTRIES[@]}"; do
+for e in "${ENTRIES[@]}"; do
   i=$((i + 1))
+  label="${e%%|*}"
+  sub="${e#*|}"
   idx="$(printf '%02d' "$i")"
   n="set-$idx"
-  if ! scroll_to "$label"; then
-    row "$label" "-" "MISSING" "row label never rendered"
+  if ! scroll_to "$sub"; then
+    row "$label" "-" "MISSING" "row subtitle never rendered: $sub"
     fail=1
     resync_settings
     continue
   fi
   before="$(sig)"
-  if tap text "$label" > /dev/null 2>&1; then
+  if tap text "$sub" > /dev/null 2>&1; then
     sleep 4
-    shot "$n"
+    shot "$n" 2
+    snap || true
     after="$(sig)"
     if ! alive; then
       row "$label" "$n.png" "DEAD" "crash opening entry"; fail=1
+    elif on_home; then
+      row "$label" "$n.png" "NOCHANGE" "still on settings home — tap opened nothing"; fail=1
     elif [ "$after" = "$before" ]; then
-      row "$label" "$n.png" "NOCHANGE" "tap opened nothing"; fail=1
-    else
+      row "$label" "$n.png" "NOCHANGE" "screen identical before/after"; fail=1
+    elif has "$label"; then
       row "$label" "$n.png" "OK" "-"
+    else
+      row "$label" "$n.png" "OK" "opened, title differs from row label"
     fi
   else
-    row "$label" "-" "MISSING" "tap failed"; fail=1
+    row "$label" "-" "MISSING" "tap failed on subtitle: $sub"; fail=1
   fi
   adb shell input keyevent KEYCODE_BACK; sleep 2
-  if ! alive; then launch 12; fi
+  if ! alive; then launch 14; fi
   resync_settings
 done
 
