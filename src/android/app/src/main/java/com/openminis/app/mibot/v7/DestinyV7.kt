@@ -747,11 +747,11 @@ private fun v7SettingsCatalog(): List<Pair<String, List<V7SettingEntry>>> = list
         V7SettingEntry("环境变量", "注入到运行时的变量", Routes.ENV_VARS),
     ),
     "设备与手机" to listOf(
-        V7SettingEntry("语音", "转写 · 朗读 · 唤醒", Routes.MIBOT_VOICE),
+        V7SettingEntry("语音", "转写 · 朗读 · 唤醒", "destiny_voice"),
         V7SettingEntry("手机控制", "无障碍 · 屏幕 · 点击", Routes.MIBOT_APP_ACCESS),
-        V7SettingEntry("微信", "消息派单通道", Routes.MIBOT_WECHAT),
+        V7SettingEntry("微信", "未接入 · 不显示假账号", "destiny_not_wired/wechat"),
         V7SettingEntry("任务队列", "真实作业 · 执行中 · 排队", "destiny_queue"),
-        V7SettingEntry("钱包", "余额与充值记录", Routes.MIBOT_WALLET),
+        V7SettingEntry("钱包", "未接入 · 不显示假余额", "destiny_not_wired/wallet"),
     ),
     "存储与文件" to listOf(
         V7SettingEntry("存储", "占用 · 清理", Routes.STORAGE),
@@ -992,6 +992,67 @@ fun DestinyV7QueueScreen(onBack: () -> Unit) {
                     lineHeight = 18.sp,
                 )
             }
+        }
+    }
+}
+
+// ─── [destiny/honest-state] 还没接后端的页，如实说没接 ──────────────────────
+//
+// 微信（ilinkai 通道）和钱包（支付通道）在这一版没有真实后端。之前的实现把它们
+// 画成「已连接 destiny_bot」「¥ 1,284.50 / 尾号 8842」——那是写死的示例数据，
+// 看起来像真的，实际什么都做不了。这里改成如实状态：没有任何编造的数字或账号。
+@Composable
+fun DestinyV7NotWired(
+    which: String,
+    onBack: () -> Unit,
+    onOpenPermissions: () -> Unit,
+    onOpenProviders: () -> Unit,
+) {
+    val title = if (which == "wallet") "钱包" else "微信"
+    val missing = if (which == "wallet") {
+        "这一版没有接支付通道：没有余额、没有绑卡、没有账单。所以这里不显示金额 —— 之前的 ¥1,284.50 / 尾号 8842 是写死的示例，已经去掉。"
+    } else {
+        "这一版没有接微信（ilinkai）通道：没有已连接账号、没有扫码授权、没有聊天记录。之前的「已连接 destiny_bot」和两条「最近」是写死的示例，已经去掉。"
+    }
+    val needs = if (which == "wallet") {
+        listOf("支付通道与商户号", "单笔限额与二次确认", "真实账单流水")
+    } else {
+        listOf("ilinkai 账号授权", "常驻通知权限（收消息）", "已配置的模型（派单执行）")
+    }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(V7.Bg)
+            .statusBarsPadding(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = 8.dp, end = 18.dp, top = 8.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = V7.Tx)
+            }
+            Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = V7.Tx, modifier = Modifier.weight(1f))
+            V7Chip("未接入", "wa")
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+        Column(Modifier.weight(1f).padding(horizontal = 22.dp)) {
+            Spacer(Modifier.height(16.dp))
+            Text(missing, fontSize = 13.sp, color = V7.Tx, lineHeight = 21.sp)
+            Spacer(Modifier.height(20.dp))
+            Text("要接上还差", fontSize = 12.sp, color = V7.Tx2)
+            Spacer(Modifier.height(8.dp))
+            needs.forEach { s ->
+                Row(Modifier.padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(5.dp).clip(RoundedCornerShape(3.dp)).background(V7.Wa))
+                    Spacer(Modifier.width(9.dp))
+                    Text(s, fontSize = 12.5.sp, color = V7.Tx2)
+                }
+            }
+            Spacer(Modifier.height(22.dp))
+            V7Button("看系统权限") { onOpenPermissions() }
+            Spacer(Modifier.height(10.dp))
+            V7Button("模型服务商") { onOpenProviders() }
         }
     }
 }

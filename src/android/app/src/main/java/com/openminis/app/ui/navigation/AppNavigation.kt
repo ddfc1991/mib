@@ -890,6 +890,19 @@ fun AppNavigation(
             }
         }
 
+        // [destiny/honest-state] 没接后端的页（微信 / 钱包）如实说"未接入"，
+        // 不再显示写死的账号与金额。
+        composable(
+            route = "destiny_not_wired/{which}",
+            arguments = listOf(navArgument("which") { type = NavType.StringType }),
+        ) { entry ->
+            com.openminis.app.mibot.v7.DestinyV7NotWired(
+                which = entry.arguments?.getString("which") ?: "wechat",
+                onBack = { navController.safePopBackStack() },
+                onOpenPermissions = { navController.safeNavigate(Routes.PERMISSIONS) },
+                onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
+            )
+        }
         // [destiny/queue-real] 真实任务队列页（AgentJobRegistry），设置 › 任务队列
         // 与对话页「查看全部」都落到这里。
         composable("destiny_queue") {
