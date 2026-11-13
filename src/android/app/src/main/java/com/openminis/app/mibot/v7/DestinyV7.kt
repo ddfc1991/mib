@@ -210,7 +210,7 @@ fun DestinyV7Home(
                 }
             }
             IconButton(onClick = { showIndex = true }) {
-                Icon(Icons.Filled.Menu, contentDescription = "全部 56 屏", tint = V7.Tx2)
+                Icon(Icons.Filled.Menu, contentDescription = "设计稿 56 屏（示例数据）", tint = V7.Tx2)
             }
             IconButton(onClick = actions.onLegacy) {
                 Icon(Icons.Filled.Settings, contentDescription = "原功能", tint = V7.Tx2)
@@ -221,7 +221,7 @@ fun DestinyV7Home(
         // [destiny/v7-real] The four tabs are the app's REAL surfaces now:
         //   0 对话 = real session database (observeSessions)
         //   1 动态 = real feed store (DestinyFeedHost)
-        //   2 群聊 = real sub-agent roster (SubAgentsScreen)
+        //   2 群聊 = real bot groups (GroupChatsPage -> GroupChatStore)
         //   3 设置 = real routes, every row opens an existing screen
         // The 56 design screens are still reachable from the top-bar menu,
         // but they are no longer what the app *is*.
@@ -231,16 +231,23 @@ fun DestinyV7Home(
                     com.openminis.app.mibot.feed.DestinyFeedHost(
                         onDiscuss = { actions.onAction(it) },
                         onOpenSession = { actions.onOpenSession(it) },
-                        onOpenGroup = { actions.onAgents() },
+                        onOpenGroup = { id ->
+                            actions.onNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id))
+                        },
                         onChat = { actions.onAction(it) },
                     )
                 }
             }
+            // [destiny/groups-real] 这一栏原来放的是「子 Agent 花名册」——语义不对，
+            // 花名册在 设置 › 子 Agent 里。群聊栏要的是真实的 bot 群聊：
+            // GroupChatsPage 读 GroupChatStore（落盘的真实群、真实成员、真实会话），
+            // 点进去是 GroupChatScreen。空群时它自己给新建入口，不画假群。
             2 -> Box(Modifier.weight(1f)) {
                 V7MaterialWrap {
-                    com.openminis.app.ui.settings.SubAgentsScreen(
-                        onBack = {},
-                        onOpen = { id -> actions.onNavigate("sub_agent/" + id) },
+                    com.openminis.app.mibot.groups.GroupChatsPage(
+                        onOpen = { id ->
+                            actions.onNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id))
+                        },
                     )
                 }
             }
@@ -681,7 +688,7 @@ private fun DestinyV7Index(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = V7.Tx2)
             }
-            Text("全部 56 屏 · 设计规格", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = V7.Tx)
+            Text("设计稿 · 56 屏", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = V7.Tx)
         }
         Box(Modifier.fillMaxWidth().height(2.dp).background(V7.Cu))
         LazyColumn(
@@ -691,7 +698,7 @@ private fun DestinyV7Index(
             item {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "每一屏都是原生界面：大标题、搜索框、分区、头像行、chip、按钮、开关按设计稿重画。点任意一屏进去，也能直接交给 Agent 去办。",
+                    "这里放的是设计规格的示例画面，里面的文字和数字都是示例值，不是 App 的真实功能。真实功能在四个 tab 里：对话、动态、群聊、设置。这些设计稿留着是为了对照版式，不用来当功能用。",
                     fontSize = 12.sp, color = V7.Tx2,
                 )
                 Spacer(Modifier.height(8.dp))
@@ -795,7 +802,7 @@ private fun LazyListScope.v7RealSettings(actions: V7Actions, onSpec: () -> Unit)
     }
     item {
         Spacer(Modifier.height(26.dp))
-        V7Section("设计规格", "56 屏")
+        V7Section("设计稿（示例数据）", "56 屏")
         Text(
             "这套 56 屏是产品设计稿（V7 规格），用来对齐视觉与信息架构，不是功能页。" +
                 "上面那些入口才是能真正干活的地方。",
