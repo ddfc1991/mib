@@ -2031,23 +2031,49 @@ fun AppNavigation(
             )
         }
 
-        // [destiny/mibot-capability] 5 个能力页 Screen 的路由（DestinyCapabilityScreens.kt）。
+        // [destiny/capabilities-real] 能力页全部接真实实现。
+        //
+        // 旧版这 5 条路由指向 DestinyCapabilityScreens.kt：微信（已连接 destiny_bot +
+        // 两条写死的最近消息）、钱包（¥1,284.50 / 尾号 8842）、语音（静态音色文案）、
+        // 手机控制（未分类·169 + 4 个只改本地变量的 Switch）。那些是 HTML 复刻带过来
+        // 的假页，已整文件删除。现在：
+        //   · 微信 / 钱包 → 如实「未接入」，不显示任何编造的账号与金额
+        //   · 语音 → 真实 SpeechRecognizer 页面
+        //   · 手机控制 → 真读系统无障碍状态 + 如实说明运行时未接入
+        //   · 任务队列 → 派单作业表 + 落盘执行队列，两张真表并列
         composable(Routes.MIBOT_WECHAT) {
-            com.openminis.app.mibot.capabilities.WechatScreen()
+            com.openminis.app.mibot.v7.DestinyV7NotWired(
+                which = "wechat",
+                onBack = { navController.safePopBackStack() },
+                onOpenPermissions = { navController.safeNavigate(Routes.PERMISSIONS) },
+                onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
+            )
         }
         composable(Routes.MIBOT_APP_ACCESS) {
-            com.openminis.app.mibot.capabilities.AppAccessScreen()
+            com.openminis.app.mibot.v7.DestinyV7AppAccessScreen(
+                onBack = { navController.safePopBackStack() },
+            )
         }
         composable(Routes.MIBOT_WALLET) {
-            com.openminis.app.mibot.capabilities.WalletScreen()
+            com.openminis.app.mibot.v7.DestinyV7NotWired(
+                which = "wallet",
+                onBack = { navController.safePopBackStack() },
+                onOpenPermissions = { navController.safeNavigate(Routes.PERMISSIONS) },
+                onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
+            )
         }
         composable(Routes.MIBOT_VOICE) {
-            com.openminis.app.mibot.capabilities.VoiceScreen()
+            com.openminis.app.mibot.v7.V7MaterialWrap {
+                com.openminis.app.mibot.voice.DestinyVoiceScreen(
+                    onBack = { navController.safePopBackStack() },
+                    onSend = { text -> com.openminis.app.mibot.feed.openChatWithDraft(navController, text) },
+                )
+            }
         }
         composable(Routes.MIBOT_TASK_QUEUE) {
-            val ctx = androidx.compose.ui.platform.LocalContext.current
-            val queue = remember { com.openminis.app.mibot.queue.TaskRunQueue.get(ctx.applicationContext) }
-            com.openminis.app.mibot.capabilities.TaskQueueScreen(queue)
+            com.openminis.app.mibot.v7.DestinyV7QueueScreen(
+                onBack = { navController.safePopBackStack() },
+            )
         }
     }
     }

@@ -559,7 +559,7 @@ private fun V7Chip(text: String, kind: String) {
 }
 
 @Composable
-private fun V7Button(text: String, onClick: () -> Unit) {
+internal fun V7Button(text: String, onClick: () -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
@@ -902,7 +902,7 @@ private fun V7JobRow(job: com.openminis.app.agent.jobs.AgentJob) {
  * 塞进 Row 里会把整行撑满、把左侧文字挤成零宽。这里必须是 wrap-content。
  */
 @Composable
-private fun V7Tag(text: String, color: Color) {
+internal fun V7Tag(text: String, color: Color) {
     Box(
         Modifier
             .clip(RoundedCornerShape(6.dp))
@@ -1000,11 +1000,82 @@ fun DestinyV7QueueScreen(onBack: () -> Unit) {
         ) {
             item { V7QueuePanel(onOpen = {}, expanded = true) }
             item {
+                // 第二张表：语音/工具任务的持久化执行队列（SharedPrefs 落盘，
+                // 重启不丢、支持断点续接）。和上面派单作业表是两个不同的真实来源，
+                // 只显示一个会让「排队数」对不上，所以两栏都列出来。
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                val runQueue = remember {
+                    com.openminis.app.mibot.queue.TaskRunQueue.get(ctx.applicationContext)
+                }
+                val runs by runQueue.runs.collectAsState()
+                val queued = runs.count { it.state == com.openminis.app.mibot.queue.TaskRunState.QUEUED }
+                val running = runs.count { it.state == com.openminis.app.mibot.queue.TaskRunState.RUNNING }
+                val held = runs.count { it.state == com.openminis.app.mibot.queue.TaskRunState.HELD }
+                Column(Modifier.fillMaxWidth().padding(top = 22.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("任务执行队列", fontSize = 12.sp, color = V7.Tx2, letterSpacing = 0.4.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            when {
+                                runs.isEmpty() -> "空闲"
+                                else -> "$running 执行 · $queued 排队" + if (held > 0) " · $held 挂起" else ""
+                            },
+                            fontSize = 11.sp,
+                            color = if (runs.isEmpty()) V7.Tx3 else V7.Cu,
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (runs.isEmpty()) {
+                        Text(
+                            "这一条是语音/工具任务落盘的那张表（重启不丢）。现在没有记录。",
+                            fontSize = 11.5.sp,
+                            color = V7.Tx3,
+                            lineHeight = 18.sp,
+                        )
+                    } else {
+                        runs.take(6).forEach { r ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(vertical = 9.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    Modifier
+                                        .size(7.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(
+                                            if (r.state == com.openminis.app.mibot.queue.TaskRunState.RUNNING) V7.Ok else V7.Wa,
+                                        ),
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        r.goal.replace("\n", " ").take(30),
+                                        fontSize = 13.sp,
+                                        color = V7.Tx,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        r.state.name.lowercase() + " · " + r.kind.name.lowercase(),
+                                        fontSize = 11.sp,
+                                        color = V7.Tx3,
+                                    )
+                                }
+                                if (r.priority > 0) V7Tag("插队", V7.Cu)
+                            }
+                            Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+                        }
+                    }
+                }
+            }
+            item {
                 Spacer(Modifier.height(18.dp))
                 Text(
-                    "这一页读的是派单引擎真实的作业表：每个子 Agent、每条后台任务都在里面。" +
-                        "一个任务没跑完时新任务只会排队（PENDING），不会把上一条顶掉；" +
-                        "跑完自动接下一个。",
+                    "这一页读的是两张真实的表：派单引擎的作业表（子 Agent、后台任务、定时任务）" +
+                        "和落盘的任务执行队列（语音/工具任务，重启不丢）。" +
+                        "一个任务没跑完时新任务只会排队，不会把上一条顶掉；跑完自动接下一个。",
                     fontSize = 11.5.sp,
                     color = V7.Tx3,
                     lineHeight = 18.sp,
