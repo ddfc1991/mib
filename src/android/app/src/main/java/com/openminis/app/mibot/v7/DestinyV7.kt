@@ -168,7 +168,16 @@ fun DestinyV7Home(
     }
 
     val screen = v7Screen(screenId) ?: v7Screen(V7_TAB_SCREENS[tab]) ?: return
-    val header = screen.elems.firstOrNull { it.kind == "H" }?.a ?: screen.title
+    // [destiny/v7-real] On the four real tabs the header must be the tab's own
+    // name, not the design screen's headline — otherwise 群聊 shows up as
+    // "Bots 群聊" (a design-spec title) even though the tab is the real
+    // GroupChatsPage. Design headers only apply while browsing a design screen.
+    val tabLabels = listOf("对话", "动态", "群聊", "设置")
+    val header = if (screenId == null) {
+        tabLabels.getOrNull(tab) ?: screen.title
+    } else {
+        screen.elems.firstOrNull { it.kind == "H" }?.a ?: screen.title
+    }
     val draft = { s: String -> actions.onAction("【${screen.title}】$s\n按这一条执行；需要先确认的先列给我。") }
 
     // [destiny/v7-real] Screen 01 is wired to the REAL session database — no
