@@ -103,7 +103,9 @@ object MibotSpace {
     val M: Dp = 12.dp
     val L: Dp = 16.dp
     val XL: Dp = 20.dp
-    val Screen: Dp = 14.dp
+    // [destiny/ui-unify] 14dp → 22dp：和 V7 的四个 tab、页头、按钮都对齐到同一条左线。
+    // 原来从「设置」列表（22dp）点进子页，内容突然往里缩 8dp，看着就是两套版。
+    val Screen: Dp = 22.dp
     val RowMin: Dp = 50.dp
     val TopBar: Dp = 52.dp
     val ButtonMin: Dp = 38.dp
