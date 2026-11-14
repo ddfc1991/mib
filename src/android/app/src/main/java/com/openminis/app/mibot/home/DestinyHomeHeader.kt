@@ -143,20 +143,27 @@ private fun HomeRow(
     title: String,
     subtitle: String,
     trailing: String? = null,
+    // [destiny/ui-one-look] 会话行带首字母色块（和「对话」tab 的会话行一致，那是
+    // 有语义的头像）；「能力」那几条和「设置」首屏的 28 个入口是同一类东西 ——
+    // 设置首屏一个图标块都没有，这里也就不画，同一排入口只允许一种长相。
+    showGlyph: Boolean = true,
     onClick: () -> Unit,
 ) {
     Column(Modifier.fillMaxWidth()) {
         Row(
-            Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 11.dp),
+            // 13dp：和 V7SessionRow / V7SettingRow / 群聊行同一个行高节奏。
+            Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(V7.Sf2),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(glyph, color = V7.Tx2, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            if (showGlyph) {
+                Box(
+                    Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).background(V7.Sf2),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(glyph, color = V7.Tx2, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                }
+                Spacer(Modifier.width(12.dp))
             }
-            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = V7.Tx, maxLines = 1)
                 if (subtitle.isNotBlank()) {
@@ -187,5 +194,5 @@ private fun RecentRow(item: HomeRecent, onClick: () -> Unit) {
 
 @Composable
 private fun CapabilityRow(label: String, sub: String, glyph: String, onClick: () -> Unit) {
-    HomeRow(glyph = glyph, title = label, subtitle = sub, onClick = onClick)
+    HomeRow(glyph = glyph, title = label, subtitle = sub, showGlyph = false, onClick = onClick)
 }

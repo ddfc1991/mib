@@ -283,8 +283,11 @@ fun SettingsSection(
                 .fillMaxWidth()
                 .padding(horizontal = if (mibotUi) com.openminis.app.mibot.design.MibotSpace.Screen else 16.dp)
                 .then(
+                    // [destiny/ui-one-look] 设置子页原来是一张 iOS 式「内嵌圆角卡片」
+                    // （frosted 底 + 圆角），而四个 tab 是纯黑底上的平铺行 + 1dp 发丝线，
+                    // 同一个 App 里两套语言。这里在 V7 下不再画卡片底：行直接铺在 V7.Bg
+                    // 上，靠行尾发丝线分隔，和「设置」首屏 / 对话 / 动态 / 群聊完全同构。
                     if (mibotUi) Modifier
-                        .frosted(com.openminis.app.mibot.design.MibotRadius.CardShape) // [fork/frost]
                     else Modifier
                         .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerLow),
@@ -294,14 +297,15 @@ fun SettingsSection(
         if (footer != null) {
             Text(
                 text = footer,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                // [T-android-settings-ui-md3] #6 explanatory footer: 8dp below the
-                // card, 4dp before the next section (the parent's 24dp top padding
-                // already provides separation, so keep the footer's own bottom
-                // tight at 4dp).
+                // [destiny/ui-one-look] V7 下页脚与行内说明同一字号/色阶（11.5sp / Tx3），
+                // 不再是 Material 的 bodySmall + onSurfaceVariant。
+                style = if (mibotUi) androidx.compose.ui.text.TextStyle(
+                    fontSize = 11.5.sp,
+                    lineHeight = 18.sp,
+                ) else MaterialTheme.typography.bodySmall,
+                color = if (mibotUi) com.openminis.app.mibot.v7.V7.Tx3 else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 8.dp, bottom = 4.dp),
-                lineHeight = 16.sp,
+                lineHeight = if (mibotUi) 18.sp else 16.sp,
             )
         }
     }
@@ -338,13 +342,10 @@ fun SettingsRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                // [T-android-settings-ui-md3] #1/#8 fixed List Item height so every
-                // toggle/value/nav row in a section is uniform (was content-driven
-                // → 24/54/72dp mix). heightIn(min) not height() so an unexpectedly
-                // tall row can still grow; the symmetric 12dp vertical padding (was
-                // effectively asymmetric once the 0.5dp divider was added/removed)
-                // is what made a no-subtitle last row read ~50px shorter.
-                .heightIn(min = if (mibotUi) minOf(minHeight, 50.dp) else minHeight)
+                // [destiny/ui-one-look] V7 行规格（与 V7SettingRow / V7FeedRow / 群聊行
+                // 完全一致）：上下 13dp、左右 0（外层已给 22dp 页边距）、不被 56dp
+                // 最小高度固定住 —— 高度由 14sp 标题 + 11.5sp 说明 + 26dp 内边距决定。
+                .heightIn(min = if (mibotUi) 0.dp else minHeight)
                 .then(
                     when {
                         onClick != null && onLongClick != null ->
@@ -353,15 +354,18 @@ fun SettingsRow(
                         else -> Modifier
                     },
                 )
-                .padding(horizontal = 14.dp, vertical = if (mibotUi) 9.dp else 12.dp),
+                .padding(
+                    horizontal = if (mibotUi) 0.dp else 14.dp,
+                    vertical = if (mibotUi) 13.dp else 12.dp,
+                ),
             // #10 keep the trailing control (Switch/value) vertically centered
             // against the title — already centered, kept explicit.
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (icon != null && mibotUi) {
-                com.openminis.app.mibot.design.IconChip(icon, iconColor)
-                Spacer(Modifier.width(12.dp))
-            } else if (icon != null) {
+            // [destiny/ui-one-look] V7 设置页的行不带图标块（设置首屏 28 个入口
+            // 全部是纯文字行）。以前这里给部分子页画了 IconChip，同一排入口在
+            // 首屏和子页长成两种样子。icon 参数保留，只是 V7 下不渲染。
+            if (icon != null && !mibotUi) {
                 Box(
                     modifier = Modifier
                         .size(30.dp)
@@ -380,20 +384,27 @@ fun SettingsRow(
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(1.dp),
+                verticalArrangement = Arrangement.spacedBy(if (mibotUi) 0.dp else 1.dp),
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = titleColor,
+                    style = if (mibotUi) androidx.compose.ui.text.TextStyle(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                    ) else MaterialTheme.typography.bodyLarge,
+                    color = if (mibotUi) com.openminis.app.mibot.v7.V7.Tx else titleColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = if (mibotUi) androidx.compose.ui.text.TextStyle(
+                            fontSize = 11.5.sp,
+                            lineHeight = 18.sp,
+                        ) else MaterialTheme.typography.bodySmall,
+                        color = if (mibotUi) com.openminis.app.mibot.v7.V7.Tx3
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -406,12 +417,10 @@ fun SettingsRow(
             }
 
             if (showChevron && mibotUi) {
-                Spacer(Modifier.width(4.dp))
-                com.openminis.app.mibot.design.Glyph(
-                    com.openminis.app.mibot.design.LineIcons.ChevronRight,
-                    size = 16.dp,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
+                Spacer(Modifier.width(8.dp))
+                // 设置首屏用的就是 17sp 的 ›，子页以前是 16dp 细线箭头，同一排
+                // 入口两种箭头。统一成同一个字形。
+                Text("\u203A", fontSize = 17.sp, color = com.openminis.app.mibot.v7.V7.Tx3)
             } else if (showChevron) {
                 Spacer(Modifier.width(4.dp))
                 Icon(
@@ -424,14 +433,25 @@ fun SettingsRow(
         }
 
         if (showDivider) {
-            val insetStart = if (icon != null) (if (mibotUi) 54.dp else 58.dp) else 14.dp
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = insetStart, end = 14.dp)
-                    .height(0.5.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-            )
+            // [destiny/ui-one-look] V7 下是满宽 1dp 发丝线（V7.Ln），不是内缩 0.5dp
+            // 的 outlineVariant —— 和 tab 页、首屏的列表分隔完全一样。
+            if (mibotUi) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(com.openminis.app.mibot.v7.V7.Ln),
+                )
+            } else {
+                val insetStart = if (icon != null) 58.dp else 14.dp
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = insetStart, end = 14.dp)
+                        .height(0.5.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                )
+            }
         }
     }
 }
@@ -507,15 +527,19 @@ fun SettingsChoiceRow(
     leading: (@Composable () -> Unit)? = null,
     showDivider: Boolean = true,
 ) {
+    val mibotUi = com.openminis.app.ui.theme.LocalMibotActive.current
     Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                // [T-android-settings-ui-md3] #1 match SettingsRow's 56dp min so
-                // choice/radio rows line up with toggle/value rows in mixed lists.
-                .heightIn(min = if (com.openminis.app.ui.theme.LocalMibotActive.current) 48.dp else 56.dp)
+                // [destiny/ui-one-look] 与 SettingsRow 同一套 V7 行规格：
+                // 不定最小高度、左右 0（外层 22dp）、上下 13dp。
+                .heightIn(min = if (mibotUi) 0.dp else 56.dp)
                 .clickable(onClick = onSelect)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(
+                    horizontal = if (mibotUi) 0.dp else 16.dp,
+                    vertical = if (mibotUi) 13.dp else 12.dp,
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (leading != null) {
@@ -524,11 +548,14 @@ fun SettingsChoiceRow(
             }
             Text(
                 title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = if (mibotUi) androidx.compose.ui.text.TextStyle(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                ) else MaterialTheme.typography.bodyLarge,
+                color = if (mibotUi) com.openminis.app.mibot.v7.V7.Tx else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
-            if (selected && com.openminis.app.ui.theme.LocalMibotActive.current) {
+            if (selected && mibotUi) {
                 com.openminis.app.mibot.design.CheckMark(true)
             } else if (selected) {
                 Icon(
@@ -540,13 +567,22 @@ fun SettingsChoiceRow(
             }
         }
         if (showDivider) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 14.dp)
-                    .height(0.5.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-            )
+            if (mibotUi) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(com.openminis.app.mibot.v7.V7.Ln),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 14.dp)
+                        .height(0.5.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                )
+            }
         }
     }
 }
@@ -560,9 +596,15 @@ fun SettingsCardBlock(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    // [destiny/ui-one-look] 非行内容（滑块、分段选择器）在 V7 下也不再内缩 16dp —
+    // 外层已经给了 22dp 页边距，再缩一次会让滑块比上面的行短一截。
+    val mibotUi = com.openminis.app.ui.theme.LocalMibotActive.current
     Column(
         modifier = modifier
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(
+                horizontal = if (mibotUi) 0.dp else 16.dp,
+                vertical = if (mibotUi) 13.dp else 12.dp,
+            )
             .fillMaxWidth(),
         content = content,
     )

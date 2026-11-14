@@ -88,7 +88,9 @@ private fun FeedModeTabs(selected: Int, onSelect: (Int) -> Unit) {
         Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 20.dp),
+            // [destiny/ui-one-look] 20dp → 22dp：子 tab（在看/想到的/能领的）的左边缘
+            // 要和顶栏标题、下面内容区的 22dp 页边距在同一条竖线上。
+            .padding(horizontal = 22.dp),
     ) {
         Row(
             Modifier.fillMaxWidth(),

@@ -114,7 +114,10 @@ fun GroupChatsPage(
         }
         item {
             if (v7) {
-                Column(Modifier.fillMaxWidth()) {
+                // [destiny/ui-one-look] 其他三栏第一个元素距顶栏发丝线都是 ~20dp
+                // （分组标题自带 top=20dp）。这里原来只有 V7Button 自己的 7dp，
+                // 按钮几乎贴住分隔线，四个 tab 顶部节奏不一致。
+                Column(Modifier.fillMaxWidth().padding(top = 13.dp)) {
                     V7Button("＋ 新建群聊", enabled = roster.size >= 2) { rosterGen++; showNew = true }
                     if (roster.size < 2) {
                         Text(
