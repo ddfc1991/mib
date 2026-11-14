@@ -1,12 +1,13 @@
 package com.mibot.life.life
 
 import android.content.Context
+import com.mibot.life.settings.LifeSettings
 
 /**
  * 生活系统整合层 —— 决策 + 记账 + 等级 + 项目 + 记忆衰减。
  * 状态持久化（LifeStore），重启恢复，不依赖模型上下文。
  */
-class LifeSystem(context: Context) {
+class LifeSystem(context: Context, private val settings: LifeSettings) {
 
     private val store = LifeStore(context)
     private val planner = LifePlanner()
@@ -16,6 +17,48 @@ class LifeSystem(context: Context) {
 
     /** 当前状态快照 */
     fun snapshot(): LifeStateData = state
+
+    private val careLedger = CareLedger()
+    private val affectRules = AffectState()
+
+    /** 从用户话里提取牵挂（温度来源）：说累/忙/考试/答应… → 记下来，到期主动问 */
+    fun rememberCareFrom(userText: String) {
+        val item = careLedger.extractFromUser(userText) ?: return
+        state = state.copy(cares = careLedger.add(state.cares, item))
+        save()
+    }
+
+    /** 情感事件（成功/失败/被回应…） */
+    fun feel(event: AffectEvent) {
+        state = state.copy(affect = state.affect.apply(event))
+        save()
+    }
+
+    /** 记一条经历（生活痕迹，也是兴趣的来源） */
+    fun recordEpisode(kind: EpisodeKind, summary: String, at: Long = System.currentTimeMillis()) {
+        state = state.copy(episodes = (state.episodes + LifeEpisode(kind = kind, title = summary, occurredAt = at)).takeLast(200))
+        recomputeInterests()
+        save()
+    }
+
+    /** 兴趣自主生成：从经历统计，不预设加权 */
+    private fun recomputeInterests() {
+        val now = System.currentTimeMillis()
+        val halfLife = settings.interestHalfLifeDays.toDouble()
+        val grouped = state.episodes.groupBy { it.kind.name.lowercase() }
+        val interests = grouped.mapNotNull { (topic, eps) ->
+            if (eps.size < settings.interestMinCount) return@mapNotNull null
+            // 近期度：半衰期加权
+            val recency = eps.sumOf { e ->
+                val days = ((now - e.occurredAt) / 86_400_000.0).coerceAtLeast(0.0)
+                Math.pow(0.5, days / halfLife)
+            }
+            val strength = (recency * 2).coerceAtMost(settings.interestMaxBonus.toDouble())
+            Interest(topic = topic, domain = topic, strength = strength,
+                     count = eps.size, lastAt = eps.maxOf { it.occurredAt })
+        }
+        state = state.copy(interests = interests)
+    }
 
     /** 当前作息阶段 */
     fun phase(now: Long = System.currentTimeMillis()): RhythmPhase =

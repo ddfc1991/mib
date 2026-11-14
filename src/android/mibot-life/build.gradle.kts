@@ -75,4 +75,6 @@ dependencies {
 
     // 复用 Mibot core（vd/流云体/记忆）
     implementation(project(":core"))
+    // 模型调用需要 OkHttp（core 用的是 implementation，不传递）
+    implementation(libs.okhttp)
 }
