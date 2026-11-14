@@ -1,9 +1,15 @@
 package com.openminis.app.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -11,10 +17,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * Single source of truth for Settings section-card visual rhythm.
@@ -28,7 +36,8 @@ import androidx.compose.ui.unit.dp
  */
 object SectionDesign {
     /** Outer column padding from screen edge. iOS UIKit insets.left/.right = 16. */
-    val ScreenHorizontalPadding = 16.dp
+    // [destiny/ui-unify] 16dp → 22dp：和 V7 四个 tab 的内容左边线对齐，进出页面不再横跳。
+    val ScreenHorizontalPadding = 22.dp
 
     /** Card corner radius. iOS UITableViewCell rounded section uses ~10pt. */
     val CardShape = RoundedCornerShape(12.dp)
@@ -120,11 +129,42 @@ fun SectionHeader(
     modifier: Modifier = Modifier,
 ) {
     val mibotUi = com.openminis.app.ui.theme.LocalMibotActive.current
+    if (mibotUi) {
+        // [destiny/ui-unify] 分组标题统一成 V7 规格：10sp 加宽小字 + 一条发丝线铺满右侧。
+        // 原来这里是 13sp 灰色 sentence-case，和「设置」首屏带线的分组标题不是一套。
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(
+                    start = SectionDesign.ScreenHorizontalPadding,
+                    end = SectionDesign.ScreenHorizontalPadding,
+                    top = 18.dp,
+                    bottom = 6.dp,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = text,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp,
+                color = com.openminis.app.mibot.v7.V7.Tx3,
+            )
+            Spacer(Modifier.width(10.dp))
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(com.openminis.app.mibot.v7.V7.Ln),
+            )
+        }
+        return
+    }
     Text(
         text = text,
-        style = if (mibotUi) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
-        color = if (mibotUi) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = modifier.padding(
             start = SectionDesign.ScreenHorizontalPadding,
             end = SectionDesign.ScreenHorizontalPadding,
