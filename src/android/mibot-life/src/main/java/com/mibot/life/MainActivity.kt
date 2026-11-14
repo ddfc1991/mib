@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
             ),
             system,
         )
-        setContent { Root(system, agent, voice, settings, executor) }
+        setContent { Root(system, agent, voice, settings, executor, onSaveSettings = { newS -> settingsStore.save(newS); settings = newS }) }
     }
 
     override fun onDestroy() {
@@ -84,7 +84,9 @@ fun Root(
     voice: VoiceIO,
     settings: LifeSettings,
     executor: LifeExecutor,
+    onSaveSettings: (LifeSettings) -> Unit = {},
 ) {
+    var curSettings by remember { mutableStateOf(settings) }
     var tab by remember { mutableIntStateOf(0) }
     var decision by remember { mutableStateOf<LifeDecision?>(null) }
     var refreshTick by remember { mutableIntStateOf(0) }
@@ -103,8 +105,8 @@ fun Root(
                     0 -> LifeScreen(system, decision, executor) { refreshTick++ }
                     1 -> ChatScreen(system, agent, voice)
                     2 -> GrowthScreen(system)
-                    3 -> EconomyScreen(system, settings)
-                    else -> SettingsScreen(settings) { newS -> settingsStore.save(newS); settings = newS; refreshTick++ }
+                    3 -> EconomyScreen(system, curSettings)
+                    else -> SettingsScreen(curSettings) { newS -> onSaveSettings(newS); curSettings = newS; refreshTick++ }
                 }
             }
         }
