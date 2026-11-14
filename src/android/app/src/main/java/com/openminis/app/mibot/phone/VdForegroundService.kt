@@ -29,6 +29,7 @@ class VdForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
+            VdIsland.hideAll()
             VdController.close(this)
             stopSelf()
             return START_NOT_STICKY
@@ -64,6 +65,11 @@ class VdForegroundService : Service() {
             startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         } else {
             startForeground(ID, n)
+        }
+        // 流云体：虚拟屏运行期间在任意界面上显示可拖/缩放/后台的实时预览胶囊。
+        // 只对 HELPER（隐藏虚拟屏）模式显示；无障碍主屏模式不抢占用户屏幕。
+        if (s.mode == VdController.Mode.HELPER && s.displayId >= 0) {
+            VdIsland.showFor(this, s.displayId)
         }
         return START_NOT_STICKY
     }
