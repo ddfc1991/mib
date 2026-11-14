@@ -152,6 +152,7 @@ jobs:
           name: minis-debug-apk
           path: |
             out/minis-debug.apk
+            out/mibot-life-debug.apk
             out/signing.txt
           retention-days: 14
 
