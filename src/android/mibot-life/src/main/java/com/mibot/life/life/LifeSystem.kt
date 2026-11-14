@@ -18,6 +18,9 @@ class LifeSystem(context: Context, private val settings: LifeSettings) {
     /** 当前状态快照 */
     fun snapshot(): LifeStateData = state
 
+    /** 供 Agent 读取（内部用） */
+    internal val current: LifeStateData get() = state
+
     private val careLedger = CareLedger()
     private val affectRules = AffectState()
 
@@ -25,20 +28,20 @@ class LifeSystem(context: Context, private val settings: LifeSettings) {
     fun rememberCareFrom(userText: String) {
         val item = careLedger.extractFromUser(userText) ?: return
         state = state.copy(cares = careLedger.add(state.cares, item))
-        save()
+        store.save(state)
     }
 
     /** 情感事件（成功/失败/被回应…） */
     fun feel(event: AffectEvent) {
         state = state.copy(affect = state.affect.apply(event))
-        save()
+        store.save(state)
     }
 
     /** 记一条经历（生活痕迹，也是兴趣的来源） */
     fun recordEpisode(kind: EpisodeKind, summary: String, at: Long = System.currentTimeMillis()) {
         state = state.copy(episodes = (state.episodes + LifeEpisode(kind = kind, title = summary, occurredAt = at)).takeLast(200))
         recomputeInterests()
-        save()
+        store.save(state)
     }
 
     /** 兴趣自主生成：从经历统计，不预设加权 */

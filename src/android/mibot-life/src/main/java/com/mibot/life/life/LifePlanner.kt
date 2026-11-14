@@ -66,7 +66,7 @@ class LifePlanner(
         val interestBonus: (String, String) -> Double = { key, domain ->
             val byTopic = state.interests.filter { it.topic.isNotEmpty() && (key.contains(it.topic) || it.topic.contains(key.take(20))) }
             val byDomain = state.interests.filter { it.domain == domain }
-            (byTopic + byDomain).sumOf { it.strength }.coerceAtMost(MAX_INTEREST_BONUS)
+            (byTopic + byDomain).sumOf { it.strength }.coerceAtMost(8.0)
         }
 
         fun add(

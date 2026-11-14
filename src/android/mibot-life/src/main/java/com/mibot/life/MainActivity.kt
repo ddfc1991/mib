@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.mibot.life.exec.LifeExecutor
 import com.mibot.life.life.*
 import com.mibot.life.settings.LifeSettings
+import com.mibot.life.settings.SettingsStore
 import com.mibot.life.ui.EconomyScreen
 import com.mibot.life.ui.GrowthScreen
 import com.mibot.life.ui.SettingsScreen
@@ -45,6 +46,7 @@ val BubbleThem = Color(0xFFE1EAEC)
 class MainActivity : ComponentActivity() {
 
     private lateinit var settings: LifeSettings
+    private lateinit var settingsStore: SettingsStore
     private lateinit var system: LifeSystem
     private lateinit var agent: LifeAgent
     private lateinit var voice: VoiceIO
@@ -52,7 +54,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        settings = LifeSettings(this)
+        settingsStore = SettingsStore(this)
+        settings = settingsStore.load()
         system = LifeSystem(this, settings)
         executor = LifeExecutor(this)
         voice = VoiceIO(this).also { v -> v.initTts(); v.initAsr() }
@@ -100,8 +103,8 @@ fun Root(
                     0 -> LifeScreen(system, decision, executor) { refreshTick++ }
                     1 -> ChatScreen(system, agent, voice)
                     2 -> GrowthScreen(system)
-                    3 -> EconomyScreen(system)
-                    else -> SettingsScreen(settings) { refreshTick++ }
+                    3 -> EconomyScreen(system, settings)
+                    else -> SettingsScreen(settings) { newS -> settingsStore.save(newS); settings = newS; refreshTick++ }
                 }
             }
         }
@@ -226,7 +229,9 @@ private fun LifeScreen(
             }
         }
 
-        items(st.episodes.takeLast(4).reversed(), key = { it.id }) { e ->
+        val recent = st.episodes.takeLast(4).reversed()
+        items(recent.size) { i ->
+            val e = recent[i]
             HarkCard {
                 Text(fmtTime(e.occurredAt), fontSize = 10.sp, color = InkSoft.copy(alpha = 0.7f))
                 Text(e.title, fontSize = 13.sp, color = Ink)

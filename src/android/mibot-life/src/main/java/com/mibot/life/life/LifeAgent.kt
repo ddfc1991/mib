@@ -31,8 +31,8 @@ class LifeAgent(
         val deepModel: String,
     )
 
-    private var daily: OpenAiCompatModel? = null
-    private var deep: OpenAiCompatModel? = null
+    private var dailyCache: OpenAiCompatModel? = null
+    private var deepCache: OpenAiCompatModel? = null
 
     private fun caps() = Capabilities(
         toolCalls = false,
@@ -43,19 +43,27 @@ class LifeAgent(
 
     private fun model(deep: Boolean): OpenAiCompatModel {
         val cfg = if (deep) config.deepModel else config.dailyModel
-        if (deep) return deep ?: OpenAiCompatModel(
+        if (deep) {
+            deepCache?.let { return it }
+            val m = OpenAiCompatModel(
+                baseUrl = config.baseUrl, apiKey = config.apiKey, model = cfg,
+                capabilities = caps(), http = http,
+            )
+            deepCache = m
+            return m
+        }
+        dailyCache?.let { return it }
+        val m = OpenAiCompatModel(
             baseUrl = config.baseUrl, apiKey = config.apiKey, model = cfg,
             capabilities = caps(), http = http,
-        ).also { deep = it }
-        return daily ?: OpenAiCompatModel(
-            baseUrl = config.baseUrl, apiKey = config.apiKey, model = cfg,
-            capabilities = caps(), http = http,
-        ).also { daily = it }
+        )
+        dailyCache = m
+        return m
     }
 
     /** 生成回复（带真实状态上下文） */
     suspend fun reply(userText: String): String = withContext(Dispatchers.IO) {
-        val st = system.state
+        val st = system.current
         val interestTxt = st.interests.sortedByDescending { it.strength }.take(3)
             .joinToString("、") { "${it.topic}(${it.strength})" }.ifBlank { "还没有特别偏爱的" }
         val careTxt = CareLedger().due(st.cares, System.currentTimeMillis())
@@ -68,7 +76,7 @@ class LifeAgent(
             appendLine("- 兴趣：$interestTxt")
             appendLine("- 惦记着：$careTxt")
             appendLine("- Mibot 币：${st.coin}")
-            appendLine("- 最近：${st.episodes.takeLast(3).joinToString("；") { it.summary }.ifBlank { "刚醒" }}")
+            appendLine("- 最近：${st.episodes.takeLast(3).joinToString("；") { it.title }.ifBlank { "刚醒" }}")
             appendLine()
             appendLine("说话要求：按真实状态说，累了就说累，没兴趣就说没兴趣，不要永远热情；短，一两句；惦记着就主动问；不说「作为AI」「我可以帮你」。")
         }
@@ -96,5 +104,5 @@ class LifeAgent(
         else -> "${st.affect.moodHint()}，我在。"
     }
 
-    private fun f(v: Float) = String.format("%.1f", v)
+    private fun f(v: Double) = String.format("%.1f", v)
 }
