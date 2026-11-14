@@ -991,7 +991,8 @@ private fun V7QueuePanel(onOpen: () -> Unit, expanded: Boolean = false) {
         Spacer(Modifier.height(8.dp))
         if (active.isEmpty()) {
             Text(
-                "现在没有任务在跑。发消息时如果一个任务还没跑完，新消息会排队，做完自动接下一个。",
+                "现在没有子任务在跑。主 AI 派生子 Agent 时，执行中和排队的都会列在这里；" +
+                    "对话里当前一轮还没跑完时再发消息，那条消息会标成排队。",
                 fontSize = 11.5.sp,
                 color = V7.Tx3,
                 lineHeight = 18.sp,
@@ -1021,7 +1022,17 @@ private fun V7QueuePanel(onOpen: () -> Unit, expanded: Boolean = false) {
     }
 }
 
-/** 任务队列整页：真实作业 + 真实状态。 */
+/**
+ * 任务队列整页。
+ *
+ * 这里只列真正有数据在动的东西：
+ *  ① 派单引擎的作业表 —— AgentJobRegistry.jobs，Compose 直接订它的 StateFlow；
+ *  ② 已登记但还没拿到槽位的派发数 —— AgentJobRegistry.queuedDepth（从队列 revision 派生）。
+ *
+ * 之前这一页还并了一张 TaskRunQueue 的表，写着「语音/工具任务落盘、重启不丢」。
+ * 那个类完整实现了 FIFO，但全仓库没有任何一处调用它的 enqueue，恒为空表 —— 等于画
+ * 了一张永远不会出现数据的表。已连同文件删除，不再假装有这条队列。
+ */
 @Composable
 fun DestinyV7QueueScreen(onBack: () -> Unit) {
     Column(
@@ -1052,82 +1063,44 @@ fun DestinyV7QueueScreen(onBack: () -> Unit) {
         ) {
             item { V7QueuePanel(onOpen = {}, expanded = true) }
             item {
-                // 第二张表：语音/工具任务的持久化执行队列（SharedPrefs 落盘，
-                // 重启不丢、支持断点续接）。和上面派单作业表是两个不同的真实来源，
-                // 只显示一个会让「排队数」对不上，所以两栏都列出来。
-                val ctx = androidx.compose.ui.platform.LocalContext.current
-                val runQueue = remember {
-                    com.openminis.app.mibot.queue.TaskRunQueue.get(ctx.applicationContext)
-                }
-                val runs by runQueue.runs.collectAsState()
-                val queued = runs.count { it.state == com.openminis.app.mibot.queue.TaskRunState.QUEUED }
-                val running = runs.count { it.state == com.openminis.app.mibot.queue.TaskRunState.RUNNING }
-                val held = runs.count { it.state == com.openminis.app.mibot.queue.TaskRunState.HELD }
+                val reg = com.openminis.app.agent.jobs.AgentJobRegistry
+                val depth by reg.queuedDepth.collectAsState()
+                // 用活的那个 var 而不是常量：DEV_TOOLS 压力测试会覆盖它。
+                val perParent = reg.maxConcurrentChildJobsPerParent
+                val maxQueued = reg.MAX_QUEUED_DELEGATIONS_PER_PARENT
                 Column(Modifier.fillMaxWidth().padding(top = 22.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("任务执行队列", fontSize = 12.sp, color = V7.Tx2, letterSpacing = 0.4.sp)
+                        Text("排队等槽位", fontSize = 12.sp, color = V7.Tx2, letterSpacing = 0.4.sp)
                         Spacer(Modifier.width(8.dp))
                         Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            when {
-                                runs.isEmpty() -> "空闲"
-                                else -> "$running 执行 · $queued 排队" + if (held > 0) " · $held 挂起" else ""
-                            },
+                            "$depth 条",
                             fontSize = 11.sp,
-                            color = if (runs.isEmpty()) V7.Tx3 else V7.Cu,
+                            color = if (depth == 0) V7.Tx3 else V7.Cu,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
-                    if (runs.isEmpty()) {
-                        Text(
-                            "这一条是语音/工具任务落盘的那张表（重启不丢）。现在没有记录。",
-                            fontSize = 11.5.sp,
-                            color = V7.Tx3,
-                            lineHeight = 18.sp,
-                        )
-                    } else {
-                        runs.take(6).forEach { r ->
-                            Row(
-                                Modifier.fillMaxWidth().padding(vertical = 9.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Box(
-                                    Modifier
-                                        .size(7.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(
-                                            if (r.state == com.openminis.app.mibot.queue.TaskRunState.RUNNING) V7.Ok else V7.Wa,
-                                        ),
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(
-                                        r.goal.replace("\n", " ").take(30),
-                                        fontSize = 13.sp,
-                                        color = V7.Tx,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    Text(
-                                        r.state.name.lowercase() + " · " + r.kind.name.lowercase(),
-                                        fontSize = 11.sp,
-                                        color = V7.Tx3,
-                                    )
-                                }
-                                if (r.priority > 0) V7Tag("插队", V7.Cu)
-                            }
-                            Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
-                        }
-                    }
+                    Text(
+                        if (depth == 0) {
+                            "没有派发在等。一个对话同时最多跑 $perParent 个子 Agent，" +
+                                "超出的先在这里排队，槽位一空按登记顺序接上（每个对话最多排 $maxQueued 条）。"
+                        } else {
+                            "这 $depth 条派发在等父对话空出槽位：一个对话同时最多跑 $perParent 个子 Agent，" +
+                                "槽位一空按登记顺序接上。"
+                        },
+                        fontSize = 11.5.sp,
+                        color = V7.Tx3,
+                        lineHeight = 18.sp,
+                    )
                 }
             }
             item {
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(20.dp))
                 Text(
-                    "这一页读的是两张真实的表：派单引擎的作业表（子 Agent、后台任务、定时任务）" +
-                        "和落盘的任务执行队列（语音/工具任务，重启不丢）。" +
-                        "一个任务没跑完时新任务只会排队，不会把上一条顶掉；跑完自动接下一个。",
+                    "上面两块都是派单引擎的实时状态，没有样例数据。" +
+                        "对话里当前这一轮还没跑完时再发一条，那条消息会被标成排队（虚线气泡，右侧可撤回）；" +
+                        "跑完自动接上，不会把上一条顶掉。",
                     fontSize = 11.5.sp,
                     color = V7.Tx3,
                     lineHeight = 18.sp,

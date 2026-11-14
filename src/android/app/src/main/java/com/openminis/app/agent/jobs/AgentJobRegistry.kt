@@ -349,6 +349,20 @@ object AgentJobRegistry {
     private val registryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /**
+     * [destiny/queue-visible] 全局排队深度：已登记但还没拿到槽位的派发数。
+     *
+     * 队列本身是裸列表，只有 revision 变化能观察，所以从 revision 派生一个数。
+     * 只读，不改任何排队行为。
+     */
+    val queuedDepth: StateFlow<Int> = MutableStateFlow(0).also { flow ->
+        registryScope.launch {
+            queueRevision.collect {
+                flow.value = synchronized(queuedDelegations) { queuedDelegations.size }
+            }
+        }
+    }
+
+    /**
      * [T-android-sidebar-subagent-running] Parent sessions that have sub agent
      * work in flight, for the session list.
      *
