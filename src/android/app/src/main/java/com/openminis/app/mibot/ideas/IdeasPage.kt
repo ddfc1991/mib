@@ -59,6 +59,8 @@ import com.openminis.app.mibot.design.GlassField
 import com.openminis.app.mibot.design.Glyph
 import com.openminis.app.mibot.design.LineIcons
 import com.openminis.app.mibot.design.MibotButton
+import com.openminis.app.mibot.v7.V7
+import com.openminis.app.mibot.v7.V7Button
 import com.openminis.app.mibot.design.MibotCard
 import com.openminis.app.mibot.design.MibotFootnote
 import com.openminis.app.mibot.design.MibotPageTitle
@@ -103,7 +105,7 @@ private fun ideaColor(i: Int) = IdeaColors[IdeaStore.clampColor(i)]
  * 「去对话」 opens a new chat prefilled with the note.
  */
 @Composable
-fun IdeasPage(onChat: (String) -> Unit) {
+fun IdeasPage(onChat: (String) -> Unit, v7: Boolean = false) {
     val ctx = LocalContext.current
     val bottom = LocalGlassBottomInset.current
     val store = remember { Ideas.store(ctx) }
@@ -116,14 +118,24 @@ fun IdeasPage(onChat: (String) -> Unit) {
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottom + 24.dp),
+        contentPadding = PaddingValues(
+            start = if (v7) 22.dp else 16.dp,
+            end = if (v7) 22.dp else 16.dp,
+            bottom = bottom + 24.dp,
+        ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalItemSpacing = 12.dp,
     ) {
         item(span = StaggeredGridItemSpan.FullLine) {
             Column {
-                MibotPageTitle(t("点子", "Ideas"), t("随手记下，之后变成任务或拿去对话", "Jot it down; turn it into a task or a chat later"))
-                MibotButton(t("新点子", "New idea"), onClick = { editing = "" }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
+                if (v7) {
+                    // [destiny/ui-one-look] 顶栏已经是「动态」，这里不再画第二层大标题；
+                    // 主操作改用 V7Button，和其它 tab 同一个组件。
+                    V7Button("＋ 新点子") { editing = "" }
+                } else {
+                    MibotPageTitle(t("点子", "Ideas"), t("随手记下，之后变成任务或拿去对话", "Jot it down; turn it into a task or a chat later"))
+                    MibotButton(t("新点子", "New idea"), onClick = { editing = "" }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
+                }
             }
         }
         if (ideas.isEmpty()) {

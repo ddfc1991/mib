@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,29 +18,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.openminis.app.mibot.design.HarkTokens
+import com.openminis.app.mibot.v7.V7
+import com.openminis.app.mibot.v7.V7Button
 import java.util.Calendar
 
 /**
  * 动态页顶部的首页区。
  *
  * [destiny/real-home] 这里以前是写死的样张：「下午好，Yang」、副标题
- * 「Destiny-2.5 · 推理 · 1M · 沙箱已连接」、三条编造的最近对话（Mines 设计稿
- * v36 / 梦洁 SSH 修好了 / Hermes 交易机器人），还有一个点了没任何反应的搜索框。
- * 现在全部换成调用方传进来的真实数据：
- *   - 问候语按当前小时算，不编名字；
- *   - 副标题由调用方给出真实状态，给空就不显示；
- *   - 「最近对话」是真实会话表的前几条，点了真能进那个会话；
- *   - 真没有会话就如实写空态，不摆假条目；
- *   - 搜索框删掉——没有搜索后端的输入框只是骗人。
+ * 「Destiny-2.5 · 推理 · 1M · 沙箱已连接」、三条编造的最近对话、一个点了没反应
+ * 的搜索框。现在全部是调用方传进来的真实数据。
  *
- * [destiny/home-dark] HarkTokens 是浅色「暖瓷」一套令牌，直接贴进 V7 的深色壳里
- * 会是一块白板。dark=true 时整体换深色等价色，深色页里不再有白卡。
+ * [destiny/ui-unify] 这一块原来自带一套「暖瓷」视觉：整块 #171719 大面板、
+ * 圆角 20dp + 10dp 投影的卡片、蓝/绿/紫/琥珀四色圆角图标、亮橙 #C2571F 胶囊按钮。
+ * 和 V7 的设置页（纯黑、平铺行、发丝线、单一铜色强调）放在同一个 App 里就是两套
+ * 设计。现在按 V7 的行规格重写：
+ *   - 不再有面板和卡片，直接铺在 V7.Bg 上；
+ *   - 分组标题用 V7Section 的规格（10sp/加宽字距/发丝线/右侧计数）；
+ *   - 行 = 14sp 主标题 + 11.5sp 说明 + 17sp 箭头 + 1dp 发丝线，与设置页一致；
+ *   - 图标块统一灰底（V7.Sf2）+ 单色字，不再一屏四个颜色；
+ *   - 主操作按钮改用 V7 的铜色（V7.Cu），不再用亮橙。
  */
 data class HomeRecent(
     val id: String,
@@ -65,54 +65,54 @@ fun DestinyHomeHeader(
     onOpenRecent: (String) -> Unit = {},
     statusLine: String = "",
     onNewChat: () -> Unit = {},
-    dark: Boolean = false,
+    @Suppress("UNUSED_PARAMETER") dark: Boolean = true,
 ) {
-    val p = homePalette(dark)
-    Column(Modifier.fillMaxWidth().background(p.card)) {
-        GreetingHeader(p, statusLine = statusLine, onNewChat = onNewChat)
-        Spacer(Modifier.height(20.dp))
-        RecentSection(p, recents = recents, onOpenRecent = onOpenRecent)
-        Spacer(Modifier.height(16.dp))
-        CapabilityGroup(
-            p = p,
-            onPhoneControl = onPhoneControl,
-            onWechat = onWechat,
-            onAppAccess = onAppAccess,
-            onWallet = onWallet,
-            onSandbox = onSandbox,
-            onMonitor = onMonitor,
-            onSettings = onSettings,
-        )
-        Spacer(Modifier.height(16.dp))
+    Column(Modifier.fillMaxWidth()) {
+        GreetingRow(statusLine = statusLine, onNewChat = onNewChat)
+        HomeSection("最近对话", "${recents.size} 条")
+        if (recents.isEmpty()) {
+            Text(
+                "对话保存在本机数据库；新建之后会出现在这里，点一下就能接着聊。",
+                fontSize = 12.sp,
+                color = V7.Tx2,
+                lineHeight = 19.sp,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+        } else {
+            recents.forEach { item ->
+                RecentRow(item) { onOpenRecent(item.id) }
+            }
+        }
+        HomeSection("能力", "6 项")
+        CapabilityRow("手机操控", "虚拟屏 · 多开", "◈", onPhoneControl)
+        CapabilityRow("微信", "扫码 · 任务", "▣", onWechat)
+        CapabilityRow("应用访问", "允许 · 推荐", "▤", onAppAccess)
+        CapabilityRow("钱包", "支付 · 只问不付", "◉", onWallet)
+        CapabilityRow("沙箱", "403 · 镜像", "▦", onSandbox)
+        CapabilityRow("监控", "诊断 · 上报", "◫", onMonitor)
+        Spacer(Modifier.height(10.dp))
     }
 }
 
-/** 首页区配色：默认浅色暖瓷；V7 深色壳里传 dark=true。 */
-private data class HomePalette(
-    val card: Color,
-    val ink: Color,
-    val inkSub: Color,
-    val line: Color,
-)
-
-private fun homePalette(dark: Boolean) = if (dark) {
-    HomePalette(
-        card = Color(0xFF171719),
-        ink = Color(0xFFF2F0EB),
-        inkSub = Color(0xFFA3A099),
-        line = Color(0x1FFFFFFF),
-    )
-} else {
-    HomePalette(
-        card = HarkTokens.glass,
-        ink = HarkTokens.ink,
-        inkSub = HarkTokens.inkSub,
-        line = HarkTokens.hairline,
-    )
+/** 与 V7Section 同一规格：10sp 加宽字距 + 发丝线 + 右侧计数。 */
+@Composable
+private fun HomeSection(label: String, meta: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = V7.Tx3, letterSpacing = 1.2.sp)
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
+        if (meta.isNotBlank()) {
+            Spacer(Modifier.width(8.dp))
+            Text(meta, fontSize = 10.5.sp, color = V7.Tx3)
+        }
+    }
 }
 
 @Composable
-private fun GreetingHeader(p: HomePalette, statusLine: String, onNewChat: () -> Unit) {
+private fun GreetingRow(statusLine: String, onNewChat: () -> Unit) {
     val greeting = remember {
         when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
             in 0..4 -> "凌晨好"
@@ -122,136 +122,70 @@ private fun GreetingHeader(p: HomePalette, statusLine: String, onNewChat: () -> 
             else -> "晚上好"
         }
     }
-    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier.size(44.dp).clip(CircleShape).background(HarkTokens.terracotta),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("D", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Text(greeting, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = V7.Tx)
+        if (statusLine.isNotBlank()) {
+            Spacer(Modifier.height(2.dp))
+            Text(statusLine, fontSize = 11.5.sp, color = V7.Tx3)
         }
-        Spacer(Modifier.width(13.dp))
-        Column(Modifier.weight(1f)) {
-            Text(greeting, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = p.ink)
-            if (statusLine.isNotBlank()) {
-                Spacer(Modifier.height(3.dp))
-                Text(statusLine, fontSize = 12.5.sp, color = p.inkSub)
-            }
-        }
-        Box(
-            Modifier.clip(RoundedCornerShape(99.dp)).background(HarkTokens.terracotta)
-                .clickable { onNewChat() }.padding(horizontal = 16.dp, vertical = 9.dp),
-        ) {
-            Text("+ 新对话", color = Color.White, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
-        }
+        Spacer(Modifier.height(6.dp))
+        // [destiny/ui-one-cta] 主操作统一成 V7Button（白底、满宽、14dp 圆角），
+        // 和「对话」tab 的「＋ 新建真实对话」是同一个组件。原来这里是铜色小胶囊，
+        // 群聊是灰胶囊，三个 tab 三种按钮。
+        V7Button("＋ 新建对话") { onNewChat() }
     }
 }
 
+/** 一行设置式条目：灰底单色图标 + 主标题/说明 + 箭头 + 发丝线。 */
 @Composable
-private fun RecentSection(p: HomePalette, recents: List<HomeRecent>, onOpenRecent: (String) -> Unit) {
-    Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("最近对话", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = p.ink)
-            Spacer(Modifier.width(8.dp))
-            Text("${recents.size}", fontSize = 12.sp, color = p.inkSub)
-        }
-        Spacer(Modifier.height(10.dp))
-        Column(
-            Modifier.fillMaxWidth().shadow(10.dp, RoundedCornerShape(20.dp)).clip(RoundedCornerShape(20.dp))
-                .background(p.card),
-        ) {
-            if (recents.isEmpty()) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 18.dp)) {
-                    Text("还没有对话", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = p.ink)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "对话保存在本机数据库；新建之后会出现在这里，点一下就能接着聊。",
-                        fontSize = 12.sp,
-                        color = p.inkSub,
-                    )
-                }
-            } else {
-                recents.forEachIndexed { i, item ->
-                    Row(
-                        Modifier.fillMaxWidth().clickable { onOpenRecent(item.id) }
-                            .padding(horizontal = 16.dp, vertical = 13.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(item.color),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(item.letter, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(Modifier.width(13.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(item.title, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = p.ink)
-                            if (item.sub.isNotBlank()) {
-                                Spacer(Modifier.height(3.dp))
-                                Text(item.sub, fontSize = 12.sp, color = p.inkSub, maxLines = 2)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
-                        Text(item.time, fontSize = 12.sp, color = p.inkSub)
-                    }
-                    if (i < recents.size - 1) {
-                        Box(Modifier.fillMaxWidth().height(1.dp).background(p.line))
-                    }
-                }
-            }
-        }
-    }
-}
-
-private data class Cap(val label: String, val sub: String, val color: Color, val letter: String, val onTap: () -> Unit)
-
-@Composable
-private fun CapabilityGroup(
-    p: HomePalette,
-    onPhoneControl: () -> Unit,
-    onWechat: () -> Unit,
-    onAppAccess: () -> Unit,
-    onWallet: () -> Unit,
-    onSandbox: () -> Unit,
-    onMonitor: () -> Unit,
-    onSettings: () -> Unit,
+private fun HomeRow(
+    glyph: String,
+    title: String,
+    subtitle: String,
+    trailing: String? = null,
+    onClick: () -> Unit,
 ) {
-    val caps = listOf(
-        Cap("手机操控", "虚拟屏 · 多开", HarkTokens.blue, "◈", onPhoneControl),
-        Cap("微信", "扫码 · 任务", HarkTokens.green, "▣", onWechat),
-        Cap("应用访问", "允许 · 推荐", HarkTokens.purple, "▤", onAppAccess),
-        Cap("钱包", "支付 · 只问不付", HarkTokens.amber, "◉", onWallet),
-        Cap("沙箱", "403 · 镜像", HarkTokens.terracotta, "▦", onSandbox),
-        Cap("监控", "诊断 · 上报", HarkTokens.blue, "◫", onMonitor),
-    )
     Column(Modifier.fillMaxWidth()) {
-        Text("能力", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = p.ink)
-        Spacer(Modifier.height(10.dp))
-        Column(
-            Modifier.fillMaxWidth().shadow(10.dp, RoundedCornerShape(20.dp)).clip(RoundedCornerShape(20.dp))
-                .background(p.card),
+        Row(
+            Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            caps.forEachIndexed { i, c ->
-                Row(
-                    Modifier.fillMaxWidth().clickable { c.onTap() }.padding(horizontal = 16.dp, vertical = 13.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(c.color),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(c.letter, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.width(13.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(c.label, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = p.ink)
-                        Text(c.sub, fontSize = 12.sp, color = p.inkSub)
-                    }
-                    Text("›", fontSize = 18.sp, color = p.inkSub)
-                }
-                if (i < caps.size - 1) {
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(p.line))
+            Box(
+                Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(V7.Sf2),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(glyph, color = V7.Tx2, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = V7.Tx, maxLines = 1)
+                if (subtitle.isNotBlank()) {
+                    Text(subtitle, fontSize = 11.5.sp, color = V7.Tx3, maxLines = 2)
                 }
             }
+            if (trailing != null) {
+                Spacer(Modifier.width(10.dp))
+                Text(trailing, fontSize = 11.sp, color = V7.Tx3)
+            }
+            Spacer(Modifier.width(8.dp))
+            Text("\u203A", fontSize = 17.sp, color = V7.Tx3)
         }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
     }
+}
+
+@Composable
+private fun RecentRow(item: HomeRecent, onClick: () -> Unit) {
+    HomeRow(
+        glyph = item.letter.ifBlank { "·" },
+        title = item.title,
+        subtitle = item.sub,
+        trailing = item.time,
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun CapabilityRow(label: String, sub: String, glyph: String, onClick: () -> Unit) {
+    HomeRow(glyph = glyph, title = label, subtitle = sub, onClick = onClick)
 }

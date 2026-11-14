@@ -52,6 +52,10 @@ fun DestinyFeedHost(
     statusLine: String = "",
     onNewChat: () -> Unit = {},
     dark: Boolean = false,
+    // [destiny/ui-unify] 透传给 FeedPage：V7 外壳已有大标题，别画第二层。
+    chrome: Boolean = true,
+    // [destiny/ui-one-look] 透传给 FeedPage：条目/分组标题/页边距走 V7 规格。
+    v7: Boolean = false,
 ) {
     var mode by rememberSaveable { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize()) {
@@ -66,9 +70,11 @@ fun DestinyFeedHost(
                     statusLine = statusLine,
                     onNewChat = onNewChat,
                     dark = dark,
+                    chrome = chrome,
+                    v7 = v7,
                 )
-                1 -> IdeasPage(onChat = onChat)
-                else -> FreeQuotasPage(onDiscuss = onDiscuss)
+                1 -> IdeasPage(onChat = onChat, v7 = v7)
+                else -> FreeQuotasPage(onDiscuss = onDiscuss, v7 = v7)
             }
         }
     }
@@ -168,15 +174,15 @@ private val QUOTAS = listOf(
 )
 
 @Composable
-private fun FreeQuotasPage(onDiscuss: (String) -> Unit) {
+private fun FreeQuotasPage(onDiscuss: (String) -> Unit, v7: Boolean = false) {
     val bottom = LocalGlassBottomInset.current
     val accent = MaterialTheme.colorScheme.primary
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            start = 20.dp,
-            end = 20.dp,
+            start = if (v7) 22.dp else 20.dp,
+            end = if (v7) 22.dp else 20.dp,
             top = 10.dp,
             bottom = bottom + 24.dp,
         ),
@@ -184,7 +190,14 @@ private fun FreeQuotasPage(onDiscuss: (String) -> Unit) {
         item {
             Text(
                 "能领的钱 · ${QUOTAS.size} 条内置清单",
-                style = MaterialTheme.typography.titleMedium,
+                style = if (v7) {
+                    androidx.compose.ui.text.TextStyle(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp,
+                        color = com.openminis.app.mibot.v7.V7.Tx3,
+                    )
+                } else MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.height(6.dp))
@@ -215,7 +228,8 @@ private fun FreeQuotasPage(onDiscuss: (String) -> Unit) {
                 ) {
                     Text(
                         q.name,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = if (v7) androidx.compose.ui.text.TextStyle(fontSize = 14.sp, color = com.openminis.app.mibot.v7.V7.Tx)
+                        else MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.weight(1f),
                     )

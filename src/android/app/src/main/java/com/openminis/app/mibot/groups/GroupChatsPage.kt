@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +61,9 @@ import com.openminis.app.mibot.design.MibotTokens
 import com.openminis.app.mibot.design.MibotType
 import com.openminis.app.mibot.design.StatusChip
 import com.openminis.app.mibot.design.t
+import com.openminis.app.mibot.v7.V7
+import com.openminis.app.mibot.v7.V7Button
+import com.openminis.app.mibot.v7.V7Tag
 import com.openminis.app.ui.glass.LocalGlassBottomInset
 
 internal val GroupAvatarColors = listOf(MibotTokens.Brick, MibotTokens.Sky, MibotTokens.Green, MibotTokens.Purple, MibotTokens.Amber, MibotTokens.Teal)
@@ -78,7 +82,14 @@ internal fun InitialAvatar(name: String, colorKey: String, size: Dp = 32.dp) {
  * the new-group sheet. Groups live in filesDir/groups (see [GroupChatStore]).
  */
 @Composable
-fun GroupChatsPage(onOpen: (String) -> Unit = {}) {
+// [destiny/ui-unify] chrome=false 时不画自带大标题：V7 顶栏已经有「群聊」。
+fun GroupChatsPage(
+    onOpen: (String) -> Unit = {},
+    chrome: Boolean = true,
+    // [destiny/ui-one-look] V7 皮肤：22dp 页边距、主按钮走 V7Button（白底满宽）、
+    // 群列表是平铺行 + 发丝线，空态不再套圆角卡片。数据和交互不变。
+    v7: Boolean = false,
+) {
     val ctx = LocalContext.current
     val bottom = LocalGlassBottomInset.current
     val store = remember { GroupChats.store(ctx) }
@@ -90,22 +101,56 @@ fun GroupChatsPage(onOpen: (String) -> Unit = {}) {
     val nameById = remember(roster) { roster.associate { it.id to it.displayName(ctx) } }
     LaunchedEffect(Unit) { store.refresh() }
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottom + 24.dp)) {
-        item { MibotPageTitle(t("群聊", "Group chats"), t("让多个 Bot 在一个对话里协作", "Let several bots work together in one chat")) }
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = if (v7) {
+            PaddingValues(start = 22.dp, end = 22.dp, bottom = bottom + 24.dp)
+        } else {
+            PaddingValues(bottom = bottom + 24.dp)
+        },
+    ) {
+        if (chrome) {
+            item { MibotPageTitle(t("群聊", "Group chats"), t("让多个 Bot 在一个对话里协作", "Let several bots work together in one chat")) }
+        }
         item {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                MibotButton(
-                    t("新建群聊", "New group chat"),
-                    onClick = { rosterGen++; showNew = true },
-                    enabled = roster.size >= 2,
-                    modifier = Modifier.weight(1f),
-                )
+            if (v7) {
+                Column(Modifier.fillMaxWidth()) {
+                    V7Button("＋ 新建群聊", enabled = roster.size >= 2) { rosterGen++; showNew = true }
+                    if (roster.size < 2) {
+                        Text(
+                            "至少需要 2 个 Bot 才能建群，可以在 设置 › 子 Agent 里先建两个。",
+                            fontSize = 11.5.sp,
+                            lineHeight = 18.sp,
+                            color = V7.Tx3,
+                        )
+                    }
+                }
+            } else {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    MibotButton(
+                        t("新建群聊", "New group chat"),
+                        onClick = { rosterGen++; showNew = true },
+                        enabled = roster.size >= 2,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (roster.size < 2) MibotFootnote(t("至少需要 2 个 Bot 才能建群，可以在 设置 › Bots 里新建。", "You need at least 2 bots for a group — create them in Settings › Bots."))
             }
-            if (roster.size < 2) MibotFootnote(t("至少需要 2 个 Bot 才能建群，可以在 设置 › Bots 里新建。", "You need at least 2 bots for a group — create them in Settings › Bots."))
         }
         if (groups.isEmpty()) {
             item {
-                MibotCard(Modifier.padding(top = 12.dp)) {
+                if (v7) {
+                    Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                        Text("还没有群聊", fontSize = 13.sp, color = V7.Tx)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "把几个 Bot 拉进同一个对话，用 @名字 点名谁来回答；没人被点名时按相关度挑发言人。",
+                            fontSize = 11.5.sp,
+                            lineHeight = 18.sp,
+                            color = V7.Tx3,
+                        )
+                    }
+                } else MibotCard(Modifier.padding(top = 12.dp)) {
                     Column(
                         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -126,6 +171,29 @@ fun GroupChatsPage(onOpen: (String) -> Unit = {}) {
             }
         } else {
             item {
+                if (v7) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("我的群聊", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = V7.Tx3, letterSpacing = 1.2.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
+                        Spacer(Modifier.width(8.dp))
+                        Text("${groups.size} 个", fontSize = 10.5.sp, color = V7.Tx3)
+                    }
+                    groups.forEachIndexed { i, g ->
+                        val names = g.memberBotIds.map { nameById[it] ?: "?" }
+                        V7GroupRow(
+                            title = g.title,
+                            subtitle = names.joinToString(" · "),
+                            avatar = avatarColorFor(g.id),
+                            replying = g.id in running,
+                            showDivider = i < groups.lastIndex,
+                            onClick = { onOpen(g.id) },
+                        )
+                    }
+                } else {
                 MibotSectionHeader(t("我的群聊", "My group chats") + " · ${groups.size}")
                 val replyingLabel = t("回复中", "Replying")
                 val replyingChip: @Composable () -> Unit = { StatusChip(replyingLabel, ChipKind.ACCENT) }
@@ -146,6 +214,7 @@ fun GroupChatsPage(onOpen: (String) -> Unit = {}) {
                             }
                         }
                     }
+                }
                 }
             }
         }
@@ -236,5 +305,44 @@ fun NewGroupSheet(roster: List<SubAgentDefinition>, onDismiss: () -> Unit, onCre
                 )
             }
         }
+    }
+}
+
+/** [destiny/ui-one-look] V7 行：34dp 灰底首字母 + 14sp 群名 + 11.5sp 成员 + 发丝线。 */
+@Composable
+private fun V7GroupRow(
+    title: String,
+    subtitle: String,
+    avatar: Color,
+    replying: Boolean,
+    showDivider: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(avatar.copy(alpha = 0.22f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(title.take(1).uppercase(), color = V7.Tx, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = V7.Tx, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (subtitle.isNotBlank()) {
+                    Text(subtitle, fontSize = 11.5.sp, color = V7.Tx3, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            if (replying) {
+                Spacer(Modifier.width(8.dp))
+                V7Tag("回复中", V7.Cu)
+            }
+            Spacer(Modifier.width(8.dp))
+            Text("\u203A", fontSize = 17.sp, color = V7.Tx3)
+        }
+        if (showDivider) Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
     }
 }

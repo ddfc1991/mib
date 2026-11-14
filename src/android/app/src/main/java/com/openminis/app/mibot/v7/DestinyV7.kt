@@ -271,6 +271,10 @@ fun DestinyV7Home(
                         statusLine = homeStatus,
                         onNewChat = { actions.onNewChat() },
                         dark = true,
+                        // V7 顶栏已经有「动态」大标题，让内页别再画一层。
+                        chrome = false,
+                        // [destiny/ui-one-look] 内页走 V7 规格（22dp / 平铺行 / 发丝线）。
+                        v7 = true,
                     )
                 }
             }
@@ -284,6 +288,10 @@ fun DestinyV7Home(
                         onOpen = { id ->
                             actions.onNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id))
                         },
+                        // V7 顶栏已经有「群聊」，内页别再画一层同名大标题。
+                        chrome = false,
+                        // [destiny/ui-one-look] 内页走 V7 规格。
+                        v7 = true,
                     )
                 }
             }
@@ -536,7 +544,7 @@ private fun V7Search(placeholder: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun V7Section(label: String, meta: String) {
+internal fun V7Section(label: String, meta: String) {
     Row(
         Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -611,17 +619,24 @@ private fun V7Chip(text: String, kind: String) {
 }
 
 @Composable
-internal fun V7Button(text: String, onClick: () -> Unit) {
+internal fun V7Button(text: String, onClick: () -> Unit, enabled: Boolean = true) {
     Box(
         Modifier
             .fillMaxWidth()
             .padding(vertical = 7.dp)
             .height(50.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(V7.Tx)
-            .clickable(onClick = onClick),
+            .background(if (enabled) V7.Tx else V7.Sf2)
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
         contentAlignment = Alignment.Center,
-    ) { Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = V7.Bg) }
+    ) {
+        Text(
+            text,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (enabled) V7.Bg else V7.Tx3,
+        )
+    }
 }
 
 @Composable
@@ -972,22 +987,17 @@ private fun V7QueuePanel(onOpen: () -> Unit, expanded: Boolean = false) {
     val running = active.count { it.state == com.openminis.app.agent.jobs.AgentJobState.RUNNING }
     val pending = active.size - running
     Column(Modifier.fillMaxWidth().padding(top = 18.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("任务队列", fontSize = 12.sp, color = V7.Tx2, letterSpacing = 0.4.sp)
-            Spacer(Modifier.width(8.dp))
-            Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
-            Spacer(Modifier.width(8.dp))
-            Text(
-                when {
-                    active.isEmpty() -> "空闲"
-                    pending == 0 -> "$running 执行中"
-                    running == 0 -> "$pending 排队"
-                    else -> "$running 执行 · $pending 排队"
-                },
-                fontSize = 11.sp,
-                color = if (active.isEmpty()) V7.Tx3 else V7.Cu,
-            )
-        }
+        // [destiny/ui-one-look] 分组标题统一走 V7Section（10sp 加宽 + 发丝线 + 右侧值），
+        // 原来自画了一套 12sp 的，和设置页的分组标题对不上。
+        V7Section(
+            "任务队列",
+            when {
+                active.isEmpty() -> "空闲"
+                pending == 0 -> "$running 执行中"
+                running == 0 -> "$pending 排队"
+                else -> "$running 执行 · $pending 排队"
+            },
+        )
         Spacer(Modifier.height(8.dp))
         if (active.isEmpty()) {
             Text(
@@ -1069,17 +1079,7 @@ fun DestinyV7QueueScreen(onBack: () -> Unit) {
                 val perParent = reg.maxConcurrentChildJobsPerParent
                 val maxQueued = reg.MAX_QUEUED_DELEGATIONS_PER_PARENT
                 Column(Modifier.fillMaxWidth().padding(top = 22.dp)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("排队等槽位", fontSize = 12.sp, color = V7.Tx2, letterSpacing = 0.4.sp)
-                        Spacer(Modifier.width(8.dp))
-                        Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "$depth 条",
-                            fontSize = 11.sp,
-                            color = if (depth == 0) V7.Tx3 else V7.Cu,
-                        )
-                    }
+                    V7Section("排队等槽位", "$depth 条")
                     Spacer(Modifier.height(8.dp))
                     Text(
                         if (depth == 0) {

@@ -37,9 +37,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.openminis.app.mibot.design.Glyph
 import com.openminis.app.mibot.design.LineGlyph
 import com.openminis.app.mibot.design.LineIcons
@@ -49,6 +51,7 @@ import com.openminis.app.mibot.home.DestinyHomeHeader
 import com.openminis.app.mibot.design.MibotTokens
 import com.openminis.app.mibot.design.MibotType
 import com.openminis.app.mibot.design.t
+import com.openminis.app.mibot.v7.V7
 import com.openminis.app.ui.glass.LocalGlassBottomInset
 import kotlinx.coroutines.delay
 
@@ -79,6 +82,12 @@ fun FeedPage(
     statusLine: String = "",
     onNewChat: () -> Unit = {},
     dark: Boolean = false,
+    // [destiny/ui-unify] V7 的外壳已经画了「动态」大标题，这里再画一次就是两层标题。
+    // 由 V7 调用时传 false，页面只留内容；独立使用时保持原样。
+    chrome: Boolean = true,
+    // [destiny/ui-one-look] V7 皮肤：22dp 页边距、分组标题走 V7Section 规格、
+    // 条目是平铺行 + 发丝线（不再是圆角卡片 + 阴影）。数据和交互完全不变。
+    v7: Boolean = false,
 ) {
     val ctx = LocalContext.current
     val bottom = LocalGlassBottomInset.current
@@ -95,10 +104,16 @@ fun FeedPage(
 
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = bottom + 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = if (v7) {
+            PaddingValues(start = 22.dp, end = 22.dp, bottom = bottom + 24.dp)
+        } else {
+            PaddingValues(bottom = bottom + 24.dp)
+        },
+        verticalArrangement = Arrangement.spacedBy(if (v7) 0.dp else 12.dp),
     ) {
-        item { MibotPageTitle(t("动态", "Feed"), t("应用里发生的事，最新的在最上面", "What happened in the app, newest first")) }
+        if (chrome) {
+            item { MibotPageTitle(t("动态", "Feed"), t("应用里发生的事，最新的在最上面", "What happened in the app, newest first")) }
+        }
         item {
             DestinyHomeHeader(
                 recents = recents,
@@ -117,20 +132,33 @@ fun FeedPage(
             Spacer(Modifier.height(4.dp))
         }
         if (entries.isEmpty()) {
-            item { FeedEmpty() }
+            item { if (v7) V7FeedEmpty() else FeedEmpty() }
         } else {
             groups.forEach { (label, list) ->
                 item(key = "h_$label") {
-                    Text(
-                        label,
-                        fontSize = MibotType.Section,
-                        fontWeight = MibotType.Semi,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, top = 10.dp, bottom = 2.dp),
-                    )
+                    if (v7) {
+                        V7GroupHeader(label)
+                    } else {
+                        Text(
+                            label,
+                            fontSize = MibotType.Section,
+                            fontWeight = MibotType.Semi,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, top = 10.dp, bottom = 2.dp),
+                        )
+                    }
                 }
                 items(list, key = { it.id }) { e ->
-                    FeedCard(
+                    if (v7) {
+                        V7FeedRow(
+                            e = e,
+                            timeLabel = FeedStore.relativeTime(e.ts, now, zh),
+                            onLike = { store.toggleLike(e.id) },
+                            onDiscuss = { onDiscuss(listOf(e.title, e.body).filter { it.isNotBlank() }.joinToString("\n")) },
+                            onDelete = { confirmDelete = e },
+                            onOpen = sourceOpener(e.sourceRef.orEmpty(), onOpenSession, onOpenGroup),
+                        )
+                    } else FeedCard(
                         e = e,
                         timeLabel = FeedStore.relativeTime(e.ts, now, zh),
                         onLike = { store.toggleLike(e.id) },
@@ -286,5 +314,107 @@ private fun ActionPill(glyph: LineGlyph, label: String, tint: Color, filled: Boo
         Glyph(glyph, size = 16.dp, tint = tint, duotone = filled)
         Spacer(Modifier.width(4.dp))
         Text(label, fontSize = MibotType.Secondary, color = tint)
+    }
+}
+
+// ── [destiny/ui-one-look] V7 皮肤下的三个件：分组标题 / 条目行 / 空态 ──────────
+// 规格与「设置」tab 完全一致：10sp 加宽分组标题 + 发丝线；条目 = 14sp 主标题 +
+// 11.5sp 说明 + 右侧时间；行下 1dp 发丝线；22dp 页边距由调用方给。
+
+@Composable
+private fun V7GroupHeader(label: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = V7.Tx3, letterSpacing = 1.2.sp)
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f).height(1.dp).background(V7.Ln))
+    }
+}
+
+@Composable
+private fun V7FeedAction(label: String, color: Color, onClick: () -> Unit) {
+    Text(
+        label,
+        fontSize = 11.5.sp,
+        color = color,
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 3.dp),
+    )
+}
+
+@Composable
+private fun V7FeedRow(
+    e: FeedEntry,
+    timeLabel: String,
+    onLike: () -> Unit,
+    onDiscuss: () -> Unit,
+    onDelete: () -> Unit,
+    onOpen: (() -> Unit)?,
+) {
+    var expanded by rememberSaveable(e.id) { mutableStateOf(false) }
+    val s = kindStyle(e.kind)
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier)
+                .padding(top = 13.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Box(
+                Modifier.size(26.dp).clip(RoundedCornerShape(8.dp)).background(V7.Sf2),
+                contentAlignment = Alignment.Center,
+            ) { Glyph(s.glyph, size = 14.dp, tint = V7.Tx2) }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(e.title, fontSize = 14.sp, color = V7.Tx, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                if (e.body.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        e.body,
+                        fontSize = 11.5.sp,
+                        lineHeight = 18.sp,
+                        color = V7.Tx2,
+                        maxLines = if (expanded) Int.MAX_VALUE else 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable { expanded = !expanded },
+                    )
+                }
+                Spacer(Modifier.height(7.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    V7FeedAction(if (e.liked) "已赞" else "赞", if (e.liked) V7.Cu else V7.Tx3, onLike)
+                    V7FeedAction("讨论", V7.Tx3, onDiscuss)
+                    V7FeedAction("删除", V7.Tx3, onDelete)
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(timeLabel, fontSize = 10.5.sp, color = V7.Tx3)
+                if (onOpen != null) {
+                    Spacer(Modifier.height(2.dp))
+                    Text("\u203A", fontSize = 15.sp, color = V7.Tx3)
+                }
+            }
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
+    }
+}
+
+@Composable
+private fun V7FeedEmpty() {
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Text("还没有动态", fontSize = 13.sp, color = V7.Tx)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "这里会自动出现：定时任务跑完的结果、保险库新保存的密钥（只显示服务名）、" +
+                "插件安装与启停、群聊里 Bot 的新回复。点「讨论」可以把任意一条带进新对话。",
+            fontSize = 11.5.sp,
+            lineHeight = 18.sp,
+            color = V7.Tx3,
+        )
     }
 }
