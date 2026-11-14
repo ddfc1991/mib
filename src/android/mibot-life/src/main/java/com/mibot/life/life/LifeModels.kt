@@ -153,6 +153,18 @@ data class MemoryPolicy(
     val keepUnfinishedGoals: Boolean = true,
 )
 
+/** 兴趣（自主生成：从自己的经历里长出来的偏好，不是预设加权） */
+data class Interest(
+    /** 话题/领域 key（如 forum / reading / 某本书名） */
+    val topic: String,
+    /** 领域 */
+    val domain: String,
+    /** 强度（由重复次数 × 近期度算出，0..1+） */
+    val strength: Double = 0.0,
+    val count: Int = 0,
+    val lastAt: Long = 0,
+)
+
 /** 生活系统完整状态（持久化单元） */
 data class LifeStateData(
     val version: Int = 1,
@@ -162,6 +174,12 @@ data class LifeStateData(
     val episodes: List<LifeEpisode> = emptyList(),
     val projects: List<LifeProject> = emptyList(),
     val history: List<LifeChoice> = emptyList(),
+    /** 自主形成的兴趣（由经历自动重算） */
+    val interests: List<Interest> = emptyList(),
+    /** 情感状态（被事件修改、随时间回归） */
+    val affect: AffectState = AffectState(),
+    /** 牵挂账本（温度来源） */
+    val cares: List<CareItem> = emptyList(),
     val rhythm: RhythmConfig = RhythmConfig(),
     val contact: ContactBudget = ContactBudget(),
     val memory: MemoryPolicy = MemoryPolicy(),

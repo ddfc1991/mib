@@ -45,13 +45,13 @@ data class LifeSettings(
     val allowComment: Boolean = false,
     val allowFollow: Boolean = false,
 
-    // ---- 内容分类（加权）----
-    val weightContentBeauty: Float = 1.2f,
-    val weightContentFood: Float = 1.0f,
-    val weightContentTech: Float = 1.0f,
-    val weightContentFunny: Float = 1.0f,
-    val weightContentOther: Float = 0.5f,
-    val contentClassifyConfidence: Float = 0.6f,
+    // ---- 兴趣（自主生成，不预设加权）----
+    /** 兴趣最小样本数：低于它不算形成爱好 */
+    val interestMinCount: Int = 2,
+    /** 兴趣强度上限（避免老爱好永占优势） */
+    val interestMaxBonus: Float = 8f,
+    /** 兴趣半衰期（天）：近期反复做的才叫现在喜欢 */
+    val interestHalfLifeDays: Int = 21,
 
     // ---- 游戏 ----
     val gamingAuto: Boolean = false,
@@ -111,12 +111,6 @@ class SettingsStore(context: Context) {
             allowLike = p.getBoolean("allowLike", d.allowLike),
             allowComment = p.getBoolean("allowComment", d.allowComment),
             allowFollow = p.getBoolean("allowFollow", d.allowFollow),
-            weightContentBeauty = p.getFloat("weightContentBeauty", d.weightContentBeauty),
-            weightContentFood = p.getFloat("weightContentFood", d.weightContentFood),
-            weightContentTech = p.getFloat("weightContentTech", d.weightContentTech),
-            weightContentFunny = p.getFloat("weightContentFunny", d.weightContentFunny),
-            weightContentOther = p.getFloat("weightContentOther", d.weightContentOther),
-            contentClassifyConfidence = p.getFloat("contentClassifyConfidence", d.contentClassifyConfidence),
             gamingAuto = p.getBoolean("gamingAuto", d.gamingAuto),
             gamingDailyOnly = p.getBoolean("gamingDailyOnly", d.gamingDailyOnly),
             gamingMaxMinutes = p.getInt("gamingMaxMinutes", d.gamingMaxMinutes),
@@ -130,6 +124,9 @@ class SettingsStore(context: Context) {
             deepModel = p.getString("deepModel", d.deepModel) ?: d.deepModel,
             visionModel = p.getString("visionModel", d.visionModel) ?: d.visionModel,
             apiKey = p.getString("apiKey", d.apiKey) ?: d.apiKey,
+            interestMinCount = p.getInt("interestMinCount", d.interestMinCount),
+            interestMaxBonus = p.getFloat("interestMaxBonus", d.interestMaxBonus),
+            interestHalfLifeDays = p.getInt("interestHalfLifeDays", d.interestHalfLifeDays),
             summaryAfterDays = p.getInt("summaryAfterDays", d.summaryAfterDays),
             fadeAfterDays = p.getInt("fadeAfterDays", d.fadeAfterDays),
             keepPreferences = p.getBoolean("keepPreferences", d.keepPreferences),
@@ -155,10 +152,6 @@ class SettingsStore(context: Context) {
             putBoolean("pauseWhenForeground", s.pauseWhenForeground)
             putBoolean("allowLike", s.allowLike); putBoolean("allowComment", s.allowComment)
             putBoolean("allowFollow", s.allowFollow)
-            putFloat("weightContentBeauty", s.weightContentBeauty); putFloat("weightContentFood", s.weightContentFood)
-            putFloat("weightContentTech", s.weightContentTech); putFloat("weightContentFunny", s.weightContentFunny)
-            putFloat("weightContentOther", s.weightContentOther)
-            putFloat("contentClassifyConfidence", s.contentClassifyConfidence)
             putBoolean("gamingAuto", s.gamingAuto); putBoolean("gamingDailyOnly", s.gamingDailyOnly)
             putInt("gamingMaxMinutes", s.gamingMaxMinutes)
             putBoolean("econTier1Enabled", s.econTier1Enabled)
@@ -169,6 +162,8 @@ class SettingsStore(context: Context) {
             putString("gatewayUrl", s.gatewayUrl); putString("dailyModel", s.dailyModel)
             putString("deepModel", s.deepModel); putString("visionModel", s.visionModel)
             putString("apiKey", s.apiKey)
+            putInt("interestMinCount", s.interestMinCount); putFloat("interestMaxBonus", s.interestMaxBonus)
+            putInt("interestHalfLifeDays", s.interestHalfLifeDays)
             putInt("summaryAfterDays", s.summaryAfterDays); putInt("fadeAfterDays", s.fadeAfterDays)
             putBoolean("keepPreferences", s.keepPreferences)
             putBoolean("keepUnfinishedGoals", s.keepUnfinishedGoals)

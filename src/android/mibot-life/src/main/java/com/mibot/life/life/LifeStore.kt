@@ -30,6 +30,13 @@ class LifeStore(context: Context) {
         put("episodes", JSONArray().apply { s.episodes.forEach { put(episodeJson(it)) } })
         put("projects", JSONArray().apply { s.projects.forEach { put(projectJson(it)) } })
         put("history", JSONArray().apply { s.history.takeLast(200).forEach { put(choiceJson(it)) } })
+        put("interests", JSONArray().apply { s.interests.forEach { put(interestJson(it)) } })
+        put("affect", JSONObject().apply {
+            put("pleasure", s.affect.pleasure); put("energy", s.affect.energy)
+            put("care", s.affect.care); put("frustration", s.affect.frustration)
+            put("updatedAt", s.affect.updatedAt)
+        })
+        put("cares", JSONArray().apply { s.cares.forEach { put(careJson(it)) } })
         put("rhythm", JSONObject().apply {
             put("enabled", s.rhythm.enabled)
             put("morningStart", s.rhythm.morningStart)
@@ -57,6 +64,17 @@ class LifeStore(context: Context) {
         episodes = o.optJSONArray("episodes").mapArr(::episodeFrom),
         projects = o.optJSONArray("projects").mapArr(::projectFrom),
         history = o.optJSONArray("history").mapArr(::choiceFrom),
+        interests = o.optJSONArray("interests").mapArr(::interestFrom),
+        affect = o.optJSONObject("affect")?.let {
+            AffectState(
+                pleasure = it.optDouble("pleasure", 0.0),
+                energy = it.optDouble("energy", 0.5),
+                care = it.optDouble("care", 0.0),
+                frustration = it.optDouble("frustration", 0.0),
+                updatedAt = it.optLong("updatedAt", System.currentTimeMillis()),
+            )
+        } ?: AffectState(),
+        cares = o.optJSONArray("cares").mapArr(::careFrom),
         rhythm = o.optJSONObject("rhythm")?.let {
             RhythmConfig(
                 enabled = it.optBoolean("enabled", false),
@@ -164,6 +182,29 @@ class LifeStore(context: Context) {
         runStatus = o.optString("runStatus").takeIf { it.isNotEmpty() }?.let {
             runCatching { RunStatus.valueOf(it) }.getOrNull()
         },
+    )
+
+    private fun interestJson(i: Interest) = JSONObject().apply {
+        put("topic", i.topic); put("domain", i.domain); put("strength", i.strength)
+        put("count", i.count); put("lastAt", i.lastAt)
+    }
+
+    private fun interestFrom(o: JSONObject) = Interest(
+        topic = o.optString("topic"), domain = o.optString("domain"),
+        strength = o.optDouble("strength", 0.0), count = o.optInt("count", 0),
+        lastAt = o.optLong("lastAt", 0),
+    )
+
+    private fun careJson(c: CareItem) = JSONObject().apply {
+        put("id", c.id); put("text", c.text); put("source", c.source)
+        put("createdAt", c.createdAt); put("dueAt", c.dueAt); put("resolved", c.resolved)
+    }
+
+    private fun careFrom(o: JSONObject) = CareItem(
+        id = o.optString("id"), text = o.optString("text"),
+        source = o.optString("source", "user"),
+        createdAt = o.optLong("createdAt"), dueAt = o.optLong("dueAt"),
+        resolved = o.optBoolean("resolved"),
     )
 
     companion object {

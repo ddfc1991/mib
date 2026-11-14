@@ -59,6 +59,15 @@ class LifePlanner(
         val rhythm = state.rhythm
         val currentPhase = phase(now, rhythm)
         val recent = state.history.takeLast(8)
+        // 情感影响：低能量/高挫败 → 倾向休息（不是硬规则，是打分偏移）
+        val affect = state.affect.decayed(now)
+        val low = lowEnergy || affect.isLowEnergy() || affect.isFrustrated()
+        // 兴趣表：topic/domain → 加成
+        val interestBonus: (String, String) -> Double = { key, domain ->
+            val byTopic = state.interests.filter { it.topic.isNotEmpty() && (key.contains(it.topic) || it.topic.contains(key.take(20))) }
+            val byDomain = state.interests.filter { it.domain == domain }
+            (byTopic + byDomain).sumOf { it.strength }.coerceAtMost(MAX_INTEREST_BONUS)
+        }
 
         fun add(
             action: LifeAction,
