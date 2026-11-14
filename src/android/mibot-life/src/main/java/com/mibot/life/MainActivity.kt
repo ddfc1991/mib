@@ -41,17 +41,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mibot.life.life.LifeAction
 import com.mibot.life.life.LifeSystem
+import com.mibot.life.settings.LifeSettings
+import com.mibot.life.settings.SettingsStore
+import com.mibot.life.ui.EconomyScreen
+import com.mibot.life.ui.GrowthScreen
+import com.mibot.life.ui.SettingsScreen
 
-/**
- * Mibot 生活 —— 主界面（可对话 + 真实生活系统）。
- * 输入框是真 BasicTextField（弹键盘），发送后基于生活系统真实数据回复。
- */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { LifeScreen() } }
+        setContent { MaterialTheme { LifeAppShell() } }
     }
 }
 
@@ -65,125 +65,156 @@ private val BubbleThem = Color(0xFFF0E9DF)
 
 private data class ChatMsg(val from: Boolean, val text: String)
 
-/** 基于生活系统真实数据的回复 */
-private fun replyFor(input: String, life: LifeSystem): String {
-    val q = input.trim()
-    val snap = life.snapshot()
-    return when {
-        q.contains("在干") || q.contains("干嘛") || q.contains("做什么") -> {
-            val d = life.decide()
-            val c = d.chosen
-            if (c == null) "现在没什么可做的，我休息一下。"
-            else "我刚决定：${c.action.zh} —— ${c.reason}\n打分 ${"%.1f".format(c.score)}" +
-                c.factors.joinToString("") { f -> "\n· ${f.reason} ${if (f.points >= 0) "+" else ""}${"%.1f".format(f.points)}" }
-        }
-        q.contains("等级") || q.contains("经验") || q.contains("Lv") ->
-            "学习 Lv${life.levelOf("learning")}（${life.levelTitle("learning")}）· 经验 ${life.xpOf("learning")}\n" +
-                "写作 Lv${life.levelOf("writing")}（${life.xpTitleSafe()}）\n币：${snap.coin}"
-        q.contains("目标") || q.contains("计划") ->
-            if (snap.goals.isEmpty() && snap.curiosityGoals.isEmpty()) "还没有目标。你可以跟我说想让我做什么。"
-            else buildString {
-                if (snap.goals.isNotEmpty()) appendLine("目标：" + snap.goals.take(5).joinToString("；") { "${it.title}（${it.status.zh}）" })
-                if (snap.curiosityGoals.isNotEmpty()) append("小疑问：" + snap.curiosityGoals.take(3).joinToString("；") { it.title })
-            }
-        q.contains("币") || q.contains("钱") -> "我现在有 ${snap.coin} 个 Mibot 币。"
-        q.contains("经历") || q.contains("记忆") || q.contains("做过") ->
-            if (snap.episodes.isEmpty()) "还没什么经历。"
-            else "最近的经历：\n" + snap.episodes.takeLast(5).joinToString("\n") { "· [${it.kind.zh}] ${it.title}" }
-        q.contains("休息") -> "好，我休息一下。"
-        q.contains("读") || q.contains("看") || q.contains("研究") ->
-            "好，我去研究。你现在可以让我加个目标，我就按它去读。"
-        q.isBlank() -> "嗯？"
-        else -> "收到：「$q」。我现在的生活系统能做的：研究/写作/探索/休息。想让我做别的，先给我加个目标。"
-    }
-}
-
-/** 安全拿写作称号（避免越界异常） */
-private fun LifeSystem.xpTitleSafe(): String = runCatching { levelTitle("writing") }.getOrElse { "新手" }
+private val Tabs = listOf("生活", "对话", "成长", "经济", "设置")
 
 @Composable
-private fun LifeScreen() {
+private fun LifeAppShell() {
     val ctx = LocalContext.current
     val life = remember { LifeSystem(ctx.applicationContext) }
-    val messages = remember { mutableStateListOf<ChatMsg>() }
-    var input by remember { mutableStateOf("") }
-    var statusLine by remember { mutableStateOf("") }
-
-    fun reflectStatus() {
-        val snap = life.snapshot()
-        statusLine = "作息：${life.phase().zh} · 经验 Lv${life.levelOf("learning")} · 币 ${snap.coin}"
-    }
-
-    fun send() {
-        val text = input.trim()
-        if (text.isEmpty()) return
-        messages.add(ChatMsg(from = true, text = text))
-        input = ""
-        // 加目标（用户说"目标：xxx"或"让我做xxx"）
-        runCatching {
-            if (text.startsWith("目标") || text.startsWith("让我")) {
-                val title = text.removePrefix("目标").removePrefix("让我").trimStart('：', ':', ' ')
-                if (title.isNotEmpty()) {
-                    life.addGoal(title)
-                    messages.add(ChatMsg(from = false, text = "记住了，目标：$title。我会按它安排生活。"))
-                    reflectStatus()
-                    return
-                }
-            }
-            messages.add(ChatMsg(from = false, text = replyFor(text, life)))
-            reflectStatus()
-        }.onFailure {
-            messages.add(ChatMsg(from = false, text = "出了点问题：${it.message}"))
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        val phase = life.phase()
-        val decision = life.decide()
-        val chosen = decision.chosen
-        reflectStatus()
-        messages.add(
-            ChatMsg(
-                from = false,
-                text = if (chosen != null) {
-                    "我醒来了（${phase.zh}）。刚做了个决定：${chosen.action.zh} —— ${chosen.reason}\n" +
-                        "打分 ${"%.1f".format(chosen.score)}，候选里排第一。" +
-                        (chosen.factors.joinToString("") { f -> "\n· ${f.reason} ${if (f.points >= 0) "+" else ""}${"%.1f".format(f.points)}" })
-                } else "我醒来了（${phase.zh}）。暂时没有可做的事。",
-            ),
-        )
-        if (decision.excluded.isNotEmpty()) {
-            messages.add(ChatMsg(from = false, text = "没选的：\n" + decision.excluded.take(4).joinToString("\n") { "· ${it.key} — ${it.reason}" }))
-        }
-    }
+    val settingsStore = remember { SettingsStore(ctx.applicationContext) }
+    var settings by remember { mutableStateOf(settingsStore.load()) }
+    var tab by remember { mutableStateOf(0) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(SkyTop, SkyBottom))),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 6.dp)) {
-            Text("Mibot 生活", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = InkDark)
+        // 顶部：标题 + 5 胶囊标签
+        Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp)) {
             Text(
-                if (statusLine.isBlank()) "生活系统加载中…" else statusLine,
-                fontSize = 12.sp, color = MutedInk, modifier = Modifier.padding(top = 3.dp),
+                "Mibot 生活",
+                fontSize = 22.sp, fontWeight = FontWeight.Bold, color = InkDark,
+                modifier = Modifier.padding(start = 20.dp),
             )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Tabs.forEachIndexed { i, label ->
+                    val on = i == tab
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .background(if (on) InkDark else Color.Transparent, RoundedCornerShape(50))
+                            .clickable { tab = i }
+                            .padding(horizontal = 11.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            label, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold,
+                            color = if (on) Color(0xFFF7F3EC) else MutedInk,
+                        )
+                    }
+                }
+            }
         }
 
+        // 内容
+        when (tab) {
+            0 -> LifeTab(life)
+            1 -> ChatTab(life)
+            2 -> GrowthScreen(life)
+            3 -> EconomyScreen(life, settings)
+            else -> SettingsScreen(settings) { newSettings ->
+                settings = newSettings
+                settingsStore.save(newSettings)
+            }
+        }
+    }
+}
+
+// ---------------- 生活 tab（状态 + 决策流）----------------
+
+@Composable
+private fun LifeTab(life: LifeSystem) {
+    var loaded by remember { mutableStateOf(false) }
+    val lines = remember { mutableStateListOf<String>() }
+    var header by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        if (loaded) return@LaunchedEffect
+        loaded = true
+        val phase = life.phase()
+        val snap = life.snapshot()
+        header = "作息：${phase.zh} · 经验 Lv${life.levelOf("learning")} · 币 ${snap.coin} · 目标 ${snap.goals.size} · 经历 ${snap.episodes.size}"
+        val d = life.decide()
+        d.chosen?.let { c ->
+            lines.add("我刚决定：${c.action.zh} —— ${c.reason}\n打分 ${"%.1f".format(c.score)}")
+            if (c.factors.isNotEmpty()) {
+                lines.add("打分依据：\n" + c.factors.joinToString("\n") { "· ${it.reason} ${if (it.points >= 0) "+" else ""}${"%.1f".format(it.points)}" })
+            }
+        } ?: lines.add("暂时没有可做的事。")
+        if (d.excluded.isNotEmpty()) {
+            lines.add("没选（及原因）：\n" + d.excluded.take(6).joinToString("\n") { "· ${it.key} — ${it.reason}" })
+        }
+        if (snap.goals.isNotEmpty()) {
+            lines.add("我的目标：\n" + snap.goals.take(5).joinToString("\n") { "· ${it.title}（${it.status.zh}）" })
+        }
+        if (snap.episodes.isNotEmpty()) {
+            lines.add("最近经历：\n" + snap.episodes.takeLast(4).joinToString("\n") { "· [${it.kind.zh}] ${it.title}" })
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Text(header.ifBlank { "加载中…" }, fontSize = 11.5.sp, color = MutedInk,
+            modifier = Modifier.padding(vertical = 8.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(lines) { t ->
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(BubbleThem, RoundedCornerShape(18.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                ) { Text(t, fontSize = 13.5.sp, color = InkDark, lineHeight = 20.sp) }
+            }
+        }
+    }
+}
+
+// ---------------- 对话 tab ----------------
+
+@Composable
+private fun ChatTab(life: LifeSystem) {
+    val messages = remember { mutableStateListOf<ChatMsg>() }
+    var input by remember { mutableStateOf("") }
+    var inited by remember { mutableStateOf(false) }
+
+    fun send() {
+        val text = input.trim()
+        if (text.isEmpty()) return
+        messages.add(ChatMsg(true, text))
+        input = ""
+        runCatching {
+            if (text.startsWith("目标") || text.startsWith("让我")) {
+                val title = text.removePrefix("目标").removePrefix("让我").trimStart('：', ':', ' ')
+                if (title.isNotEmpty()) {
+                    life.addGoal(title)
+                    messages.add(ChatMsg(false, "记住了，目标：$title。我会按它安排生活。"))
+                    return
+                }
+            }
+            messages.add(ChatMsg(false, replyFor(text, life)))
+        }.onFailure { messages.add(ChatMsg(false, "出了点问题：${it.message}")) }
+    }
+
+    LaunchedEffect(Unit) {
+        if (inited) return@LaunchedEffect
+        inited = true
+        messages.add(ChatMsg(false, "我在。想聊什么，或者告诉我「目标：xxx」。\n也可以问：在干嘛 / 等级 / 目标 / 经历 / 币。"))
+    }
+
+    Column(Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             items(messages) { m -> ChatBubble(m) }
         }
-
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier
-                    .weight(1f)
+                modifier = Modifier.weight(1f)
                     .background(Color(0xD9FFFFFF), RoundedCornerShape(50))
                     .padding(start = 18.dp, end = 10.dp, top = 12.dp, bottom = 12.dp),
                 contentAlignment = Alignment.CenterStart,
@@ -198,39 +229,52 @@ private fun LifeScreen() {
                     keyboardActions = KeyboardActions(onSend = { send() }),
                     modifier = Modifier.fillMaxWidth(),
                     decorationBox = { inner ->
-                        if (input.isEmpty()) {
-                            Text("和 Mibot 说话…", fontSize = 14.sp, color = MutedInk)
-                        }
+                        if (input.isEmpty()) Text("和 Mibot 说话…", fontSize = 14.sp, color = MutedInk)
                         inner()
                     },
                 )
             }
             Spacer(Modifier.width(8.dp))
             Box(
-                modifier = Modifier
-                    .width(44.dp).height(44.dp)
+                modifier = Modifier.width(44.dp).height(44.dp)
                     .background(Coral, RoundedCornerShape(50))
                     .clickable { send() },
                 contentAlignment = Alignment.Center,
-            ) {
-                Text("➤", fontSize = 16.sp, color = Color.White)
-            }
+            ) { Text("➤", fontSize = 16.sp, color = Color.White) }
         }
     }
 }
 
 @Composable
 private fun ChatBubble(m: ChatMsg) {
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = if (m.from) Alignment.CenterEnd else Alignment.CenterStart,
-    ) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = if (m.from) Alignment.CenterEnd else Alignment.CenterStart) {
         Column(
             modifier = Modifier
                 .background(if (m.from) BubbleMine else BubbleThem, RoundedCornerShape(18.dp))
                 .padding(horizontal = 14.dp, vertical = 10.dp),
-        ) {
-            Text(m.text, fontSize = 14.sp, color = InkDark, lineHeight = 21.sp)
+        ) { Text(m.text, fontSize = 14.sp, color = InkDark, lineHeight = 21.sp) }
+    }
+}
+
+/** 基于生活系统的本地回复（模型接入前） */
+private fun replyFor(input: String, life: LifeSystem): String {
+    val q = input.trim()
+    val snap = life.snapshot()
+    return when {
+        q.contains("在干") || q.contains("干嘛") || q.contains("做什么") -> {
+            val c = life.decide().chosen
+            if (c == null) "现在没什么可做的，我休息一下。"
+            else "我刚决定：${c.action.zh} —— ${c.reason}\n打分 ${"%.1f".format(c.score)}"
         }
+        q.contains("等级") || q.contains("经验") ->
+            "学习 Lv${life.levelOf("learning")} · 写作 Lv${life.levelOf("writing")} · 币 ${snap.coin}"
+        q.contains("目标") ->
+            if (snap.goals.isEmpty()) "还没有目标。说「目标：xxx」我就记下。"
+            else snap.goals.take(6).joinToString("\n") { "· ${it.title}（${it.status.zh}）" }
+        q.contains("币") || q.contains("钱") -> "我现在有 ${snap.coin} 个 Mibot 币。"
+        q.contains("经历") || q.contains("记忆") ->
+            if (snap.episodes.isEmpty()) "还没什么经历。"
+            else snap.episodes.takeLast(5).joinToString("\n") { "· [${it.kind.zh}] ${it.title}" }
+        else -> "收到：「$q」。生活系统现在能做：研究/写作/探索/休息。加个目标我就按它去做。"
     }
 }
