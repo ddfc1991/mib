@@ -1,6 +1,7 @@
 package com.mibot.life.voice
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -26,6 +27,7 @@ import java.util.Locale
  * 5) 音量回调 isRmsChanged → 驱动光环（让用户知道它在听）
  */
 class VoiceIO(private val context: Context) {
+    private companion object { const val TAG = "MibotLifeVoice" }
 
     // ---------- 状态 ----------
     enum class AsrState { IDLE, LISTENING, THINKING, SPEAKING, ERROR }
@@ -132,18 +134,78 @@ class VoiceIO(private val context: Context) {
     private var recognizer: SpeechRecognizer? = null
     private var pendingResume = false
 
+    /** 可用的识别服务组件（fallback 链：默认 → 设备上其他 exported 服务） */
+    private var serviceIndex = -1
+    private val fallbackServices = listOf(
+        // 设备实测：realme 无系统默认识别服务，但有第三方 App 注册的 exported 服务
+        "com.anthropic.claude/com.anthropic.claude.bell.assist.ClaudeRecognitionService",
+        "com.facebook.aura/com.facebook.aura.assist.HatchRecognitionService",
+    )
+
     var asrAvailable: Boolean = false
         private set
+
+    /** 探测设备上所有识别服务（写进日志，方便诊断） */
+    private fun probeServices(): List<ComponentName> {
+        val out = mutableListOf<ComponentName>()
+        runCatching {
+            val pm = context.packageManager
+            val intent = Intent("android.speech.RecognitionService")
+            val resolved = pm.queryIntentServices(intent, PackageManager.MATCH_ALL)
+            for (ri in resolved) {
+                val cn = ComponentName(ri.serviceInfo.packageName, ri.serviceInfo.name)
+                out.add(cn)
+                android.util.Log.i(TAG, "识别服务可用: $cn enabled=${ri.serviceInfo.enabled}")
+            }
+        }
+        return out
+    }
 
     fun initAsr() {
         asrAvailable = SpeechRecognizer.isRecognitionAvailable(context)
         if (!asrAvailable) {
-            _error.value = "此设备没有可用的语音识别引擎"
+            // 系统说没有，但可能有第三方服务 —— 显式探测并尝试
+            android.util.Log.w(TAG, "isRecognitionAvailable=false，尝试显式绑定第三方服务")
+            asrAvailable = bindNextService()
+            if (!asrAvailable) _error.value = "此设备没有可用的语音识别引擎"
             return
         }
         if (recognizer == null) {
             recognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
                 setRecognitionListener(listener)
+            }
+        }
+    }
+
+    /** 依次尝试绑定 fallback 服务 */
+    private fun bindNextService(): Boolean {
+        for ((i, spec) in fallbackServices.withIndex()) {
+            if (i <= serviceIndex) continue
+            val parts = spec.split("/")
+            if (parts.size != 2) continue
+            val cn = ComponentName(parts[0], parts[1])
+            try {
+                val r = SpeechRecognizer.createSpeechRecognizer(context, cn)
+                r.setRecognitionListener(listener)
+                recognizer = r
+                serviceIndex = i
+                android.util.Log.i(TAG, "已绑定识别服务: $cn")
+                return true
+            } catch (t: Throwable) {
+                android.util.Log.w(TAG, "绑定 $cn 失败: ${t.message}")
+            }
+        }
+        return false
+    }
+
+    /** 识别报错时尝试切换到下一个服务（ERROR_CLIENT 常因服务不可用） */
+    private fun fallbackOnError() {
+        if (serviceIndex >= 0 && serviceIndex < fallbackServices.size - 1) {
+            runCatching { recognizer?.destroy() }
+            recognizer = null
+            if (bindNextService()) {
+                _error.value = null
+                android.util.Log.i(TAG, "已切换到下一个识别服务")
             }
         }
     }
@@ -170,7 +232,12 @@ class VoiceIO(private val context: Context) {
             _level.value = 0f
             _asrState.value = AsrState.IDLE
             _error.value = asrErrorMessage(error)
-            if (continuousMode && error == SpeechRecognizer.ERROR_NO_MATCH) pendingResume = true
+            if (error == SpeechRecognizer.ERROR_CLIENT) {
+                // 实机：无系统默认识别服务时必报 ERROR_CLIENT —— 尝试切换第三方服务
+                fallbackOnError()
+            } else if (continuousMode && error == SpeechRecognizer.ERROR_NO_MATCH) {
+                pendingResume = true
+            }
         }
 
         override fun onResults(results: Bundle?) {
