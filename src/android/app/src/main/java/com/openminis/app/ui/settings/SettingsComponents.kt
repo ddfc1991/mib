@@ -236,13 +236,24 @@ fun SettingsSection(
     ) {
         val mibotUi = com.openminis.app.ui.theme.LocalMibotActive.current
         if (header != null && mibotUi) {
-            Text(
-                text = header,
-                fontSize = com.openminis.app.mibot.design.MibotType.Section,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 28.dp, end = 28.dp, bottom = 6.dp),
-            )
+            // [destiny/ui-unify] 与「设置」首屏同一套分组标题：10sp 加宽小字 +
+            // 右侧发丝线，左边线 22dp 和卡片边缘对齐（原来是 13sp 灰字 + 28dp）。
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = header,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    color = com.openminis.app.mibot.v7.V7.Tx3,
+                )
+                Spacer(Modifier.width(10.dp))
+                Box(Modifier.weight(1f).height(1.dp).background(com.openminis.app.mibot.v7.V7.Ln))
+            }
         } else if (header != null) {
             Text(
                 text = header.uppercaseForDisplay(),
@@ -289,7 +300,7 @@ fun SettingsSection(
                 // card, 4dp before the next section (the parent's 24dp top padding
                 // already provides separation, so keep the footer's own bottom
                 // tight at 4dp).
-                modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 4.dp),
+                modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 8.dp, bottom = 4.dp),
                 lineHeight = 16.sp,
             )
         }
