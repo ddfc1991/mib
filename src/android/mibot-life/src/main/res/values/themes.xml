@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mibot 生活主题：用简单 NoActionBar，避免依赖 XML Material 主题 -->
+    <style name="Theme.MibotLife" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FAF5EF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

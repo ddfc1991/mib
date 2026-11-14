@@ -29,6 +29,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "Minis"
 include(":app")
+// Mibot 生活 —— 独立 App（桌宠 + 生活系统），复用 :core
+include(":mibot-life")
 // [fork/mibot-merge] Mika browser port: the pure-JVM `core` module that backs
 // com.mibot.core.cap.web (CDP transport, WebSocket, NetworkLedger, page
 // scripts) and com.mibot.core.uistate. The app module's com.mibot.cap.web

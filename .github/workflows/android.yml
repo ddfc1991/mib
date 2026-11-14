@@ -135,12 +135,13 @@ jobs:
           MIBOT_KEYSTORE_PASSWORD: ${{ secrets.MIBOT_KEYSTORE_PASSWORD }}
           MIBOT_KEY_ALIAS: ${{ secrets.MIBOT_KEY_ALIAS }}
           MIBOT_KEY_PASSWORD: ${{ secrets.MIBOT_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon :app:assembleDebug -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8"
+        run: ./gradlew --no-daemon :app:assembleDebug :mibot-life:assembleDebug -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8"
 
       - name: Collect APK
         run: |
           mkdir -p out
           cp $(find src/android/app/build/outputs/apk -name '*.apk' | head -n1) out/minis-debug.apk
+          cp $(find src/android/mibot-life/build/outputs/apk -name '*.apk' | head -n1) out/mibot-life-debug.apk
           unzip -l out/minis-debug.apk | grep -E 'libproot|libgojni' || true
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs out/minis-debug.apk | tee out/signing.txt || true
           ls -la out
