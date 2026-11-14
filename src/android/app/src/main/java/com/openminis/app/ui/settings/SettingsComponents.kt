@@ -281,12 +281,19 @@ fun SettingsSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = if (mibotUi) com.openminis.app.mibot.design.MibotSpace.Screen else 16.dp)
+                // [destiny/ui-one-look] V7 下把容器水平边距从 22dp 收到 6dp，
+                // 同时把行自身的内缩统一成 16dp —— 6 + 16 = 22dp，正好落在页边距上。
+                //
+                // 为什么要绕这一下：全 App 有二十多个页面自己写了行（MemoryFileRow、
+                // SubAgentRow、StorageRow…），它们内部硬编码 16dp 内缩；而
+                // SettingsRow 是共享组件。若容器保持 22dp、行设 0，那些自定义行就会
+                // 变成 22+16=38dp —— 比分组标题多缩 16dp，截图里「GLOBAL.md」「子代理」
+                // 比上面的标题缩进去一截就是这个原因。反过来做，自定义行一行都不用改
+                // 就自动对齐，共享行的发丝线再加回 16dp 内缩即可。
+                .padding(
+                    horizontal = if (mibotUi) com.openminis.app.mibot.design.MibotSpace.Screen - 16.dp else 16.dp,
+                )
                 .then(
-                    // [destiny/ui-one-look] 设置子页原来是一张 iOS 式「内嵌圆角卡片」
-                    // （frosted 底 + 圆角），而四个 tab 是纯黑底上的平铺行 + 1dp 发丝线，
-                    // 同一个 App 里两套语言。这里在 V7 下不再画卡片底：行直接铺在 V7.Bg
-                    // 上，靠行尾发丝线分隔，和「设置」首屏 / 对话 / 动态 / 群聊完全同构。
                     if (mibotUi) Modifier
                     else Modifier
                         .clip(RoundedCornerShape(14.dp))
@@ -355,7 +362,7 @@ fun SettingsRow(
                     },
                 )
                 .padding(
-                    horizontal = if (mibotUi) 0.dp else 14.dp,
+                    horizontal = if (mibotUi) 16.dp else 14.dp,
                     vertical = if (mibotUi) 13.dp else 12.dp,
                 ),
             // #10 keep the trailing control (Switch/value) vertically centered
@@ -439,6 +446,8 @@ fun SettingsRow(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        // 容器已收 16dp，这里再补 16dp → 发丝线与页边距 22dp 同起点。
+                        .padding(horizontal = 16.dp)
                         .height(1.dp)
                         .background(com.openminis.app.mibot.v7.V7.Ln),
                 )
@@ -537,7 +546,7 @@ fun SettingsChoiceRow(
                 .heightIn(min = if (mibotUi) 0.dp else 56.dp)
                 .clickable(onClick = onSelect)
                 .padding(
-                    horizontal = if (mibotUi) 0.dp else 16.dp,
+                    horizontal = if (mibotUi) 16.dp else 16.dp,
                     vertical = if (mibotUi) 13.dp else 12.dp,
                 ),
             verticalAlignment = Alignment.CenterVertically,
@@ -571,6 +580,8 @@ fun SettingsChoiceRow(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        // 容器已收 16dp，这里再补 16dp → 发丝线与页边距 22dp 同起点。
+                        .padding(horizontal = 16.dp)
                         .height(1.dp)
                         .background(com.openminis.app.mibot.v7.V7.Ln),
                 )
@@ -596,15 +607,12 @@ fun SettingsCardBlock(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    // [destiny/ui-one-look] 非行内容（滑块、分段选择器）在 V7 下也不再内缩 16dp —
-    // 外层已经给了 22dp 页边距，再缩一次会让滑块比上面的行短一截。
+    // [destiny/ui-one-look] 非行内容（滑块、分段选择器）与行用同一个 16dp 内缩，
+    // 这样滑块的两端和上下文字的左右边缘在同一条竖线上。
     val mibotUi = com.openminis.app.ui.theme.LocalMibotActive.current
     Column(
         modifier = modifier
-            .padding(
-                horizontal = if (mibotUi) 0.dp else 16.dp,
-                vertical = if (mibotUi) 13.dp else 12.dp,
-            )
+            .padding(horizontal = 16.dp, vertical = if (mibotUi) 13.dp else 12.dp)
             .fillMaxWidth(),
         content = content,
     )
