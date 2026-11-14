@@ -66,7 +66,7 @@ import com.openminis.app.ui.glass.frosted
  * system sans (Roboto / Noto Sans CJK SC for Chinese), weights 400/500/600.
  */
 object MibotType {
-    val PageHeader: TextUnit = 20.sp
+    val PageHeader: TextUnit = 22.sp
     val Title: TextUnit = 17.sp
     val TitleSmall: TextUnit = 15.sp
     val Body: TextUnit = 14.sp
@@ -237,40 +237,55 @@ fun MibotScaffold(
     }
 }
 
-/** Centered title with a round frosted back button (reference style). */
+/**
+ * [destiny/ui-unify] 统一顶栏，规格照 V7 的页头：
+ * 靠左 22sp 粗标题 + 无底色箭头（44dp 热区）+ 右侧动作 + 底部 1dp 发丝线。
+ *
+ * 原来是「居中标题 + 圆形毛玻璃返回键」，和 V7 里那些页头（设置、任务队列、
+ * 未接入页）放在一起就是两种设计语言，进出一个功能页标题会横跳。现在全 App
+ * 只有这一个顶栏实现。
+ */
 @Composable
 fun MibotTopBar(title: String, onBack: (() -> Unit)?, actions: @Composable RowScope.() -> Unit = {}) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.statusBars)
-            .height(MibotSpace.TopBar)
-            .padding(horizontal = MibotSpace.M),
-    ) {
-        if (onBack != null) {
-            Box(
-                Modifier
-                    .align(Alignment.CenterStart)
-                    .size(MibotIcon.TopButton)
-                    .frosted(CircleShape, FrostLevel.Bar, elevation = 2.dp)
-                    .clickable(onClick = onBack)
-                    .semantics { contentDescription = "Back" },
-                contentAlignment = Alignment.Center,
-            ) {
-                Glyph(LineIcons.ArrowLeft, size = MibotIcon.Dense, tint = MaterialTheme.colorScheme.onSurface)
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .height(56.dp)
+                .padding(start = if (onBack != null) 8.dp else 22.dp, end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onBack != null) {
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onBack)
+                        .semantics { contentDescription = "返回" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Spacer(Modifier.width(6.dp))
             }
+            Text(
+                title,
+                modifier = Modifier.weight(1f),
+                fontSize = MibotType.Hero,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, content = actions)
         }
-        Text(
-            title,
-            modifier = Modifier.align(Alignment.Center).padding(horizontal = 52.dp),
-            fontSize = MibotType.Title,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
-        Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically, content = actions)
+        HorizontalDivider(thickness = 1.dp, color = MibotTokens.hairline())
     }
 }
 

@@ -619,7 +619,9 @@ private fun V7Chip(text: String, kind: String) {
 }
 
 @Composable
-internal fun V7Button(text: String, onClick: () -> Unit, enabled: Boolean = true) {
+// [destiny/ui-one-look] onClick 必须是最后一个参数：调用方大量用尾随 lambda
+// （`V7Button("…") { … }`），若 enabled 排在最后，尾随 lambda 会绑到 enabled 上编译不过。
+internal fun V7Button(text: String, enabled: Boolean = true, onClick: () -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
