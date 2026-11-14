@@ -23,6 +23,7 @@ import com.mibot.life.exec.LifeExecutor
 import com.mibot.life.life.*
 import com.mibot.life.settings.LifeSettings
 import com.mibot.life.settings.SettingsStore
+import com.mibot.life.ui.ChatScreen
 import com.mibot.life.ui.EconomyScreen
 import com.mibot.life.ui.GrowthScreen
 import com.mibot.life.ui.SettingsScreen
@@ -263,88 +264,6 @@ private fun AffectBar(label: String, v: Double, color: Color) {
         }
         Spacer(Modifier.width(6.dp))
         Text(String.format("%.1f", v), fontSize = 10.sp, color = InkSoft)
-    }
-}
-
-// ---------------- 对话 ----------------
-
-@Composable
-private fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
-    val scope = rememberCoroutineScope()
-    val messages = remember { mutableStateListOf<Pair<Boolean, String>>() }
-    var input by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    val partial by voice.partial.collectAsState()
-    val heard by voice.heard.collectAsState()
-
-    LaunchedEffect(Unit) {
-        messages.add(false to "我醒了。${system.snapshot().affect.moodHint()}。")
-    }
-    LaunchedEffect(heard) {
-        heard?.takeIf { it.isNotBlank() }?.let { input = it }
-    }
-
-    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        LazyColumn(Modifier.weight(1f), reverseLayout = true) {
-            items(messages.size) { idx ->
-                val i = messages.size - 1 - idx
-                val (me, text) = messages[i]
-                Row(
-                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = if (me) Arrangement.End else Arrangement.Start
-                ) {
-                    Box(
-                        Modifier.widthIn(max = 280.dp)
-                            .background(if (me) BubbleMe else BubbleThem, RoundedCornerShape(18.dp))
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
-                    ) { Text(text, fontSize = 13.sp, color = Ink) }
-                }
-            }
-        }
-        if (partial.isNotBlank()) {
-            Text("听：$partial", fontSize = 11.sp, color = Coral, modifier = Modifier.padding(bottom = 4.dp))
-        }
-        Row(
-            Modifier.fillMaxWidth().padding(vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                Modifier.size(42.dp).background(GlassCard, RoundedCornerShape(50))
-                    .clickable { if (voice.available) voice.listen() },
-                contentAlignment = Alignment.Center
-            ) { Text("说", fontSize = 13.sp, color = if (voice.available) Ink else InkSoft.copy(alpha = 0.4f)) }
-            Spacer(Modifier.width(8.dp))
-            Box(
-                Modifier.weight(1f).background(GlassCard, RoundedCornerShape(50))
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-            ) {
-                if (input.isEmpty()) Text("跟它说话…", fontSize = 13.sp, color = InkSoft.copy(alpha = 0.55f))
-                BasicTextField(
-                    value = input, onValueChange = { input = it },
-                    textStyle = TextStyle(fontSize = 13.sp, color = Ink),
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 4,
-                )
-            }
-            Spacer(Modifier.width(8.dp))
-            Box(
-                Modifier.size(42.dp)
-                    .background(if (input.isBlank() || busy) InkSoft.copy(alpha = 0.25f) else Coral, RoundedCornerShape(50))
-                    .clickable(enabled = input.isNotBlank() && !busy) {
-                        val text = input.trim()
-                        input = ""
-                        messages.add(true to text)
-                        busy = true
-                        scope.launch {
-                            val r = agent.reply(text)
-                            messages.add(false to r)
-                            voice.speak(r)
-                            busy = false
-                        }
-                    },
-                contentAlignment = Alignment.Center
-            ) { Text(if (busy) "…" else "发", fontSize = 13.sp, color = Porcelain) }
-        }
     }
 }
 

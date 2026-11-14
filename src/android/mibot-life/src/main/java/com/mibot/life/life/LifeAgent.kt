@@ -99,7 +99,7 @@ class LifeAgent(
 
     private fun fallback(text: String, st: LifeStateData): String = when {
         text.contains("在干嘛") || text.contains("做什么") ->
-            "在${st.episodes.lastOrNull()?.summary ?: "发呆"}。${st.affect.moodHint()}。"
+            "在${st.episodes.lastOrNull()?.title ?: "发呆"}。${st.affect.moodHint()}。"
         text.contains("累") || text.contains("休息") -> "那你去躺会儿，我在这儿待着。"
         else -> "${st.affect.moodHint()}，我在。"
     }
