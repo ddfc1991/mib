@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.openminis.app.mibot.design.GlassField
 import com.openminis.app.mibot.design.Glyph
 import com.openminis.app.mibot.design.LineIcons
@@ -140,7 +141,21 @@ fun IdeasPage(onChat: (String) -> Unit, v7: Boolean = false) {
         }
         if (ideas.isEmpty()) {
             item(span = StaggeredGridItemSpan.FullLine) {
-                Column(
+                // [destiny/ui-one-look] 空态原来是一个居中的大灯泡图标 + 居中三行字，
+                // 而「在看」和「群聊」的空态是左对齐两段文字。同一个 App 的三处空态
+                // 三种排版，这里在 V7 下统一成左对齐（标题 13sp Tx + 说明 11.5sp Tx3）。
+                if (v7) {
+                    Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                        Text("还没有点子", fontSize = 13.sp, color = com.openminis.app.mibot.v7.V7.Tx)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "想到什么就记下来。重要的可以置顶，想做的可以一键变成定时任务。",
+                            fontSize = 11.5.sp,
+                            lineHeight = 18.sp,
+                            color = com.openminis.app.mibot.v7.V7.Tx3,
+                        )
+                    }
+                } else Column(
                     Modifier.fillMaxWidth().padding(vertical = 32.dp, horizontal = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {

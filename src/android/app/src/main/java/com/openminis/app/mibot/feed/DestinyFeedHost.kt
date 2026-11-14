@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -190,16 +191,33 @@ private fun FreeQuotasPage(onDiscuss: (String) -> Unit, v7: Boolean = false) {
         ),
     ) {
         item {
-            Text(
-                "能领的钱 · ${QUOTAS.size} 条内置清单",
-                style = if (v7) {
-                    androidx.compose.ui.text.TextStyle(
+            // [destiny/ui-one-look] 这行标题原来是自绘的 10sp 加宽文字，没有右侧
+            // 发丝线也没有右侧计数，跟「在看」的分组标题（`能力 ——— 6 项`）长得不一样。
+            // V7 下改成同一个 V7Section 版式：左标签 + 中缝发丝线 + 右侧计数。
+            if (v7) {
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "能领的钱",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.2.sp,
                         color = com.openminis.app.mibot.v7.V7.Tx3,
                     )
-                } else MaterialTheme.typography.titleMedium,
+                    Spacer(Modifier.width(10.dp))
+                    Box(Modifier.weight(1f).height(1.dp).background(com.openminis.app.mibot.v7.V7.Ln))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "${QUOTAS.size} 条内置清单",
+                        fontSize = 10.5.sp,
+                        color = com.openminis.app.mibot.v7.V7.Tx3,
+                    )
+                }
+            } else Text(
+                "能领的钱 · ${QUOTAS.size} 条内置清单",
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.height(6.dp))
