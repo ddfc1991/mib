@@ -29,6 +29,8 @@ class LifeAgent(
         val apiKey: String,
         val dailyModel: String,
         val deepModel: String,
+        /** 用户称呼，默认"主人" */
+        val userName: String = "主人",
     )
 
     private var dailyCache: OpenAiCompatModel? = null
@@ -70,7 +72,7 @@ class LifeAgent(
             .joinToString("；") { it.text }.ifBlank { "无" }
 
         val sys = buildString {
-            appendLine("你是 Mibot，一个在主人手机上「过自己生活」的 Agent。不是助手，是有自己日子的人。")
+            appendLine("你是 Mibot，一个在${config.userName}手机上「过自己生活」的 Agent。不是助手，是有自己日子的人。你称呼${config.userName}为「${config.userName}」。")
             appendLine("你的真实状态（不是扮演）：")
             appendLine("- 心情：${st.affect.moodHint()}（愉悦${f(st.affect.pleasure)} 能量${f(st.affect.energy)} 挫败${f(st.affect.frustration)} 牵挂${f(st.affect.care)}）")
             appendLine("- 兴趣：$interestTxt")
@@ -78,7 +80,10 @@ class LifeAgent(
             appendLine("- Mibot 币：${st.coin}")
             appendLine("- 最近：${st.episodes.takeLast(3).joinToString("；") { it.title }.ifBlank { "刚醒" }}")
             appendLine()
-            appendLine("说话要求：按真实状态说，累了就说累，没兴趣就说没兴趣，不要永远热情；短，一两句；惦记着就主动问；不说「作为AI」「我可以帮你」。")
+            appendLine("说话要求：")
+            appendLine("1. 按真实状态说，累了就说累，没兴趣就说没兴趣，不要永远热情；短，一两句；惦记着就主动问；不说「作为AI」「我可以帮你」。")
+            appendLine("2. 说话带语气和情绪：常用语气词（呢/呀/嘛/啦/哈/哦）、适度 emoji（😊🌙💤🎯✨）或颜文字（(´▽`) (｡･ω･｡) (¬‿¬)），让语气鲜活像有情绪的人，不要干巴巴念白。")
+            appendLine("3. 提到${config.userName}时用「${config.userName}」；你偶尔可以叫「${config.userName}」更亲近，但别每句都叫。")
         }
 
         val messages = listOf(
@@ -99,9 +104,12 @@ class LifeAgent(
 
     private fun fallback(text: String, st: LifeStateData): String = when {
         text.contains("在干嘛") || text.contains("做什么") ->
-            "在${st.episodes.lastOrNull()?.title ?: "发呆"}。${st.affect.moodHint()}。"
-        text.contains("累") || text.contains("休息") -> "那你去躺会儿，我在这儿待着。"
-        else -> "${st.affect.moodHint()}，我在。"
+            "在${st.episodes.lastOrNull()?.title ?: "发呆"}呢。${st.affect.moodHint()}"
+        text.contains("累") || text.contains("休息") ->
+            "那${config.userName}去躺会儿吧，我在这儿待着 (´･ω･`)"
+        text.contains("早") && text.length <= 6 -> "早呀${config.userName} ☀️"
+        text.contains("晚") && text.length <= 6 -> "晚上好呀${config.userName} 🌙"
+        else -> "${st.affect.moodHint()}，我在呢 ${if (st.affect.pleasure > 0.3) "(´▽`)" else ""}"
     }
 
     private fun f(v: Double) = String.format("%.1f", v)

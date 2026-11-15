@@ -52,6 +52,7 @@ fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
     var input by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var wantListening by remember { mutableStateOf(false) }
+    var handsFree by remember { mutableStateOf(true) }   // 免提通话：像打电话，不按锁自动听/说
 
     val state by voice.asrState.collectAsState()
     val level by voice.level.collectAsState()
@@ -71,7 +72,18 @@ fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
 
     LaunchedEffect(Unit) {
         voice.initTts(); voice.initAsr()
+        // 免触控：说话时你开口 → 自动打断转听（像打电话）
+        voice.onBarge = {
+            wantListening = true
+            if (!busy) runCatching { voice.listen() }
+        }
         messages.add(false to "我醒了。${system.snapshot().affect.moodHint()}。")
+        // 免提默认开：进入即自动开始听，不用按锁
+        if (handsFree && !voice.needsPermission()) {
+            wantListening = true
+            delay(300)
+            runCatching { voice.listen() }
+        }
     }
 
     // 识别完成 → 自动发送（语音优先的核心）
@@ -102,6 +114,51 @@ fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        // Mibot 虚拟形象：说话动嘴 + 心情表情
+        Row(
+            Modifier.fillMaxWidth().padding(top = 6.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            MibotAvatar(
+                size = 88.dp,
+                mood = ((system.snapshot().affect.pleasure + 1.0) / 2.0).toFloat(),
+                talking = state == VoiceIO.AsrState.SPEAKING,
+                sleeping = state == VoiceIO.AsrState.IDLE && !wantListening,
+            )
+        }
+        Spacer(Modifier.height(2.dp))
+        // 免提通话开关：像打电话，开=不按锁自动听/说
+        Row(
+            Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Row(
+                Modifier.background(Glass, RoundedCornerShape(50))
+                    .clickable {
+                        handsFree = !handsFree
+                        wantListening = handsFree
+                        if (handsFree) {
+                            if (voice.needsPermission()) permLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            else voice.listen()
+                        } else voice.stopListening()
+                    }
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier.size(8.dp).background(
+                        if (handsFree) Color(0xFF4CAF7D) else InkSoft.copy(alpha = 0.3f),
+                        RoundedCornerShape(50)
+                    )
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    if (handsFree) "免提通话中 · 开口就听" else "免提已关 · 点麦说话",
+                    fontSize = 11.sp,
+                    color = if (handsFree) Color(0xFF2F6B4F) else InkSoft
+                )
+            }
+        }
         // 消息
         LazyColumn(Modifier.weight(1f), reverseLayout = true) {
             items(messages.size) { idx ->
@@ -185,9 +242,9 @@ fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
                         messages.add(true to text)
                         busy = true
                         scope.launch {
+                            // 打字进 → 打字出（不朗读，用户"如果我打字他就打字"）
                             val r = agent.reply(text)
                             messages.add(false to r)
-                            voice.speak(r)
                             busy = false
                         }
                     },

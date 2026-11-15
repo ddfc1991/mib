@@ -26,6 +26,7 @@ import com.mibot.life.settings.SettingsStore
 import com.mibot.life.ui.ChatScreen
 import com.mibot.life.ui.EconomyScreen
 import com.mibot.life.ui.GrowthScreen
+import com.mibot.life.ui.OnboardingScreen
 import com.mibot.life.ui.SettingsScreen
 import com.mibot.life.voice.VoiceIO
 import kotlinx.coroutines.launch
@@ -66,6 +67,7 @@ class MainActivity : ComponentActivity() {
                 apiKey = settings.apiKey,
                 dailyModel = settings.dailyModel,
                 deepModel = settings.deepModel,
+                userName = settings.userName,
             ),
             system,
         )
@@ -91,6 +93,7 @@ fun Root(
     var tab by remember { mutableIntStateOf(0) }
     var decision by remember { mutableStateOf<LifeDecision?>(null) }
     var refreshTick by remember { mutableIntStateOf(0) }
+    var needOnboard by remember { mutableStateOf(!curSettings.onboarded) }
 
     LaunchedEffect(refreshTick) { decision = system.decide() }
 
@@ -99,6 +102,15 @@ fun Root(
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(SkyTop, SkyBottom)))
     ) {
+        if (needOnboard) {
+            // 首次安装引导：给它起名 + 它叫你什么
+            OnboardingScreen(curSettings) { mName, uName ->
+                onSaveSettings(curSettings.copy(onboarded = true, mibotName = mName, userName = uName))
+                curSettings = curSettings.copy(onboarded = true, mibotName = mName, userName = uName)
+                needOnboard = false
+            }
+            return@Box
+        }
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             TabBar(tab) { tab = it }
             Box(Modifier.weight(1f).fillMaxWidth()) {

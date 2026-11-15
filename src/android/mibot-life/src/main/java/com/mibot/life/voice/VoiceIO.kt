@@ -5,6 +5,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -80,6 +83,7 @@ class VoiceIO(private val context: Context) {
                     }
 
                     override fun onDone(id: String?) {
+                        stopBargeIn()
                         _level.value = 0f
                         if (continuousMode) {
                             _asrState.value = AsrState.IDLE
@@ -115,13 +119,80 @@ class VoiceIO(private val context: Context) {
         }
         _asrState.value = AsrState.SPEAKING
         t.speak(text, TextToSpeech.QUEUE_FLUSH, Bundle(), "mibot-${System.nanoTime()}")
+        // 免触控打断：说话时后台监听，你开口就停嘴
+        startBargeIn()
     }
 
     /** 立刻打断（点麦克风时用） */
     fun interrupt() {
+        stopBargeIn()
         runCatching { tts?.stop() }
         _level.value = 0f
         if (_asrState.value == AsrState.SPEAKING) _asrState.value = AsrState.IDLE
+    }
+
+    // ---------- Barge-in（免触控打断：Mibot 说话时，你开口它就自动停嘴转听） ----------
+    private var bargeThread: Thread? = null
+    private var bargeRunning = false
+
+    /** 打断后回调（UI 接 listen） */
+    var onBarge: (() -> Unit)? = null
+
+    fun startBargeIn() {
+        if (bargeRunning) return
+        if (needsPermission()) return
+        bargeRunning = true
+        bargeThread = Thread {
+            val sr = 16000
+            val minBuf = AudioRecord.getMinBufferSize(
+                sr, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+            val bufSize = maxOf(minBuf, sr / 2)
+            val rec = runCatching {
+                AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, sr,
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize)
+            }.getOrNull()
+            if (rec == null || rec.state != AudioRecord.STATE_INITIALIZED) {
+                runCatching { rec?.release() }
+                bargeRunning = false
+                return@Thread
+            }
+            rec.startRecording()
+            val buf = ShortArray(bufSize / 2)
+            var baseline = 900.0            // TTS 回声基线（缓慢跟随）
+            var hotSince = 0L               // 用户开口持续毫秒
+            val now0 = System.currentTimeMillis()
+            while (bargeRunning && System.currentTimeMillis() - now0 < 120_000) {
+                val n = rec.read(buf, 0, buf.size)
+                if (n <= 0) continue
+                var sum = 0.0
+                for (i in 0 until n) { val v = buf[i].toDouble(); sum += v * v }
+                val rms = Math.sqrt(sum / n)
+                baseline = baseline * 0.94 + rms * 0.06    // 跟随 TTS 回声
+                val now = System.currentTimeMillis()
+                // 突变检测：比基线高不少且绝对够响 → 是用户开口不是 TTS 回声
+                if (rms > baseline * 2.4 + 600 && rms > 1600) {
+                    if (hotSince == 0L) hotSince = now
+                    if (now - hotSince > 260) {
+                        bargeRunning = false
+                        runCatching { rec.stop() }
+                        runCatching { rec.release() }
+                        interrupt()
+                        onBarge?.invoke()
+                        return@Thread
+                    }
+                } else hotSince = 0L
+            }
+            runCatching { rec.stop() }
+            runCatching { rec.release() }
+            bargeRunning = false
+        }.also { it.isDaemon = true }
+        bargeThread?.start()
+    }
+
+    fun stopBargeIn() {
+        bargeRunning = false
+        bargeThread?.interrupt()
+        bargeThread = null
     }
 
     fun shutdownTts() {

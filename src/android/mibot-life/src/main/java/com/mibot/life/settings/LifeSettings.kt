@@ -58,7 +58,9 @@ data class LifeSettings(
     val gamingDailyOnly: Boolean = true,
     val gamingMaxMinutes: Int = 30,
 
-    // ---- 经济档位 ----
+    // ---- 经济：自主探索（不固定方向） ----
+    /** 自主探索赚钱：它自己找方向、真实执行、真实碰壁（授权后） */
+    val econExplore: Boolean = true,
     val econTier1Enabled: Boolean = true,       // 虚拟资产（自主）
     val econTier2aAuthed: Boolean = false,      // 试玩任务（需授权）
     val econTier2bAuthed: Boolean = false,      // 挂机激励（需授权）
@@ -67,8 +69,14 @@ data class LifeSettings(
 
     // ---- 模型分层 ----
     val gatewayUrl: String = "http://127.0.0.1:8788",
-    val dailyModel: String = "deepseek-v3-flash",
-    val deepModel: String = "deepseek-v3",
+    val dailyModel: String = "workbuddy/deepseek-v4-flash",
+    val deepModel: String = "workbuddy/deepseek-v4-pro",
+    /** 用户称呼（默认"主人"，可改昵称） */
+    val userName: String = "主人",
+    /** Mibot 自己的名字（引导页可起） */
+    val mibotName: String = "Mibot",
+    /** 是否已完成首次引导 */
+    val onboarded: Boolean = false,
     val visionModel: String = "",
     val apiKey: String = "",
 
@@ -115,6 +123,7 @@ class SettingsStore(context: Context) {
             gamingDailyOnly = p.getBoolean("gamingDailyOnly", d.gamingDailyOnly),
             gamingMaxMinutes = p.getInt("gamingMaxMinutes", d.gamingMaxMinutes),
             econTier1Enabled = p.getBoolean("econTier1Enabled", d.econTier1Enabled),
+            econExplore = p.getBoolean("econExplore", d.econExplore),
             econTier2aAuthed = p.getBoolean("econTier2aAuthed", d.econTier2aAuthed),
             econTier2bAuthed = p.getBoolean("econTier2bAuthed", d.econTier2bAuthed),
             econTier2cEnabled = p.getBoolean("econTier2cEnabled", d.econTier2cEnabled),
@@ -122,6 +131,9 @@ class SettingsStore(context: Context) {
             gatewayUrl = p.getString("gatewayUrl", d.gatewayUrl) ?: d.gatewayUrl,
             dailyModel = p.getString("dailyModel", d.dailyModel) ?: d.dailyModel,
             deepModel = p.getString("deepModel", d.deepModel) ?: d.deepModel,
+            userName = p.getString("userName", d.userName) ?: d.userName,
+            mibotName = p.getString("mibotName", d.mibotName) ?: d.mibotName,
+            onboarded = p.getBoolean("onboarded", d.onboarded),
             visionModel = p.getString("visionModel", d.visionModel) ?: d.visionModel,
             apiKey = p.getString("apiKey", d.apiKey) ?: d.apiKey,
             interestMinCount = p.getInt("interestMinCount", d.interestMinCount),
@@ -155,11 +167,16 @@ class SettingsStore(context: Context) {
             putBoolean("gamingAuto", s.gamingAuto); putBoolean("gamingDailyOnly", s.gamingDailyOnly)
             putInt("gamingMaxMinutes", s.gamingMaxMinutes)
             putBoolean("econTier1Enabled", s.econTier1Enabled)
+            putBoolean("econExplore", s.econExplore)
             putBoolean("econTier2aAuthed", s.econTier2aAuthed)
             putBoolean("econTier2bAuthed", s.econTier2bAuthed)
             putBoolean("econTier2cEnabled", s.econTier2cEnabled)
             putBoolean("econTier3Enabled", s.econTier3Enabled)
             putString("gatewayUrl", s.gatewayUrl); putString("dailyModel", s.dailyModel)
+            putString("deepModel", s.deepModel)
+            putString("userName", s.userName)
+            putString("mibotName", s.mibotName)
+            putBoolean("onboarded", s.onboarded)
             putString("deepModel", s.deepModel); putString("visionModel", s.visionModel)
             putString("apiKey", s.apiKey)
             putInt("interestMinCount", s.interestMinCount); putFloat("interestMaxBonus", s.interestMaxBonus)

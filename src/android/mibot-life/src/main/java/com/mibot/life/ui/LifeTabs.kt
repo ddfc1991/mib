@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -101,15 +102,29 @@ fun EconomyScreen(life: LifeSystem, settings: LifeSettings) {
                 }
             }
         }
-        item { Text("赚钱档位", fontSize = 13.sp, color = MutedInk, modifier = Modifier.padding(top = 8.dp)) }
-        item { EconRow("档1 虚拟资产", "玩游戏/做任务/产出赚币", if (settings.econTier1Enabled) "开启 · 自主" else "关闭", settings.econTier1Enabled) }
-        item { EconRow("档2a 试玩任务", "试玩平台挂机拿奖励（合规）", if (settings.econTier2aAuthed) "已授权" else "需授权", settings.econTier2aAuthed) }
-        item { EconRow("档2b 挂机激励", "游戏中心签到/补给站（已实证：OPPO 游戏中心）", if (settings.econTier2bAuthed) "已授权" else "需授权", settings.econTier2bAuthed) }
-        item { EconRow("档2c 打金卖玩家", "封号/合规风险，绝不自动", if (settings.econTier2cEnabled) "已开启（风险自担）" else "关闭", settings.econTier2cEnabled) }
-        item { EconRow("档3 真实赚钱", "接单/薅羊毛，逐项批", if (settings.econTier3Enabled) "已开启" else "关闭", settings.econTier3Enabled) }
+        item { Text("赚钱 · 自主探索", fontSize = 13.sp, color = MutedInk, modifier = Modifier.padding(top = 8.dp)) }
+        item {
+            GlassRow {
+                Column(Modifier.weight(1f)) {
+                    Text("自主探索", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = InkDark)
+                    Text("它自己找方向、自己试、碰壁也算成长。找到什么能赚就去赚什么，不固定。", fontSize = 11.sp, color = MutedInk)
+                }
+                Badge(if (settings.econExplore) "探索中" else "关闭", if (settings.econExplore) Color(0x2210B981) else Color(0x14000000), if (settings.econExplore) Color(0xFF059669) else MutedInk)
+            }
+        }
+        item {
+            GlassRow {
+                Column(Modifier.weight(1f)) {
+                    Text("渠道授权", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = InkDark)
+                    Text("已实证：OPPO 游戏中心签到/补给站（+游币）。其他渠道逐项授权。", fontSize = 11.sp, color = MutedInk)
+                }
+            }
+        }
+        item { EconRow("游戏中心签到/挂机", "OPPO 游戏中心福利（已实证）", if (settings.econTier2bAuthed) "已授权" else "需授权", settings.econTier2bAuthed) }
+        item { EconRow("试玩/其他平台", "合规试玩平台", if (settings.econTier2aAuthed) "已授权" else "需授权", settings.econTier2aAuthed) }
         item {
             Text(
-                "原则：只有档1 完全自主；档2a/2b 需你授权；档2c/3 绝不自动。",
+                "原则：方向不固定，它自己探索；涉及真钱/账号的渠道逐项授权，绝不自动。",
                 fontSize = 11.sp, color = MutedInk, modifier = Modifier.padding(top = 6.dp),
             )
         }
@@ -186,15 +201,40 @@ fun SettingsScreen(
         item { ToggleRow("档2c 打金（风险）", "封号风险，不推荐", settings.econTier2cEnabled) { onChange(settings.copy(econTier2cEnabled = it)) } }
         item { ToggleRow("档3 真实赚钱", "逐项批", settings.econTier3Enabled) { onChange(settings.copy(econTier3Enabled = it)) } }
 
-        item { SectionTitle("模型（分层：日常便宜/产出强）") }
-        item { TextRow("网关", settings.gatewayUrl) }
-        item { TextRow("日常模型", settings.dailyModel) }
-        item { TextRow("产出模型", settings.deepModel) }
+        item { SectionTitle("模型（接你的免费 API）") }
+        item {
+            EditRow("API 地址", settings.gatewayUrl, "https://open.774966.xyz/v1") {
+                onChange(settings.copy(gatewayUrl = it))
+            }
+        }
+        item {
+            EditRow("API 密钥", settings.apiKey, "填免费 API 的 key", secret = true) {
+                onChange(settings.copy(apiKey = it))
+            }
+        }
+        item {
+            EditRow("日常模型", settings.dailyModel, "workbuddy/deepseek-v4-flash") {
+                onChange(settings.copy(dailyModel = it))
+            }
+        }
+        item {
+            EditRow("产出模型", settings.deepModel, "workbuddy/deepseek-v4-pro") {
+                onChange(settings.copy(deepModel = it))
+            }
+        }
         item {
             Text(
-                "模型调用下一步接入（本机网关 :8788）。当前对话用生活系统本地回复。",
+                "模型名以你 API 返回的 /models 为准。填好保存即生效；对话不再走本地回复，而是模型按真实状态说话。",
                 fontSize = 11.sp, color = MutedInk,
             )
+        }
+
+        item { SectionTitle("称呼") }
+        item {
+            EditRow("它叫你", settings.userName, "主人") { onChange(settings.copy(userName = it)) }
+        }
+        item {
+            EditRow("它的名字", settings.mibotName, "Mibot") { onChange(settings.copy(mibotName = it)) }
         }
 
         item { SectionTitle("记忆") }
@@ -279,6 +319,34 @@ private fun TextRow(title: String, value: String) {
         Column(Modifier.weight(1f)) {
             Text(title, fontSize = 13.sp, color = InkDark)
             Text(value.ifBlank { "（未设置）" }, fontSize = 11.sp, color = MutedInk)
+        }
+    }
+}
+
+/** 可编辑文本行（模型配置/称呼用） */
+@Composable
+private fun EditRow(
+    title: String,
+    value: String,
+    placeholder: String = "",
+    secret: Boolean = false,
+    onChange: (String) -> Unit,
+) {
+    GlassRow {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 13.sp, color = InkDark)
+            BasicTextField(
+                value = value,
+                onValueChange = onChange,
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    fontSize = 12.sp,
+                    color = Coral,
+                    fontWeight = FontWeight.Medium,
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (value.isEmpty()) Text(placeholder, fontSize = 11.sp, color = MutedInk.copy(alpha = 0.6f))
         }
     }
 }
