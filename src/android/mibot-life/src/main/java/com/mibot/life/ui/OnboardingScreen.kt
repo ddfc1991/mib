@@ -18,6 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mibot.life.settings.LifeSettings
 
+private val Coral = Color(0xFFE8825A)
+private val Ink = Color(0xFF2E2A26)
+private val InkSoft = Color(0xFF6B625A)
+
 /**
  * 首次安装引导页 —— 豆包式：
  *   ① 认识它（虚拟形象 + 自我介绍）
