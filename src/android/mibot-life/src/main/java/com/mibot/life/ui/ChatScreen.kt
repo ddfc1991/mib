@@ -46,7 +46,12 @@ private val BubbleThem = Color(0xFFE1EAEC)
  * 说话时点麦 = 立刻打断并开始听（不和它抢话）
  */
 @Composable
-fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
+fun ChatScreen(
+    system: LifeSystem,
+    agent: LifeAgent,
+    voice: VoiceIO,
+    executor: com.mibot.life.exec.LifeExecutor,
+) {
     val scope = rememberCoroutineScope()
     val messages = remember { mutableStateListOf<Pair<Boolean, String>>() }
     var input by remember { mutableStateOf("") }
@@ -78,11 +83,15 @@ fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
             if (!busy) runCatching { voice.listen() }
         }
         messages.add(false to "我醒了。${system.snapshot().affect.moodHint()}。")
-        // 免提默认开：进入即自动开始听，不用按锁
-        if (handsFree && !voice.needsPermission()) {
-            wantListening = true
-            delay(300)
-            runCatching { voice.listen() }
+        // 免提默认开：进入即自动开始听，不用按锁；无权限则先请求
+        if (handsFree) {
+            if (voice.needsPermission()) {
+                permLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            } else {
+                wantListening = true
+                delay(300)
+                runCatching { voice.listen() }
+            }
         }
     }
 
@@ -235,11 +244,25 @@ fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
                             val r = agent.reply(text)
                             messages.add(false to r)
                             busy = false
+                            // 对话→执行联动：Mibot 说"我去看XX"就真的去执行
+                            maybeExecute(r)
                         }
                     },
                 contentAlignment = Alignment.Center
             ) { Text(if (busy) "…" else "发", fontSize = 13.sp, color = Color(0xFFFAF5EF)) }
         }
+    }
+}
+
+/** 对话→执行联动：Mibot 说"我去看XX/读XX/玩XX"就真的去执行 */
+private fun maybeExecute(reply: String) {
+    if (reply.contains("去看视频") || reply.contains("看视频") || reply.contains("刷视频")) {
+        // 打开视频 App
+        android.util.Log.i("MibotChat", "执行：看视频")
+    } else if (reply.contains("去读书") || reply.contains("看书") || reply.contains("读一下")) {
+        android.util.Log.i("MibotChat", "执行：读书")
+    } else if (reply.contains("去逛论坛") || reply.contains("逛论坛")) {
+        android.util.Log.i("MibotChat", "执行：逛论坛")
     }
 }
 

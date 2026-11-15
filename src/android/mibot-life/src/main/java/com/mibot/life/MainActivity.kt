@@ -117,7 +117,7 @@ fun Root(
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tab) {
                     0 -> LifeScreen(system, decision, executor) { refreshTick++ }
-                    1 -> ChatScreen(system, agent, voice)
+                    1 -> ChatScreen(system, agent, voice, executor)
                     2 -> GrowthScreen(system)
                     3 -> EconomyScreen(system, curSettings)
                     else -> SettingsScreen(curSettings) { newS -> onSaveSettings(newS); curSettings = newS; refreshTick++ }
