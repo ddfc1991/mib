@@ -116,7 +116,7 @@ fun OnboardingScreen(
 @Composable
 private fun NameField(value: String, onChange: (String) -> Unit) {
     Box(
-        Modifier.fillMaxWidth().background(GlassCard, RoundedCornerShape(18.dp))
+        Modifier.fillMaxWidth().background(Color(0xCCFFFFFF), RoundedCornerShape(18.dp))
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         if (value.isEmpty()) Text("输入名字…", fontSize = 15.sp, color = InkSoft.copy(alpha = 0.5f))
