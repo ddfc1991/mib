@@ -379,10 +379,10 @@ fun applyLifeEvent(state: AffectiveState, kind: String, payload: Map<String, Any
                 consecutiveNegStimuli = neg,
             )
             if (topic.isNotEmpty() && neg >= 2) {
-                val cooldowns = (nxt.extra["cooldown_topics"] as? Map<*, *>)?.entries
-                    ?.associate { (k, v) -> k.toString() to (v as? Number)?.toDouble() ?: 0.0 }
-                    ?: mutableMapOf()
-                val updated = (cooldowns.toMutableMap()).apply { this[topic] = stamp + 6 * 3600.0 }
+                val cooldowns: Map<String, Double> = (nxt.extra["cooldown_topics"] as? Map<*, *>)?.entries
+                    ?.associate { (k, v) -> k.toString() to ((v as? Number)?.toDouble() ?: 0.0) }
+                    ?: emptyMap()
+                val updated = cooldowns.toMutableMap().apply { this[topic] = stamp + 6 * 3600.0 }
                 while (updated.size > 16) updated.remove(updated.keys.first())
                 nxt = nxt.copy(extra = nxt.extra + ("cooldown_topics" to updated))
             }
@@ -533,7 +533,8 @@ fun expressionProfile(state: AffectiveState?, activeCareThreads: List<Map<String
     } else emptyList()
     val studyWriteDelta = if (a >= 0.55 && v >= 0.0 && p < 0.35) 3 else if (a < 0.35 || v < -0.25) -2 else 0
     val preferLightOrRest = a < 0.35 || v < -0.25
-    val contactDrive = (clamp(0.55 * l + 0.45 * u + (0.35 if careDue else 0.0), 0.0, 1.0) * 1000).toInt() / 1000.0
+    val careBonus = if (careDue) 0.35 else 0.0
+    val contactDrive = (clamp(0.55 * l + 0.45 * u + careBonus, 0.0, 1.0) * 1000).toInt() / 1000.0
 
     return ExpressionProfile(
         scopeKind = "owner_private", mode = mode, ttsInstruction = tts, speechRate = speechRate,
