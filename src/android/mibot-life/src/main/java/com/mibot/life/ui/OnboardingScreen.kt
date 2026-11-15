@@ -53,23 +53,20 @@ fun OnboardingScreen(
         when (step) {
             0 -> {
                 // 认识它
-                MibotAvatar(size = 140.dp, mood = 0.7f, talking = false)
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(12.dp))
                 Text("你好，我是 ${mibotName.ifBlank { "Mibot" }}", fontSize = 24.sp,
                     fontWeight = FontWeight.Bold, color = Ink)
                 Spacer(Modifier.height(10.dp))
                 Text("我在你的手机上「过自己的生活」。\n我会自己安排每天做什么、去学什么、赚点小钱，\n也会惦记你、陪你说话。", fontSize = 14.sp, color = InkSoft, lineHeight = 24.sp)
             }
             1 -> {
-                MibotAvatar(size = 120.dp, mood = 0.85f, talking = false)
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(12.dp))
                 Text("给它起个名字", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Ink)
                 Spacer(Modifier.height(20.dp))
                 NameField(mibotName) { mibotName = it }
             }
             2 -> {
-                MibotAvatar(size = 120.dp, mood = 0.5f, talking = true)
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(12.dp))
                 Text("它该叫你什么？", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Ink)
                 Spacer(Modifier.height(20.dp))
                 NameField(userName) { userName = it }

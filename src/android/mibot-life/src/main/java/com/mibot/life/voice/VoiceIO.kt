@@ -233,18 +233,22 @@ class VoiceIO(private val context: Context) {
     }
 
     fun initAsr() {
-        asrAvailable = SpeechRecognizer.isRecognitionAvailable(context)
-        if (!asrAvailable) {
-            // 系统说没有，但可能有第三方服务 —— 显式探测并尝试
-            android.util.Log.w(TAG, "isRecognitionAvailable=false，尝试显式绑定第三方服务")
-            asrAvailable = bindNextService()
-            if (!asrAvailable) _error.value = "此设备没有可用的语音识别引擎"
+        // 设备实测：realme 的 voice_recognition_service=null（系统无默认识别引擎），
+        // 即使 isRecognitionAvailable 为 true（第三方服务 enabled），默认 createSpeechRecognizer
+        // 也会因服务为 null 而 ERROR_CLIENT。因此总是优先显式绑定设备上 exported 的识别服务。
+        if (recognizer == null && bindNextService()) {
+            asrAvailable = true
             return
         }
-        if (recognizer == null) {
-            recognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
-                setRecognitionListener(listener)
+        asrAvailable = SpeechRecognizer.isRecognitionAvailable(context)
+        if (asrAvailable) {
+            if (recognizer == null) {
+                recognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
+                    setRecognitionListener(listener)
+                }
             }
+        } else {
+            _error.value = "此设备没有可用的语音识别引擎"
         }
     }
 

@@ -114,19 +114,8 @@ fun ChatScreen(system: LifeSystem, agent: LifeAgent, voice: VoiceIO) {
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        // Mibot 虚拟形象：说话动嘴 + 心情表情
-        Row(
-            Modifier.fillMaxWidth().padding(top = 6.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            MibotAvatar(
-                size = 88.dp,
-                mood = ((system.snapshot().affect.pleasure + 1.0) / 2.0).toFloat(),
-                talking = state == VoiceIO.AsrState.SPEAKING,
-                sleeping = state == VoiceIO.AsrState.IDLE && !wantListening,
-            )
-        }
-        Spacer(Modifier.height(2.dp))
+        // （虚拟形象素材到位后在此显示；当前不显示自绘形象）
+        Spacer(Modifier.height(4.dp))
         // 免提通话开关：像打电话，开=不按锁自动听/说
         Row(
             Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
