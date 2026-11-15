@@ -13,6 +13,7 @@ import com.mibot.life.settings.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -64,22 +65,27 @@ class LifeEngine : Service() {
                 lowEnergy = st.affect.isLowEnergy(),
             )
             // 执行决策：记录 + 情感
-            when (decision.action) {
-                LifeAction.RESEARCH -> {
-                    system.recordEpisode(EpisodeKind.READ, decision.why.take(60))
-                    system.feel(AffectEvent.SUCCESS)
-                }
-                LifeAction.WRITING -> {
-                    system.recordEpisode(EpisodeKind.NOTE, decision.why.take(60))
-                    system.feel(AffectEvent.SUCCESS)
-                }
-                LifeAction.EXPLORE -> {
-                    system.recordEpisode(EpisodeKind.PHONE, "探索：${decision.why.take(50)}")
-                    system.feel(AffectEvent.SUCCESS)
-                }
-                LifeAction.REST -> {
-                    system.recordEpisode(EpisodeKind.READ, "休息一下")
-                    system.feel(AffectEvent.REST)
+            val choice = decision.chosen
+            if (choice != null) {
+                when (choice.action) {
+                    LifeAction.RESEARCH -> {
+                        // 学什么：挑兴趣最强的领域（20 分钟一个单元）
+                        val topic = st.interests.maxByOrNull { it.strength }?.domain ?: "新东西"
+                        system.recordEpisode(EpisodeKind.READ, "学$topic：${choice.reason.take(50)}")
+                        system.feel(AffectEvent.SUCCESS)
+                    }
+                    LifeAction.WRITING -> {
+                        system.recordEpisode(EpisodeKind.NOTE, choice.reason.take(60))
+                        system.feel(AffectEvent.SUCCESS)
+                    }
+                    LifeAction.EXPLORE -> {
+                        system.recordEpisode(EpisodeKind.PHONE, "探索：${choice.reason.take(50)}")
+                        system.feel(AffectEvent.SUCCESS)
+                    }
+                    LifeAction.REST -> {
+                        system.recordEpisode(EpisodeKind.READ, "休息一下")
+                        system.feel(AffectEvent.REST)
+                    }
                 }
             }
             // 主动联系用户（白天偶尔；夜间不打扰）
@@ -127,7 +133,7 @@ class LifeEngine : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        scope.coroutineContext[SupervisorJob()]?.cancel()
+        scope.cancel()
         super.onDestroy()
     }
 
