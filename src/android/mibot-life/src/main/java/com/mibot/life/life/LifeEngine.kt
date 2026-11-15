@@ -102,8 +102,8 @@ class LifeEngine : Service() {
             // 通知更新
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.notify(NOTIF_ID, buildNotification(
-                "${ph.zh} · 现在想做：${decision.action.zh}",
-                content = decision.why.take(80),
+                "${ph.zh} · 现在想做：${decision.chosen?.action?.zh ?: "休息"}",
+                content = decision.chosen?.reason?.take(80) ?: "安静待着",
             ))
         } catch (t: Throwable) {
             android.util.Log.w("MibotLifeEngine", "tick 失败: ${t.message}")
