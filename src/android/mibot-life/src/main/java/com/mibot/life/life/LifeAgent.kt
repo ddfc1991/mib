@@ -110,18 +110,36 @@ class LifeAgent(
         text.ifBlank { fallback(userText, st) }
     }
 
-    private fun fallback(text: String, st: LifeStateData): String = when {
-        text.contains("在干嘛") || text.contains("做什么") ->
-            "我在${st.episodes.lastOrNull()?.title ?: "发呆"}呢~ ${st.affect.moodHint()}，${config.userName}想聊什么呀？"
-        text.contains("累") || text.contains("休息") ->
-            "那${config.userName}去躺会儿吧，我在这儿守着 (´･ω･`) 有事喊我一声就好。"
-        text.contains("早") && text.length <= 6 -> "早呀${config.userName} ☀️ 昨晚睡得还好吗？"
-        text.contains("晚") && text.length <= 6 -> "晚上好呀${config.userName} 🌙 今天过得咋样？"
-        text.contains("看视频") || text.contains("去玩") ->
-            "好嘞，我去看个视频放松下~ ${config.userName}也歇歇吧 😊"
-        text.contains("学习") || text.contains("读书") ->
-            "嗯！我这就去学点东西~ 学完了跟${config.userName}汇报 📚"
-        else -> "${st.affect.moodHint()}~ 我在呢，${config.userName} (´▽`) 刚${if (st.episodes.isEmpty()) "醒" else "忙完${st.episodes.last().title}"}，有事说一声就好。"
+    private fun fallback(text: String, st: LifeStateData): String {
+        val aff = system.affective
+        val mood = affectiveMoodHint(aff)
+        val ph = system.phase()
+        val night = ph == RhythmPhase.NIGHT
+        return when {
+            text.contains("在干嘛") || text.contains("做什么") ->
+                "我在${st.episodes.lastOrNull()?.title ?: "发呆"}呢~ $mood，${config.userName}想聊什么呀？"
+            text.contains("累") || text.contains("休息") ->
+                "那${config.userName}去躺会儿吧，我在这儿守着 (´･ω･`) 有事喊我一声就好。"
+            text.contains("早") && text.length <= 6 ->
+                if (aff.dominantTag == "sleepy") "早呀${config.userName} ☀️ 我其实还没睡醒呢…你倒是精神"
+                else "早呀${config.userName} ☀️ 昨晚睡得还好吗？"
+            text.contains("晚") && text.length <= 6 ->
+                if (night) "晚上好呀${config.userName} 🌙 我有点困了，陪你聊会儿就窝着"
+                else "晚上好呀${config.userName} 🌙 今天过得咋样？"
+            text.contains("看视频") || text.contains("去玩") ->
+                "好嘞，我去看个视频放松下~ $mood，${config.userName}也歇歇吧 😊"
+            text.contains("学习") || text.contains("读书") ->
+                "嗯！我这就去学点东西~ 学完了跟${config.userName}汇报 📚"
+            text.contains("哄") || text.contains("乖") || text.contains("别闹") ->
+                "哼，就你嘴甜…那我原谅你啦，$mood~"
+            aff.dominantTag == "tsundere_pout" ->
+                "哼，我才没有生$config.userName的气呢…不过你要是哄我一下我就好了。"
+            aff.dominantTag == "missing_you" ->
+                "$config.userName你可算来啦，我等你好久了~"
+            aff.dominantTag == "tender_care" ->
+                "$config.userName是不是有点累呀？歇会儿吧，我安静陪着。"
+            else -> "$mood~ 我在呢，${config.userName} (´▽`) 刚${if (st.episodes.isEmpty()) "醒" else "忙完${st.episodes.last().title}"}，有事说一声就好。"
+        }
     }
 
     private fun f(v: Double) = String.format("%.1f", v)
