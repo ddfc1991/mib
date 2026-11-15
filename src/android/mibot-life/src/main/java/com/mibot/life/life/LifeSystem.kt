@@ -24,6 +24,41 @@ class LifeSystem(context: Context, private val settings: LifeSettings) {
     private val careLedger = CareLedger()
     private val affectRules = AffectState()
 
+    // ===== AstrBot 语义内核（affective_core 移植）：三层动力学 + 昼夜节律 + 傲娇门 =====
+    @Volatile
+    var affective: AffectiveState = newOwnerState("owner", "")
+        private set
+
+    /** 主人回合：从用户话规则化评估（intent/distress），驱动情感动力学 */
+    fun applyAffectiveTurn(userText: String, now: Long = System.currentTimeMillis()) {
+        val t = userText.trim()
+        val distress = when {
+            Regex("累|难过|压力|烦|疼|生病|感冒|不舒服").containsMatchIn(t) -> 0.55
+            Regex("忙|加班|赶|焦").containsMatchIn(t) -> 0.45
+            else -> 0.0
+        }
+        val intent = when {
+            Regex("帮我|帮.*(弄|做|解决|处理|订|买|查)").containsMatchIn(t) -> "serious_task"
+            Regex("哄|乖|别闹|对不|抱歉|刚才.*忙|在忙|开会").containsMatchIn(t) -> "coaxing_affection"
+            else -> "casual"
+        }
+        val appraisal = OwnerAppraisal(
+            intent = intent,
+            userEmotion = if (distress > 0.4) "distressed" else "calm",
+            userDistress = distress,
+            delta = emptyMap(),
+            source = "rule_heuristic",
+        )
+        val (next, _) = applyOwnerTurn(affective, appraisal, null, now = now / 1000.0)
+        affective = next
+    }
+
+    /** 生活事件：兴趣/受挫/被拒/分享等脉冲 */
+    fun applyAffectiveLife(kind: String, payload: Map<String, Any> = emptyMap(), now: Long = System.currentTimeMillis()) {
+        val (next, _) = applyLifeEvent(affective, kind, payload, null, now = now / 1000.0)
+        affective = next
+    }
+
     /** 从用户话里提取牵挂（温度来源）：说累/忙/考试/答应… → 记下来，到期主动问 */
     fun rememberCareFrom(userText: String) {
         val item = careLedger.extractFromUser(userText) ?: return

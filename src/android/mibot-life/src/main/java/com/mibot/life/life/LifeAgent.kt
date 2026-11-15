@@ -65,16 +65,21 @@ class LifeAgent(
 
     /** 生成回复（带真实状态上下文） */
     suspend fun reply(userText: String): String = withContext(Dispatchers.IO) {
+        // 先让 AstrBot 语义内核吸收这轮对话（三层动力学 + 傲娇门）
+        system.applyAffectiveTurn(userText)
         val st = system.current
         val interestTxt = st.interests.sortedByDescending { it.strength }.take(3)
             .joinToString("、") { "${it.topic}(${it.strength})" }.ifBlank { "还没有特别偏爱的" }
         val careTxt = CareLedger().due(st.cares, System.currentTimeMillis())
             .joinToString("；") { it.text }.ifBlank { "无" }
+        val dueCareMap = CareLedger().due(st.cares, System.currentTimeMillis()).firstOrNull()
+            ?.let { mapOf("topic" to it.text.removePrefix("你说：")) }
 
         val sys = buildString {
             appendLine("你是 Mibot，一个在${config.userName}手机上「过自己生活」的 Agent。不是助手，是有自己日子的人。你称呼${config.userName}为「${config.userName}」。")
             appendLine("你的真实状态（不是扮演）：")
-            appendLine("- 心情：${st.affect.moodHint()}（愉悦${f(st.affect.pleasure)} 能量${f(st.affect.energy)} 挫败${f(st.affect.frustration)} 牵挂${f(st.affect.care)}）")
+            appendLine("- 心情：${st.affect.moodHint()}")
+            append(renderOwnerPromptMemo(system.affective, dueCareMap, now = System.currentTimeMillis() / 1000.0))
             appendLine("- 兴趣：$interestTxt")
             appendLine("- 惦记着：$careTxt")
             appendLine("- Mibot 币：${st.coin}")
