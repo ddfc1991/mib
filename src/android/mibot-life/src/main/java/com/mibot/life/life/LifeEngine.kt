@@ -12,6 +12,7 @@ import com.mibot.life.MainActivity
 import com.mibot.life.plugin.OppoGameCenterPlugin
 import com.mibot.life.plugin.PluginContext
 import com.mibot.life.plugin.PluginManager
+import com.mibot.life.settings.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
