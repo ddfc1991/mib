@@ -39,6 +39,12 @@
             android:name=".pet.PetForegroundService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <!-- 生活自主引擎：后台自己过日子 -->
+        <service
+            android:name=".life.LifeEngine"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
     </application>
 
     <queries>

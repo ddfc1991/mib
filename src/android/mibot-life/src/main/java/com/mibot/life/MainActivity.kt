@@ -72,6 +72,8 @@ class MainActivity : ComponentActivity() {
             ),
             system,
         )
+        // 启动生活自主引擎：让它在后台自己过日子（不管 App 前后台）
+        runCatching { LifeEngine.start(this) }
         setContent { Root(system, agent, voice, settings, executor, onSaveSettings = { newS -> settingsStore.save(newS); settings = newS }) }
     }
 
@@ -250,7 +252,7 @@ private fun LifeScreen(
             HarkCard {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("它在干什么", fontSize = 13.sp, color = InkSoft, fontWeight = FontWeight.Medium)
-                    Text("虚拟窗", fontSize = 10.sp, color = Coral)
+                    Text("● 自主运转中", fontSize = 10.sp, color = Color(0xFF059669))
                 }
                 Spacer(Modifier.height(10.dp))
                 // 窗口画面（16:9）
