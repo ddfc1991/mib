@@ -14,10 +14,10 @@ import kotlin.math.exp
  * 表达：不说"我很开心"，而是通过话多/话少、愿不愿做事、主动不主动 泄露出来。
  */
 data class AffectState(
-    val pleasure: Double = 0.0,
-    val energy: Double = 0.5,
-    val care: Double = 0.0,
-    val frustration: Double = 0.0,
+    val pleasure: Double = 0.35,
+    val energy: Double = 0.6,
+    val care: Double = 0.15,
+    val frustration: Double = 0.1,
     val updatedAt: Long = System.currentTimeMillis(),
 ) {
     /** 时间回归：半小时各维向基线衰减一半左右 */
@@ -83,11 +83,14 @@ data class AffectState(
 
     /** 状态的自然语言泄露（不是描述状态，是语气） */
     fun moodHint(): String = when {
+        isFrustrated() && isLowEnergy() -> "又累又烦"
         isFrustrated() -> "有点闷"
-        isLowEnergy() -> "累"
+        isLowEnergy() -> "没电了"
+        pleasure > 0.65 && energy > 0.65 -> "神采奕奕"
         pleasure > 0.4 -> "心情不错"
-        isMissing() -> "有点想你"
-        else -> "平常"
+        care > 0.65 -> "惦记着你"
+        pleasure > 0.15 -> "挺平静的"
+        else -> "有点提不起劲"
     }
 
     companion object {
