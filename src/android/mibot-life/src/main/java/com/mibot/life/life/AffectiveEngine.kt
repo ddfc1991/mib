@@ -545,6 +545,20 @@ fun expressionProfile(state: AffectiveState?, activeCareThreads: List<Map<String
     )
 }
 
+/** 情绪→短口语（对话尾缀用，零数字） */
+fun affectiveMoodHint(state: AffectiveState): String = when (state.dominantTag) {
+    "focused" -> "认真着呢，正事要紧"
+    "coaxed_soft" -> "心里软软的，甜滋滋"
+    "tender_care" -> "心疼你，想好好陪着你"
+    "tsundere_pout" -> if (state.consecutiveRejects >= 2) "有点小委屈，不过你在就还好" else "嘴硬着，其实心里惦记你"
+    "sleepy" -> "困了，声音都软了"
+    "eager_share" -> "心情雀跃，想跟你分享"
+    "joyful" -> "心情好得很"
+    "low_mood" -> "有点蔫儿，想歇口气"
+    "missing_you" -> "想你了，等你说话呢"
+    else -> "挺平静的"
+}
+
 /** 1-2 句体感记忆（零数字/零 XML），注入 system prompt */
 fun renderOwnerPromptMemo(state: AffectiveState, dueCare: Map<String, Any>? = null, cfg: Map<String, Any>? = null, now: Double? = null, backgroundRun: Boolean = false): String {
     val stamp = validTimestamp(now)
