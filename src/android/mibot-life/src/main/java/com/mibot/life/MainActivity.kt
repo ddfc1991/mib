@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -241,6 +242,41 @@ private fun LifeScreen(
                         ) { Text(label, fontSize = 13.sp, color = Ink) }
                     }
                 }
+            }
+        }
+
+        // ---- 虚拟窗：看它在干什么（固定窗口，真实画面后续接 MediaProjection）----
+        item {
+            HarkCard {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("它在干什么", fontSize = 13.sp, color = InkSoft, fontWeight = FontWeight.Medium)
+                    Text("虚拟窗", fontSize = 10.sp, color = Coral)
+                }
+                Spacer(Modifier.height(10.dp))
+                // 窗口画面（16:9）
+                Box(
+                    Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                        .background(Brush.verticalGradient(listOf(Color(0xFFEAF2F8), Color(0xFFF5EFE6))), RoundedCornerShape(14.dp))
+                        .border(1.dp, InkSoft.copy(alpha = 0.15f), RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            chosen?.let { "现在想做：${it.action.zh}" } ?: "在想…",
+                            fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ink
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        val latest = st.episodes.lastOrNull()
+                        Text(
+                            latest?.let { "最近：${it.title}" } ?: "还没开始做事",
+                            fontSize = 12.sp, color = InkSoft
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text("（真实画面接 MediaProjection 后显示）", fontSize = 10.sp, color = InkSoft.copy(alpha = 0.6f))
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text("自主推进中 · 它自己决定去做什么", fontSize = 10.sp, color = InkSoft.copy(alpha = 0.7f))
             }
         }
 
