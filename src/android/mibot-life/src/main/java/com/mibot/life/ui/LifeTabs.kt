@@ -194,12 +194,18 @@ fun SettingsScreen(
         item { ToggleRow("允许评论", "有风险，默认关", settings.allowComment) { onChange(settings.copy(allowComment = it)) } }
         item { ToggleRow("允许关注", "默认关", settings.allowFollow) { onChange(settings.copy(allowFollow = it)) } }
 
-        item { SectionTitle("赚钱档位") }
-        item { ToggleRow("档1 虚拟资产（自主）", "默认开", settings.econTier1Enabled) { onChange(settings.copy(econTier1Enabled = it)) } }
-        item { ToggleRow("档2a 试玩任务（需授权）", "平台试玩奖励", settings.econTier2aAuthed) { onChange(settings.copy(econTier2aAuthed = it)) } }
-        item { ToggleRow("档2b 挂机激励（需授权）", "游戏中心签到/补给站", settings.econTier2bAuthed) { onChange(settings.copy(econTier2bAuthed = it)) } }
-        item { ToggleRow("档2c 打金（风险）", "封号风险，不推荐", settings.econTier2cEnabled) { onChange(settings.copy(econTier2cEnabled = it)) } }
-        item { ToggleRow("档3 真实赚钱", "逐项批", settings.econTier3Enabled) { onChange(settings.copy(econTier3Enabled = it)) } }
+        item { SectionTitle("赚钱 · 自主探索") }
+        item {
+            ToggleRow("自主探索赚钱", "它自己找方向、自己试；不固定。涉及真钱/账号逐项授权", settings.econExplore) { onChange(settings.copy(econExplore = it)) }
+        }
+        item { ToggleRow("游戏中心签到/挂机", "OPPO 游戏中心福利（已实证真实到账）", settings.econTier2bAuthed) { onChange(settings.copy(econTier2bAuthed = it)) } }
+        item { ToggleRow("试玩/其他平台", "合规试玩平台", settings.econTier2aAuthed) { onChange(settings.copy(econTier2aAuthed = it)) } }
+        item {
+            Text(
+                "原则：方向不固定，它自己探索；涉及真钱/账号的渠道逐项授权，绝不自动。",
+                fontSize = 11.sp, color = MutedInk, modifier = Modifier.padding(vertical = 4.dp),
+            )
+        }
 
         item { SectionTitle("模型（接你的免费 API）") }
         item {

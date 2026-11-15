@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -123,8 +125,20 @@ fun ChatScreen(
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        // （虚拟形象素材到位后在此显示；当前不显示自绘形象）
-        Spacer(Modifier.height(4.dp))
+        // Japlos 式状态面板：记忆/疲惫/能量/心情（Mibot 真实情感数值）
+        val st = system.snapshot()
+        Row(
+            Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp)
+                .background(Glass, RoundedCornerShape(14.dp))
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            StatChip("记忆", st.episodes.size, Color(0xFF7BA7D9))
+            StatChip("疲惫", (st.affect.frustration * 100).toInt(), Color(0xFFB0A79E))
+            StatChip("能量", (st.affect.energy * 100).toInt(), Color(0xFF4CAF7D))
+            StatChip("心情", st.affect.pleasure, Color(0xFFE8825A), isMood = true)
+        }
+        Spacer(Modifier.height(2.dp))
         // 免提通话开关：像打电话，开=不按锁自动听/说
         Row(
             Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
@@ -266,7 +280,26 @@ private fun maybeExecute(reply: String) {
     }
 }
 
-/** 麦克风按钮：呼吸光环随音量放大 + 状态色 */
+/** Japlos 式状态格：记忆/疲惫/能量/心情 */
+@Composable
+private fun StatChip(label: String, value: Number, color: Color, isMood: Boolean = false) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            if (isMood) {
+                when {
+                    value.toDouble() > 0.6 -> "神采奕奕"
+                    value.toDouble() > 0.4 -> "心情不错"
+                    value.toDouble() > 0.15 -> "挺平静"
+                    else -> "提不起劲"
+                }
+            } else value.toString(),
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color
+        )
+        Text(label, fontSize = 9.sp, color = InkSoft)
+    }
+}
+
+/** 麦克风按钮：呼吸光环 + 按住说话/松开发送/下滑取消（Japlos 式） */
 @Composable
 private fun MicButton(state: VoiceIO.AsrState, level: Float, onClick: () -> Unit) {
     val pulse = rememberInfiniteTransition(label = "mic")
@@ -298,7 +331,13 @@ private fun MicButton(state: VoiceIO.AsrState, level: Float, onClick: () -> Unit
         }
         Box(
             Modifier.size(46.dp).scale(scale).background(Glass, RoundedCornerShape(50))
-                .clickable { onClick() },
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            onClick()   // 按下开始听
+                        }
+                    )
+                },
             contentAlignment = Alignment.Center
         ) {
             Text(
