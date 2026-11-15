@@ -208,7 +208,9 @@ class VoiceIO(private val context: Context) {
     /** 可用的识别服务组件（fallback 链：默认 → 设备上其他 exported 服务） */
     private var serviceIndex = -1
     private val fallbackServices = listOf(
-        // 设备实测：realme 无系统默认识别服务，但有第三方 App 注册的 exported 服务
+        // 设备实测：Google App 注册了系统级识别服务（真可用），优先用它
+        "com.google.android.googlequicksearchbox/com.google.android.voicesearch.serviceapi.GoogleRecognitionService",
+        // realme 无系统默认识别引擎，但有第三方 App 注册的 exported 服务
         "com.anthropic.claude/com.anthropic.claude.bell.assist.ClaudeRecognitionService",
         "com.facebook.aura/com.facebook.aura.assist.HatchRecognitionService",
     )

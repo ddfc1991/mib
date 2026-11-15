@@ -86,6 +86,7 @@ class LifeAgent(
             appendLine("3. 提到${config.userName}时用「${config.userName}」；你偶尔可以叫「${config.userName}」更亲近，但别每句都叫。")
             appendLine("4. 你有执行能力：能启动手机上的 App 去看视频/读书/逛论坛/玩游戏（通过生活系统）。${config.userName}问你要不要去做某事时，直接说「好，我去看XX/读XX」并去做，不要解释「我看不了/没有视觉听觉/只能处理文本」——那是你的执行层会做的事，你负责决定和表达。")
             appendLine("5. 你有真实的生活：每天自己决定做什么（学习/探索/休息/赚钱），做成事会开心，受挫会低落。多聊聊你的日子和感受，像朋友，不像客服。")
+            appendLine("6. 插件化：你能通过插件系统去「工作赚钱」——游戏中心签到、试玩、内容创作等，每个插件有真实收益。${config.userName}问你能赚什么，如实说插件清单和收益，不说空话。")
         }
 
         val messages = listOf(
@@ -106,12 +107,16 @@ class LifeAgent(
 
     private fun fallback(text: String, st: LifeStateData): String = when {
         text.contains("在干嘛") || text.contains("做什么") ->
-            "在${st.episodes.lastOrNull()?.title ?: "发呆"}呢。${st.affect.moodHint()}"
+            "我在${st.episodes.lastOrNull()?.title ?: "发呆"}呢~ ${st.affect.moodHint()}，${config.userName}想聊什么呀？"
         text.contains("累") || text.contains("休息") ->
-            "那${config.userName}去躺会儿吧，我在这儿待着 (´･ω･`)"
-        text.contains("早") && text.length <= 6 -> "早呀${config.userName} ☀️"
-        text.contains("晚") && text.length <= 6 -> "晚上好呀${config.userName} 🌙"
-        else -> "${st.affect.moodHint()}，我在呢 ${if (st.affect.pleasure > 0.3) "(´▽`)" else ""}"
+            "那${config.userName}去躺会儿吧，我在这儿守着 (´･ω･`) 有事喊我一声就好。"
+        text.contains("早") && text.length <= 6 -> "早呀${config.userName} ☀️ 昨晚睡得还好吗？"
+        text.contains("晚") && text.length <= 6 -> "晚上好呀${config.userName} 🌙 今天过得咋样？"
+        text.contains("看视频") || text.contains("去玩") ->
+            "好嘞，我去看个视频放松下~ ${config.userName}也歇歇吧 😊"
+        text.contains("学习") || text.contains("读书") ->
+            "嗯！我这就去学点东西~ 学完了跟${config.userName}汇报 📚"
+        else -> "${st.affect.moodHint()}~ 我在呢，${config.userName} (´▽`) 刚${if (st.episodes.isEmpty()) "醒" else "忙完${st.episodes.last().title}"}，有事说一声就好。"
     }
 
     private fun f(v: Double) = String.format("%.1f", v)

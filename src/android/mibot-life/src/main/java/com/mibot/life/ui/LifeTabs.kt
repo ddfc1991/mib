@@ -121,7 +121,7 @@ fun EconomyScreen(life: LifeSystem, settings: LifeSettings) {
             }
         }
         item { EconRow("游戏中心签到/挂机", "OPPO 游戏中心福利（已实证）", if (settings.econTier2bAuthed) "已授权" else "需授权", settings.econTier2bAuthed) }
-        item { EconRow("试玩/其他平台", "合规试玩平台", if (settings.econTier2aAuthed) "已授权" else "需授权", settings.econTier2aAuthed) }
+        item { EconRow("试玩/其他平台", "不自动试；仅你逐项授权", false, false) }
         item {
             Text(
                 "原则：方向不固定，它自己探索；涉及真钱/账号的渠道逐项授权，绝不自动。",
