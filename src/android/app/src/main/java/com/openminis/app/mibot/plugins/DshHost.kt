@@ -268,11 +268,11 @@ object DshHostManager {
             return@withContext finish(ctx, fullName, HostResult("BLOCKED", emptyList(), emptyList(), why, emptyList(), null, now()))
         }
         val pkg = local.pkg
-            ?: return@withContext finish(ctx, fullName, HostResult("FAILED", emptyList(), emptyList(), "缺少 package.json（不是 DSH 插件）", emptyList(), null, now()))
+            ?: return@withContext fail(ctx, fullName, "缺少 package.json（不是 DSH 插件）")
         val pkgName = pkg.optString("name").ifBlank { null }
-            ?: return@withContext finish(ctx, fullName, HostResult("FAILED", emptyList(), emptyList(), "package.json 没有 name", emptyList(), null, now()))
+            ?: return@withContext fail(ctx, fullName, "package.json 没有 name")
         if (pkg.optJSONObject("dsh") == null)
-            return@withContext finish(ctx, fullName, HostResult("FAILED", emptyList(), emptyList(), "package.json 没有 dsh 清单，不是 DSH 插件", emptyList(), null, now()))
+            return@withContext fail(ctx, fullName, "package.json 没有 dsh 清单，不是 DSH 插件")
 
         fun prog(s: String) { setLive(fullName, Live(Phase.PREPARING, s)); log(ctx, fullName, s) }
         prog("检查 Linux 沙箱 …")
@@ -448,7 +448,7 @@ object DshHostManager {
         setLive(fullName, Live(phase, commands = commands))
         PluginStore.update(ctx, fullName) {
             it.copy(host = r, status = if (phase == Phase.RUNNING) PluginStatus.RUNNING else PluginStatus.IDLE,
-                note = when (r.state) { "SKILLS" -> "运行中 · 已导入 ${r.skills.size} 个技能"; "RUNNING" -> null; else -> null })
+                note = when (r.state) { "SKILLS" -> "运行中 · 已导入 ${r.skills.size} 个技能"; "RUNNING" -> null; else -> r.error })
         }
         com.openminis.app.mibot.feed.Feed.pluginHostState(ctx, fullName, r.state, r.error)
         return r
