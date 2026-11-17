@@ -6,13 +6,10 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.os.Build
-import android.os.SystemClock
 import android.provider.Settings
 import android.view.Display
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import com.mibot.core.cap.phone.AppPacing
-import com.mibot.core.cap.phone.OperatingPace
 import com.openminis.app.accessibility.MinisAccessibilityService
 import com.openminis.app.mibot.design.tc
 import com.openminis.app.mibot.vault.VaultConfirmBus
@@ -60,54 +57,11 @@ object VdController {
     private val _log = MutableStateFlow<List<String>>(emptyList())
     val log: StateFlow<List<String>> = _log.asStateFlow()
 
-    // [fork/mibot-destiny] 丝滑引擎:操作节奏(OperatingPace/AppPacing)。FAST 默认(反应快),
-    // STANDARD/HUMAN 像人(步间延迟、限屏数,防风控)。设置页可调。
-    @Volatile private var operatingPace: OperatingPace = OperatingPace.FAST
-    @Volatile private var _appPacing: AppPacing = OperatingPace.FAST.appPacing()
-    private val appPacing: AppPacing get() = _appPacing
-
-    /** 设置操作节奏(设置页调用):重建节奏器(状态重置)。 */
-    fun setOperatingPace(p: OperatingPace) { operatingPace = p; _appPacing = p.appPacing() }
-    fun currentOperatingPace(): OperatingPace = operatingPace
-
-    /** 按节奏等上一个动作停够(FAST 恒 0,不改当前响应速度)。 */
-    private suspend fun paceWait() {
-        val w = appPacing.waitBefore(SystemClock.elapsedRealtime())
-        if (w > 0) delay(w)
-    }
-
-    /** 记下一个动作完成(节奏据此定下一步的停留)。 */
-    private fun paceNote(newScreen: Boolean) {
-        appPacing.noteAction(_state.value.app, SystemClock.elapsedRealtime(), newScreen = newScreen)
-    }
-
     @Volatile private var display: AgentDisplay? = null
-    // [fork/mibot-destiny] Multi-display pool: several hidden virtual displays may
-    // run at once (vd_create → first display; createExtra → more). `display` stays
-    // as the ACTIVE one for backwards-compatible callers; `displays` holds every live
-    // AgentDisplay keyed by its displayId, and `activeDisplayId` names the one all
-    // tools operate on.
-    private val displays = LinkedHashMap<Int, AgentDisplay>()
-    @Volatile private var activeDisplayId: Int = -1
     private val emptyFrames = MutableStateFlow<Bitmap?>(null)
     private val _framesFlow = MutableStateFlow<StateFlow<Bitmap?>>(emptyFrames)
-    /** The active display's preview frames (switches when the active display changes). */
+    /** The current display's preview frames (switches when a display is created/closed). */
     val previewSource: StateFlow<StateFlow<Bitmap?>> = _framesFlow.asStateFlow()
-
-    /** Ids of every live hidden display, insertion order. */
-    val displayIds: List<Int> get() = synchronized(displays) { displays.keys.toList() }
-    /** The active display id, or -1 when none. */
-    val activeDisplay: Int get() = activeDisplayId
-    /** Number of live hidden displays. */
-    val displayCount: Int get() = synchronized(displays) { displays.size }
-
-    private fun currentDisplay(): AgentDisplay? = synchronized(displays) { displays[activeDisplayId] ?: displays.values.firstOrNull() }
-
-    private fun setActive(id: Int) {
-        synchronized(displays) {
-            if (displays.containsKey(id)) { activeDisplayId = id; display = displays[id]; _framesFlow.value = display!!.frames }
-        }
-    }
 
     @Volatile private var a11yConfirmed = false
 
@@ -125,9 +79,7 @@ object VdController {
         val app = context.applicationContext
         val phone = MibotPhone.get(app)
         val current = _state.value
-        // [fork/mibot-destiny] Multi-display: create() is the FIRST display (or returns it
-        // when already up). Extra displays go through createExtra(). Kept for compat.
-        if (current.mode != Mode.NONE && display != null) return@withContext Result.success(current)
+        if (current.mode != Mode.NONE) return@withContext Result.success(current)
         var shell = phone.hub.shell.value
         if (shell == null && phone.supported) {
             // Wake the watchdog (paired) or try Shizuku when it is ready.
@@ -146,8 +98,6 @@ object VdController {
             val dmgr = app.getSystemService(DisplayManager::class.java)
             return@withContext runCatching {
                 val d = AgentDisplay(shell, w, h, dpi, dmgr)
-                synchronized(displays) { displays[d.displayId] = d }
-                activeDisplayId = d.displayId
                 display = d
                 _framesFlow.value = d.frames
                 val s = State(Mode.HELPER, d.displayId, d.width, d.height)
@@ -187,79 +137,10 @@ object VdController {
         Result.success(s)
     }
 
-    /**
-     * [fork/mibot-destiny] Create an ADDITIONAL hidden display (the first one uses
-     * [create]). Each extra display runs its own AgentDisplay with its own frames
-     * and app. Returns the new display's state; the new display becomes active.
-     */
-    suspend fun createExtra(context: Context, width: Int = 0, height: Int = 0): Result<State> = withContext(Dispatchers.Default) {
-        val app = context.applicationContext
-        val phone = MibotPhone.get(app)
-        if (_state.value.mode != Mode.HELPER) {
-            // No helper session yet — the first display must be up (HELPER mode).
-            val first = create(context, width, height).getOrNull()
-            if (first == null || first.mode != Mode.HELPER) {
-                return@withContext Result.failure(IllegalStateException("multi-display needs the helper session; create the first display first"))
-            }
-        }
-        val shell = phone.hub.shell.value ?: return@withContext Result.failure(IllegalStateException("helper not connected"))
-        return@withContext runCatching {
-            val (w, h, dpi) = displaySpec(app, width, height)
-            val dmgr = app.getSystemService(DisplayManager::class.java)
-            val d = AgentDisplay(shell, w, h, dpi, dmgr)
-            synchronized(displays) { displays[d.displayId] = d }
-            setActive(d.displayId)
-            val s = State(Mode.HELPER, d.displayId, d.width, d.height)
-            // Keep the session mode; the state's app/display reflect the active one.
-            _state.value = _state.value.copy(mode = Mode.HELPER, displayId = d.displayId, width = d.width, height = d.height)
-            log("vd_createExtra: display ${d.displayId} ${w}x$h@$dpi (${displays.size} live)")
-            VdForegroundService.start(app)
-            s
-        }.onFailure { log("vd_createExtra failed: ${it.message}") }
-    }
-
-    /** [fork/mibot-destiny] Switch the ACTIVE display (all tools operate on it). */
-    fun switchTo(displayId: Int): Boolean {
-        synchronized(displays) {
-            if (!displays.containsKey(displayId)) return false
-            setActive(displayId)
-            val d = displays[displayId]!!
-            _state.value = _state.value.copy(mode = Mode.HELPER, displayId = displayId, width = d.width, height = d.height)
-        }
-        log("vd_switchTo: display $displayId (active; ${displays.size} live)")
-        return true
-    }
-
-    /** [fork/mibot-destiny] Close ONE display; the last one also ends the session. */
-    fun closeDisplay(context: Context, displayId: Int): Boolean {
-        val d = synchronized(displays) { displays.remove(displayId) } ?: return false
-        runCatching { d.release() }
-        if (activeDisplayId == displayId) {
-            val next = synchronized(displays) { displays.keys.firstOrNull() }
-            if (next != null) setActive(next)
-            else { activeDisplayId = -1; display = null; _framesFlow.value = emptyFrames }
-        }
-        if (synchronized(displays) { displays.isEmpty() }) {
-            val was = _state.value.mode
-            _state.value = State()
-            a11yConfirmed = false
-            if (was != Mode.NONE) log("vd_close (last display)")
-            VdOverlay.hide(context.applicationContext)
-            VdForegroundService.stop(context.applicationContext)
-        } else {
-            log("vd_closeDisplay: display $displayId closed (${synchronized(displays) { displays.size }} live)")
-        }
-        return true
-    }
-
     fun close(context: Context) {
         val app = context.applicationContext
-        // [fork/mibot-destiny] Close every live display.
-        val all = synchronized(displays) { displays.values.toList() }
-        all.forEach { runCatching { it.release() } }
-        synchronized(displays) { displays.clear() }
+        display?.let { runCatching { it.release() } }
         display = null
-        activeDisplayId = -1
         _framesFlow.value = emptyFrames
         val was = _state.value.mode
         _state.value = State()
@@ -283,7 +164,7 @@ object VdController {
     private fun requireActive(): State {
         val s = _state.value
         check(s.mode != Mode.NONE) { "No virtual display. Call vd_create first." }
-        val d = currentDisplay()
+        val d = display
         if (s.mode == Mode.HELPER && d != null) {
             val w = d.width
             val h = d.height
@@ -314,6 +195,10 @@ object VdController {
             )
             if (!ok) return@withContext "user declined opening $packageName"
         }
+        if (!VdAppLease.acquire(packageName)) {
+            val who = VdAppLease.holder() ?: "another task"
+            return@withContext "waiting: " + who + " is using the agent display. Retry in a moment."
+        }
         when (s.mode) {
             Mode.HELPER -> {
                 val r = helper(app)?.startApp(s.displayId, packageName) ?: return@withContext "helper not connected"
@@ -324,7 +209,10 @@ object VdController {
                     ShellService.START_IN_USE_BY_OTHER -> "already on another agent display"
                     else -> "start failed ($r)"
                 }
-                if (r == ShellService.START_OK) { _state.value = s.copy(app = packageName); paceNote(true) }
+                if (r == ShellService.START_OK) {
+                    _state.value = s.copy(app = packageName)
+                    VdChangeWait.awaitStable(s.displayId, quietMs = 400)
+                }
                 log("vd_launch_app $packageName -> $msg")
                 msg
             }
@@ -333,7 +221,6 @@ object VdController {
                     ?: return@withContext "no launcher activity for $packageName"
                 app.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 _state.value = s.copy(app = packageName)
-                paceNote(true)
                 log("vd_launch_app (main screen) $packageName")
                 "started $packageName on the main screen (accessibility mode)"
             }
@@ -350,10 +237,9 @@ object VdController {
         val s = requireActive()
         val bmp: Bitmap? = when (s.mode) {
             Mode.HELPER -> {
-                val d = currentDisplay()
-                var b = d?.latestFrameBitmap()
+                var b = display?.latestFrameBitmap()
                 var tries = 0
-                while (b == null && tries++ < 10) { delay(150); b = d?.latestFrameBitmap() }
+                while (b == null && tries++ < 10) { delay(150); b = display?.latestFrameBitmap() }
                 b
             }
             Mode.A11Y -> {
@@ -382,7 +268,6 @@ object VdController {
     private fun a11yOn(): Boolean = VdA11y.service()?.also { VdA11y.ensureFlags(it) } != null
 
     suspend fun tap(context: Context, x: Int, y: Int): String = withContext(Dispatchers.IO) {
-        paceWait()
         val s = requireActive()
         val app = context.applicationContext
         if (x < 0 || y < 0 || x >= s.width || y >= s.height) return@withContext "tap failed: ($x,$y) is outside the display (${s.width}x${s.height})"
@@ -395,11 +280,14 @@ object VdController {
             VdInputOrder.Step(VdInputOrder.SHELL) { sh?.injectTap(s.displayId, x, y) == true },
         ))
         log("vd_tap $x,$y -> ${r.describe()}")
-        if (r.ok) { paceNote(false); "tapped ($x,$y) via ${r.describe()}" } else "tap failed (${r.describe()})"
+        if (r.ok) {
+            VdAppLease.touch()
+            VdChangeWait.awaitStable(s.displayId)
+            "tapped ($x,$y) via ${r.describe()}"
+        } else "tap failed (${r.describe()})"
     }
 
     suspend fun swipe(context: Context, x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Int): String = withContext(Dispatchers.IO) {
-        paceWait()
         val s = requireActive()
         val dur = durationMs.coerceIn(80, 3_000).toLong()
         val sh = if (s.mode == Mode.HELPER) helper(context) else null
@@ -415,11 +303,14 @@ object VdController {
             },
         ))
         log("vd_swipe $x1,$y1→$x2,$y2 ${dur}ms -> ${r.describe()}")
-        if (r.ok) { paceNote(false); "swiped via ${r.describe()}" } else "swipe failed (${r.describe()})"
+        if (r.ok) {
+            VdAppLease.touch()
+            VdChangeWait.awaitStable(s.displayId)
+            "swiped via ${r.describe()}"
+        } else "swipe failed (${r.describe()})"
     }
 
     suspend fun type(context: Context, text: String, submit: Boolean): String = withContext(Dispatchers.IO) {
-        paceWait()
         val s = requireActive()
         val app = context.applicationContext
         askIfSensitive(app, s, null, null, text)?.let { return@withContext it }
@@ -441,7 +332,7 @@ object VdController {
         ))
         var msg = if (r.ok) "typed ${text.length} chars via ${r.describe()}" else
             "type failed (${r.describe()}${if (field == null) "; no focused input field on the display — tap the field first" else ""})"
-        if (r.ok) { paceNote(false); if (submit) msg += "; " + key(app, "ENTER") }
+        if (r.ok && submit) msg += "; " + key(app, "ENTER")
         log("vd_type (${text.length} chars) -> ${r.describe()}")
         msg
     }
@@ -470,7 +361,6 @@ object VdController {
     }
 
     suspend fun key(context: Context, name: String): String = withContext(Dispatchers.IO) {
-        paceWait()
         val s = requireActive()
         val code = KEYS[name.uppercase().removePrefix("KEYCODE_")] ?: name.toIntOrNull()
             ?: return@withContext "unknown key '$name' (allowed: ${KEYS.keys.joinToString()})"
@@ -488,7 +378,7 @@ object VdController {
             VdInputOrder.Step(VdInputOrder.SHELL) { sh?.injectKey(s.displayId, code) == true },
         ))
         log("vd_key $name -> ${r.describe()}")
-        if (r.ok) { paceNote(code == KeyEvent.KEYCODE_BACK); "pressed $name via ${r.describe()}" } else "key failed (${r.describe()})"
+        if (r.ok) "pressed $name via ${r.describe()}" else "key failed (${r.describe()})"
     }
 
     /** Compact accessibility tree of the agent display (needs Mibot's accessibility service). */
