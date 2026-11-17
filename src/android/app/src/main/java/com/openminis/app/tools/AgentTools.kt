@@ -73,6 +73,7 @@ object AgentTools {
             // [fork/mibot-v3] Background phone control on a hidden virtual display.
             addAll(com.openminis.app.mibot.phone.VdTools.definitions())
             addAll(com.openminis.app.mibot.plugins.DshAgentTools.definitions()) // [fork/mibot-dsh-tools] D3
+            add(com.openminis.app.mibot.pc.PcBridgeTools.definition()) // [fork/mib-pc-bridge] drive the user PC over Tailscale
         }
         if (userAskExposed && !isHelper) add(com.openminis.app.agent.userask.UserAskPromptText.definition())
     }

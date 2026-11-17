@@ -14148,6 +14148,8 @@ class ChatViewModel(
                 return com.openminis.app.mibot.agent.MibotTools.executeVault(context, argsJson)
             com.openminis.app.mibot.agent.MibotTools.PROVIDER_TOOL ->
                 return com.openminis.app.mibot.agent.MibotTools.executeProvider(context, providerRepository, argsJson)
+            com.openminis.app.mibot.pc.PcBridgeTools.TOOL ->
+                return com.openminis.app.mibot.pc.PcBridgeTools.execute(context, argsJson) // [fork/mib-pc-bridge]
         }
         if (name in com.openminis.app.mibot.phone.VdTools.NAMES) {
             return com.openminis.app.mibot.phone.VdTools.execute(context, name, argsJson)
