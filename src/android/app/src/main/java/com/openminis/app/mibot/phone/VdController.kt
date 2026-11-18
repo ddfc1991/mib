@@ -58,6 +58,10 @@ object VdController {
     val log: StateFlow<List<String>> = _log.asStateFlow()
 
     @Volatile private var display: AgentDisplay? = null
+    private val displays = LinkedHashMap<Int, AgentDisplay>()
+    val displayIds: List<Int> get() = synchronized(displays) { displays.keys.toList() }
+    val displayCount: Int get() = synchronized(displays) { displays.size }
+    val activeDisplay: Int get() = _state.value.displayId
     private val emptyFrames = MutableStateFlow<Bitmap?>(null)
     private val _framesFlow = MutableStateFlow<StateFlow<Bitmap?>>(emptyFrames)
     /** The current display's preview frames (switches when a display is created/closed). */
@@ -99,6 +103,7 @@ object VdController {
             return@withContext runCatching {
                 val d = AgentDisplay(shell, w, h, dpi, dmgr)
                 display = d
+                synchronized(displays) { displays[d.displayId] = d }
                 _framesFlow.value = d.frames
                 val s = State(Mode.HELPER, d.displayId, d.width, d.height)
                 _state.value = s
@@ -137,8 +142,38 @@ object VdController {
         Result.success(s)
     }
 
+    suspend fun createExtra(context: Context, width: Int = 0, height: Int = 0): Result<State> = withContext(Dispatchers.Default) {
+        val app = context.applicationContext
+        val shell = helper(app) ?: return@withContext Result.failure(IllegalStateException("helper not connected"))
+        val (w, h, dpi) = displaySpec(app, width, height)
+        runCatching {
+            val d = AgentDisplay(shell, w, h, dpi, app.getSystemService(DisplayManager::class.java))
+            synchronized(displays) { displays[d.displayId] = d }
+            switchTo(d.displayId)
+            log("vd_create_extra: display ${d.displayId} ${w}x$h@$dpi")
+            current()
+        }
+    }
+
+    fun switchTo(id: Int): Boolean {
+        val d = synchronized(displays) { displays[id] } ?: return false
+        display = d; _framesFlow.value = d.frames
+        _state.value = _state.value.copy(displayId = id, width = d.width, height = d.height, mode = Mode.HELPER)
+        log("vd_switch: display $id"); return true
+    }
+
+    fun closeDisplay(context: Context, id: Int) {
+        val d = synchronized(displays) { displays.remove(id) } ?: return
+        d.release()
+        if (id == _state.value.displayId) {
+            val next = displayIds.lastOrNull()
+            if (next != null) switchTo(next) else close(context)
+        }
+    }
+
     fun close(context: Context) {
         val app = context.applicationContext
+        synchronized(displays) { displays.values.toList().forEach { runCatching { it.release() } }; displays.clear() }
         display?.let { runCatching { it.release() } }
         display = null
         _framesFlow.value = emptyFrames
