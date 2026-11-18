@@ -455,7 +455,10 @@ object DshHostManager {
     }
 
     private fun fail(ctx: Context, fullName: String, why: String): HostResult {
+        // Keep early failures visible both in the per-plugin log and in its card/feed.
         log(ctx, fullName, "失败：$why")
+        setLive(fullName, Live(Phase.FAILED, progress = why))
+        com.openminis.app.mibot.feed.Feed.pluginHostState(ctx, fullName, "FAILED", why)
         return finish(ctx, fullName, HostResult("FAILED", emptyList(), emptyList(), why, emptyList(), nodeVersion, now()))
     }
 
