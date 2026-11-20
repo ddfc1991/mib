@@ -177,7 +177,8 @@ fun DestinyV7Home(
     // name, not the design screen's headline — otherwise 群聊 shows up as
     // "Bots 群聊" (a design-spec title) even though the tab is the real
     // GroupChatsPage. Design headers only apply while browsing a design screen.
-    val tabLabels = listOf("对话", "动态", "群聊", "设置")
+    // [destiny/zones] 四区标签：对话 / 探索 / 能力 / 账户（目标导向）。
+    val tabLabels = listOf("对话", "探索", "能力", "账户")
     val header = if (!designMode) {
         tabLabels.getOrNull(tab) ?: screen.title
     } else {
@@ -250,57 +251,13 @@ fun DestinyV7Home(
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(V7.Ln))
 
-        // [destiny/v7-real] The four tabs are the app's REAL surfaces now:
-        //   0 对话 = real session database (observeSessions)
-        //   1 动态 = real feed store (DestinyFeedHost)
-        //   2 群聊 = real bot groups (GroupChatsPage -> GroupChatStore)
-        //   3 设置 = real routes, every row opens an existing screen
-        // The 56 design screens are still reachable from the top-bar menu,
-        // but they are no longer what the app *is*.
+        // [destiny/zones] 四区（目标导向）：0 对话=真实会话；1 探索 / 2 能力 / 3 账户
+        // 走分区页。动态、群聊、设置原真实功能全部保留，收进对应分区行，
+        // 不再单独占 tab。56 屏设计稿仍从顶栏菜单可达。
         when (tab) {
-            1 -> Box(Modifier.weight(1f)) {
-                V7MaterialWrap {
-                    com.openminis.app.mibot.feed.DestinyFeedHost(
-                        onDiscuss = { actions.onAction(it) },
-                        onOpenSession = { actions.onOpenSession(it) },
-                        onOpenGroup = { id ->
-                            actions.onNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id))
-                        },
-                        onChat = { actions.onAction(it) },
-                        recents = homeRecents,
-                        statusLine = homeStatus,
-                        onNewChat = { actions.onNewChat() },
-                        dark = true,
-                        // V7 顶栏已经有「动态」大标题，让内页别再画一层。
-                        chrome = false,
-                        // [destiny/ui-one-look] 内页走 V7 规格（22dp / 平铺行 / 发丝线）。
-                        v7 = true,
-                    )
-                }
-            }
-            // [destiny/groups-real] 这一栏原来放的是「子 Agent 花名册」——语义不对，
-            // 花名册在 设置 › 子 Agent 里。群聊栏要的是真实的 bot 群聊：
-            // GroupChatsPage 读 GroupChatStore（落盘的真实群、真实成员、真实会话），
-            // 点进去是 GroupChatScreen。空群时它自己给新建入口，不画假群。
-            2 -> Box(Modifier.weight(1f)) {
-                V7MaterialWrap {
-                    com.openminis.app.mibot.groups.GroupChatsPage(
-                        onOpen = { id ->
-                            actions.onNavigate(com.openminis.app.mibot.groups.GroupRoutes.chat(id))
-                        },
-                        // V7 顶栏已经有「群聊」，内页别再画一层同名大标题。
-                        chrome = false,
-                        // [destiny/ui-one-look] 内页走 V7 规格。
-                        v7 = true,
-                    )
-                }
-            }
-            3 -> LazyColumn(
-                Modifier.weight(1f),
-                contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 6.dp, bottom = 24.dp),
-            ) {
-                v7RealSettings(actions) { showIndex = true }
-            }
+            1 -> DestinyZonePage(Zones.byId("explore")!!, actions, Modifier.weight(1f))
+            2 -> DestinyZonePage(Zones.byId("capability")!!, actions, Modifier.weight(1f))
+            3 -> DestinyZonePage(Zones.byId("account")!!, actions, Modifier.weight(1f))
             else -> LazyColumn(
                 Modifier.weight(1f),
                 contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 6.dp, bottom = 24.dp),
@@ -322,6 +279,19 @@ fun DestinyV7Home(
                     )
                     Spacer(Modifier.height(6.dp))
                 }
+            }
+            // [destiny/zones] 对话区顶部：群聊入口（原群聊 tab，真实 GroupChatsPage）。
+            // 分区重构后群聊收进对话区，作为一行直达，不单独占 tab。
+            item {
+                V7Section("多人协作", "")
+                ZoneQuickRow(
+                    label = "群聊",
+                    hint = "多 Bot 编排 · 轮次发言（≥2 bot）",
+                    tag = "真实",
+                ) {
+                    actions.onNavigate(com.openminis.app.ui.glass.GlassRoutes.GROUPS)
+                }
+                Spacer(Modifier.height(4.dp))
             }
             if (realSessions != null) {
                 // Screen 01 with the REAL session database — sample rows are gone.
