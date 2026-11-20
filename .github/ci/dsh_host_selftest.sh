@@ -95,7 +95,7 @@ W = sys.argv[1]
 def st(i): return json.load(open(f"{W}/p/{i}/status.json"))["result"]
 n = st("nuwa"); assert n["state"] == "SKILLS" and any(e.endswith("/huashu-nuwa") for s in n["skills"] for e in s["entries"]), n
 a = st("amwh"); assert a["state"] == "SKILLS" and any(e.endswith("skills/answer-me-with-html") for s in a["skills"] for e in s["entries"]), a
-m = st("modlens"); assert m["state"] == "PENDING" and set(m["missing"]) >= {"llm", "attachments", "agents"} and "tools" not in m["missing"], m
+m = st("modlens"); assert m["state"] == "PENDING" and set(m["missing"]) >= {"attachments", "agents"} and "llm" not in m["missing"] and "tools" not in m["missing"], m
 f = st("fixture"); assert f["state"] == "ACTIVE" and f["commands"] == ["hello"], f
 assert f["kit"] == 3 and "tools" not in f["missing"] and not f["missingPackages"], f
 assert any(r["name"] == "@deepseek-ai/dsh-tools" and r["kind"] == "kit" and r["state"] == "ACTIVE" for r in f["rows"]), f["rows"]
