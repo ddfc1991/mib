@@ -175,6 +175,57 @@ const commandsImpl = (() => {
 })()
 provide('commands', commandsImpl)
 
+// llm — Cordis service. Plugins that ARE model providers (e.g. dsh-our-free-model)
+// register their adapter with ctx.llm.registerAdapter(routes, adapter). This host
+// does not drive the adapter itself (that is the Mibot model-group's job via the
+// plugin's own forward gateway), so this service records registration for status
+// and satisfies Cordis' required-injection check, letting such a plugin go ACTIVE.
+//   ctx.llm.registerAdapter(routes, adapter) → { replace(routes) }
+//   ctx.llm.registerConfigurableProviders?.(list)
+//   ctx.llm.registerModelDiscovery?.(id, fn)
+//   ctx.llm.emitAdaptersUpdated?.()
+const llmImpl = (() => {
+  const adapters = new Map()   // routeKey → { routes, adapter }
+  const providers = []         // configurable providers
+  const discoveries = new Map() // id → fn
+  const sync = () => {
+    status.llm = {
+      adapters: [...adapters.entries()].map(([k, v]) => ({ route: k, routes: v.routes })),
+      providers: providers.map((p) => ({ provider: p.provider, displayName: p.displayName })),
+      discoveries: [...discoveries.keys()],
+    }
+    pushStatus()
+  }
+  return {
+    registerAdapter(routes, adapter) {
+      const key = Array.isArray(routes) ? routes.join('+') : String(routes || 'default')
+      adapters.set(key, { routes, adapter })
+      sync()
+      log('info', 'llm', `adapter registered: ${key}`)
+      return {
+        replace(nextRoutes) {
+          const nk = Array.isArray(nextRoutes) ? nextRoutes.join('+') : String(nextRoutes || 'default')
+          if (adapters.has(key)) adapters.delete(key)
+          adapters.set(nk, { routes: nextRoutes, adapter })
+          sync()
+          log('info', 'llm', `adapter replaced: ${key} -> ${nk}`)
+        },
+      }
+    },
+    registerConfigurableProviders(list) {
+      if (Array.isArray(list)) { providers.push(...list); sync() }
+    },
+    registerModelDiscovery(id, fn) {
+      if (id) { discoveries.set(String(id), fn); sync() }
+    },
+    emitAdaptersUpdated() {
+      try { root.emit?.('llm/adapters-updated') } catch {}
+    },
+    _adapters: () => adapters,
+  }
+})()
+provide('llm', llmImpl)
+
 // tools — Cordis service (stage 2, D1). Plugins register tools
 //   ctx.tools.register({ name, description, parameters, risk?, annotations?, timeoutMs?, output?, execute(args, exec) }) → dispose
 // `parameters` is a JSON Schema object (or a Schemastery schema, converted).

@@ -44,13 +44,15 @@ import androidx.compose.ui.unit.sp
 // 4 个只改本地变量的 Switch。关掉它并不会让 Agent 少碰任何 App，因为：
 //   1. 那些 Switch 的状态没有落盘，退出页面就还原；
 //   2. 真正会拦人的是 core 里的 AppAccessPolicy，而它默认 ALLOW；
-//   3. 这个包本身没有 PhoneServices.Owner，手机控制运行时压根没接进来
-//      （PhoneServices.of() 会抛），所以「开/关某个 App」在这里没有任何对象可作用。
+//   3. 旧版断言「这个包没有 PhoneServices.Owner、手机控制运行时没接进来」——那
+//      是对 Mika 的 PhoneServices 而言；Mibot 自己的运行时（MibotPhone / HelperHub /
+//      VdController / AgentDisplay）在本包已接入，见 mibot/phone/。
 //
-// 所以这一页不再画假的名单，只做三件真的事：
+// 所以这一页不再画假的名单，只做两件真的事：
 //   · 真读系统设置里已开启的无障碍服务（Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES）
 //   · 真读本 App 是否在无障碍列表里
-//   · 如实说明这个包的手机控制运行时没接入，以及缺的是什么
+// 运行时已接入（MibotPhone），真正还差的是把「哪些 App 可操作」的名单接到
+// AppAccessPolicy 上，让它真的拦得住。
 
 private fun a11yServices(ctx: Context): List<String> =
     Settings.Secure.getString(
@@ -131,23 +133,23 @@ fun DestinyV7AppAccessScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(22.dp))
 
-            // ── 如实说明运行时没接 ────────────────────────────────────
-            Text("这一版的运行时", fontSize = 12.sp, color = V7.Tx2)
+            // ── 如实说明运行时状态 ────────────────────────────────────
+            Text("手机控制运行时", fontSize = 12.sp, color = V7.Tx2)
             Spacer(Modifier.height(8.dp))
             Text(
-                "这个包里没有接入手机控制运行时：没有 PhoneServices 的持有者，" +
-                    "也没有可用的读屏/点击通道。所以这里不给你一个「关掉某个 App」的开关 —— " +
-                    "那种开关关不掉任何东西，是假的。",
+                "Mibot 自己的手机控制运行时已接入本包（MibotPhone / HelperHub / VdController / " +
+                    "AgentDisplay，见 mibot/phone/）。这个包有读屏/点击通道（HELPER 无线调试或 Shizuku）" +
+                    "与无障碍两条路。这里不给你「关掉某个 App」的开关 —— 真正会拦人的是 AppAccessPolicy，" +
+                    "把名单接上去它才真的拦得住；在接之前给开关就是假的。",
                 fontSize = 12.5.sp,
                 color = V7.Tx,
                 lineHeight = 20.sp,
             )
             Spacer(Modifier.height(10.dp))
-            Text("要真正能用手机控制，还差", fontSize = 12.sp, color = V7.Tx2)
+            Text("要真正能按名单管控 App，还差", fontSize = 12.sp, color = V7.Tx2)
             Spacer(Modifier.height(6.dp))
             listOf(
-                "把手机控制运行时接进本包（PhoneServices 的持有者）",
-                "在系统设置里本 App 的无障碍服务打开",
+                "在系统设置里本 App 的无障碍服务打开（已读真值，见上）",
                 "把「哪些 App 可操作」的名单接到 AppAccessPolicy 上，让它真的拦得住",
             ).forEach { s ->
                 Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
