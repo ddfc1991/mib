@@ -43,7 +43,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.mibot.R
+import com.openminis.app.R
 import com.mibot.i18n.tr
 import com.mibot.ui.theme.MikaColors
 import com.mibot.ui.theme.MikaIcons

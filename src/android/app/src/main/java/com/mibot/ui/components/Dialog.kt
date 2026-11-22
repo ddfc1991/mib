@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
-import com.mibot.R
+import com.openminis.app.R
 import com.mibot.ui.MarkdownText
 import com.mibot.ui.theme.MikaTheme
 import com.mibot.ui.theme.MikaType

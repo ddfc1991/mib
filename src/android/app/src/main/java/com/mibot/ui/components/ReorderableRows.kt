@@ -26,7 +26,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.mibot.R
+import com.openminis.app.R
 import com.mibot.ui.theme.MikaIcons
 import com.mibot.ui.theme.MikaSize
 import com.mibot.ui.theme.MikaTheme

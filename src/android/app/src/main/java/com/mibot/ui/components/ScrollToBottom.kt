@@ -24,7 +24,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.mibot.R
+import com.openminis.app.R
 import com.mibot.ui.theme.MikaIcons
 import com.mibot.ui.theme.MikaMotion
 import com.mibot.ui.theme.MikaSize

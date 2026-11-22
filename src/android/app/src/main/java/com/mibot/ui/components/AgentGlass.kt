@@ -230,7 +230,7 @@ fun CatGirlAvatar(
                     )
                 } else {
                     Image(
-                        painter = painterResource(com.mibot.R.drawable.miga_catgirl_avatar),
+                        painter = painterResource(com.openminis.app.R.drawable.miga_catgirl_avatar),
                         contentDescription = null,
                         modifier = imgModifier,
                         contentScale = ContentScale.Crop,

@@ -1,6 +1,6 @@
 package com.mibot.ui.components
 
-import com.mibot.R
+import com.openminis.app.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
