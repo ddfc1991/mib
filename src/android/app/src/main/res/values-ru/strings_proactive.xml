@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">Почему: %1$s</string>
+    <string name="notice_talk_title">Напоминания об уведомлениях · %1$s</string>
+    <string name="notice_talk_intro">Я выбрал уведомления, на которые стоит взглянуть (%1$d):</string>
+    <string name="notice_talk_more">Ещё %1$d не показаны — откройте напоминание ещё раз, чтобы увидеть их.</string>
+    <string name="notice_talk_outro">Скажите, каким из них мне заняться. Просто ответьте здесь.</string>
+</resources>

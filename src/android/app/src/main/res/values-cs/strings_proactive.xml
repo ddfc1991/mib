@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">Why: %1$s</string>
+    <string name="notice_talk_title">Notifications · %1$s</string>
+    <string name="notice_talk_intro">I picked out %1$d notifications you may want to look at:</string>
+    <string name="notice_talk_more">%1$d more are not listed; open the reminder again to see them.</string>
+    <string name="notice_talk_outro">Tell me which one you want me to handle. Just reply here.</string>
+</resources>

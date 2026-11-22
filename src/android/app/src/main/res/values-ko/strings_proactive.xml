@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">이유: %1$s</string>
+    <string name="notice_talk_title">알림 리마인드 · %1$s</string>
+    <string name="notice_talk_intro">알림 중에서 확인해 보면 좋을 %1$d개를 골랐습니다:</string>
+    <string name="notice_talk_more">%1$d개가 더 있습니다. 다시 열면 이어서 보여 줍니다.</string>
+    <string name="notice_talk_outro">어느 것을 처리할지 여기에 답장해 주세요.</string>
+</resources>

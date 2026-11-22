@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">Alasan: %1$s</string>
+    <string name="notice_talk_title">Pengingat notifikasi · %1$s</string>
+    <string name="notice_talk_intro">Saya memilih %1$d notifikasi yang mungkin perlu Anda lihat:</string>
+    <string name="notice_talk_more">Ada %1$d lagi yang tidak ditampilkan; buka pengingat lagi untuk melihatnya.</string>
+    <string name="notice_talk_outro">Beri tahu saya mana yang perlu saya tangani. Balas saja di sini.</string>
+</resources>

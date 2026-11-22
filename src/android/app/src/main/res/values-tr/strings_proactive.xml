@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">Neden: %1$s</string>
+    <string name="notice_talk_title">Bildirimler · %1$s</string>
+    <string name="notice_talk_intro">Bakmak isteyebileceğiniz %1$d bildirimi seçtim:</string>
+    <string name="notice_talk_more">%1$d daha listelenmedi; görmek için hatırlatıcıyı tekrar açın.</string>
+    <string name="notice_talk_outro">Hangisini halletmemi istediğinizi söyleyin. Buradan yanıtlayın yeter.</string>
+</resources>

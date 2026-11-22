@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">Motivo: %1$s</string>
+    <string name="notice_talk_title">Lembretes de notificações · %1$s</string>
+    <string name="notice_talk_intro">Separei %1$d notificações que talvez você queira ver:</string>
+    <string name="notice_talk_more">Há mais %1$d que não foram listadas; abra o aviso de novo para vê-las.</string>
+    <string name="notice_talk_outro">Diga qual delas você quer que eu resolva. É só responder aqui.</string>
+</resources>

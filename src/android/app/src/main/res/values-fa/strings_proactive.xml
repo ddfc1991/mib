@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">دلیل: %1$s</string>
+    <string name="notice_talk_title">یادآوری اعلان‌ها · %1$s</string>
+    <string name="notice_talk_intro">%1$d اعلان را که شاید بخواهید ببینید جدا کرده‌ام:</string>
+    <string name="notice_talk_more">%1$d مورد دیگر نشان داده نشده است؛ برای دیدنشان یادآور را دوباره باز کنید.</string>
+    <string name="notice_talk_outro">بگویید به کدام رسیدگی کنم. همین‌جا پاسخ دهید.</string>
+</resources>

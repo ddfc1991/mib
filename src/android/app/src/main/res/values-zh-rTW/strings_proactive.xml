@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">理由：%1$s</string>
+    <string name="notice_talk_title">通知提醒 · %1$s</string>
+    <string name="notice_talk_intro">我從通知裡挑出 %1$d 則，可能需要你看一下：</string>
+    <string name="notice_talk_more">另有 %1$d 則沒有列出，再點一次提醒接著看。</string>
+    <string name="notice_talk_outro">想讓我處理哪一則，直接回覆就行。</string>
+</resources>

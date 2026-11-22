@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notice_hint_reason">理由:%1$s</string>
+    <string name="notice_talk_title">通知リマインド · %1$s</string>
+    <string name="notice_talk_intro">通知の中から、確認したほうがよさそうなものを %1$d 件選びました：</string>
+    <string name="notice_talk_more">ほかに %1$d 件あります。もう一度開くと続きを表示します。</string>
+    <string name="notice_talk_outro">どれを対応すればよいか、ここに返信してください。</string>
+</resources>
