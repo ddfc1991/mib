@@ -941,11 +941,11 @@ fun AppNavigation(
                         "bots" -> navController.safeNavigate(com.openminis.app.ui.glass.GlassRoutes.BOTS)
                         "plugins" -> navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
                         "groupchats" -> navController.safeNavigate(com.openminis.app.mibot.groups.GroupRoutes.LIST)
-                        "memory" -> navController.safeNavigate(com.openminis.app.mibot.memory.MemoryRoutes.LIST)
-                        "usage" -> navController.safeNavigate(com.openminis.app.mibot.usage.UsageRoutes.PAGE)
-                        "files" -> navController.safeNavigate(com.openminis.app.mibot.files.FilesRoutes.PAGE)
-                        "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.PAGE)
-                        "calls" -> navController.safeNavigate(com.openminis.app.mibot.phone.CallRoutes.PAGE)
+                        "memory" -> navController.safeNavigate(Routes.MEMORY)
+                        "usage" -> navController.safeNavigate(Routes.USAGE_STATS)
+                        "files" -> navController.safeNavigate(Routes.SETTINGS)
+                        "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
+                        "calls" -> navController.safeNavigate(Routes.MIBOT_WECHAT)
                         else -> {}
                     }
                 },
