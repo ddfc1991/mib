@@ -4827,6 +4827,7 @@
     <string name="wechat_notif_body">Private messages can start Mika tasks</string>
     <string name="wechat_turn_off">Turn off</string>
     <string name="wechat_title">WeChat</string>
+    <string name="wechat_image_receive_failed">Miga could not receive the images, so this message was not passed to a task. Check the connection and resend up to 8 images, at most 10 MiB each.</string>
     <string name="wechat_settings_sub">Assign Mika tasks in WeChat</string>
     <string name="wechat_status_disconnected">Not connected</string>
     <string name="wechat_status_connecting">Connecting</string>

@@ -5,6 +5,8 @@ import com.mibot.cap.phone.PhoneServices
 import com.mibot.capsule.AppForeground
 import com.mibot.core.model.ChatModel
 import com.mibot.core.model.ModelRole
+import com.mibot.core.run.Delivery
+import com.mibot.core.run.Outbox
 import com.mibot.settings.AppAccessStore
 import com.mibot.teach.TeachRuntime
 
@@ -35,8 +37,37 @@ open class MikaApp : Application(), PhoneServices.Owner {
     /** 模型提供者(5 模块用):modelFor(Main) 暂给 null,AI 总结等降级;后续接 mib-src LLMProvider。 */
     val providers: ModelProviders = ModelProviders()
 
+    /** 任务状态(wechat 模块用):占位,run() 恒 null;wechat 的询问/回答暂降级,后续接 Mibot 任务体系。 */
+    val taskState: TaskStateRef = TaskStateRef()
+
+    /** 投递通道(wechat 模块用):占位 Outbox;后续接 mib-src 的消息投递。 */
+    val outbox: Outbox = Outbox()
+
+    /** 微信(wechat 模块):扫码绑定 + 私聊消息监听,消息转任务降级(见 [TaskService.startChannel] 桩)。 */
+    val wechat: com.mibot.wechat.WechatRuntime by lazy {
+        com.mibot.wechat.WechatRuntime(
+            this,
+            com.mibot.wechat.WechatStore(
+                java.io.File(filesDir, "wechat"),
+                com.mibot.settings.KeystoreKeyCipher("mika-wechat-account"),
+            ),
+        )
+    }
+
     /** 5 模块需要的模型提供者接口;当前占位,返回 null。 */
     class ModelProviders {
         fun modelFor(role: ModelRole): ChatModel? = null
+    }
+
+    /** wechat 需要的任务状态引用;占位,run() 恒 null(wechat 不接 AgentLoop 任务/询问)。 */
+    class TaskStateRef {
+        fun run(threadId: String): TaskRunRef? = null
+    }
+
+    /** 单个运行的任务引用;占位,无 activeAsk/回答能力。 */
+    class TaskRunRef {
+        val activeAsk: Delivery.Ask? = null
+        suspend fun answerFromChannel(text: String, askId: String): Boolean = false
+        fun cancelAsk(askId: String) {}
     }
 }
