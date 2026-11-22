@@ -46,6 +46,8 @@ internal class ToolConfig(
     val runRecords: com.mibot.core.record.RunRecords? = null,
     /** 用户配置并启用的网页搜索;为空时不提供 web_search。 */
     val webSearch: com.mibot.core.search.WebSearch? = null,
+    /** 这两天的通知原文和存着的各天、各周、各月的归纳(主动能力攒下的);给了才提供 notices_read。 */
+    val notices: com.mibot.core.proactive.NoticeSource? = null,
 )
 
 /**
