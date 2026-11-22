@@ -65,7 +65,7 @@ import com.mibot.cap.web.cdp.WebDevtools
 import kotlinx.coroutines.launch
 import java.io.File
 
-class MinisApp : Application(), ImageLoaderFactory, WebOwner {
+class MinisApp : com.mibot.MikaApp(), ImageLoaderFactory, WebOwner {
     /**
      * T-android-safemode-lateinit-crash: true once the heavy subsystem
      * block in [onCreate] has fully run (DB + every repository assigned).

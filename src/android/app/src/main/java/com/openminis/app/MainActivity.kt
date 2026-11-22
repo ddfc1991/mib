@@ -57,6 +57,13 @@ private const val KEY_CURRENT_CHAT_SESSION_ID = "minis.current_chat_session_id"
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        /** 通知点开 calls 屏用的 extra:true=直接打开通话页。 */
+        const val EXTRA_OPEN_CALLS = "openbots.open_calls"
+        /** 通知点开单条通话记录用的 extra:通话记录 id。 */
+        const val EXTRA_CALL_HISTORY_ID = "openbots.call_history_id"
+    }
+
     private var navController: NavHostController? = null
 
     /**
