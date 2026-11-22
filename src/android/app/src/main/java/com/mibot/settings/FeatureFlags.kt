@@ -195,7 +195,28 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val CAPSULE_SIDE = "capsule_side"
         private const val CAPSULE_HEIGHT = "capsule_height"
         private const val CAPSULE_CARD_HEIGHT = "capsule_card_height"
+        private const val PROACTIVE = "proactive"
+        private const val PROACTIVE_DAILY_TOKEN_BUDGET = "proactive_daily_token_budget"
 
         fun get(context: Context) = FeatureFlags(context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE))
+    }
+
+    /** 主动能力(见 [com.mibot.proactive.ProactiveRuntime]):读所选 App 的通知;默认关。 */
+    fun proactive(): Boolean = prefs.getBoolean(PROACTIVE, false)
+    fun setProactive(on: Boolean) {
+        prefs.edit().putBoolean(PROACTIVE, on).commit()
+    }
+    fun proactiveChanges(): Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == null || key == PROACTIVE) trySend(proactive())
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        send(proactive())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
+    fun proactiveDailyTokenBudget(): Long =
+        com.mibot.core.usage.ProactiveBudget.limitOf(prefs.getLong(PROACTIVE_DAILY_TOKEN_BUDGET, 0L))
+    fun setProactiveDailyTokenBudget(limit: Long?) {
+        prefs.edit().putLong(PROACTIVE_DAILY_TOKEN_BUDGET, limit ?: 0L).commit()
     }
 }
