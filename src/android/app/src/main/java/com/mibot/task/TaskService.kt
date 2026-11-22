@@ -53,4 +53,8 @@ object TaskService {
         context, 0, Intent(context, MainActivity::class.java),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
+
+    /** 打开 app 的 Intent(proactive 通知用):NEW_TASK + CLEAR_TOP + SINGLE_TOP。 */
+    fun openAppIntent(context: Context, threadId: String? = null): Intent = Intent(context, MainActivity::class.java)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 }
