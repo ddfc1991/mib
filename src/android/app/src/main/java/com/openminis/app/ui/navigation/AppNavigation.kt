@@ -93,6 +93,8 @@ object Routes {
     const val SESSION_LIST = "sessions"
     const val CHAT = "chat/{sessionId}"
     const val SETTINGS = "settings"
+    /** Hermes HQ 5-tab 主框架(openbots 融合版)。 */
+    const val HQ_HOME = "hq_home"
     const val PROVIDER_LIST = "providers"
     const val ADD_PROVIDER = "add_provider"
     const val PROVIDER_DETAIL = "provider/{instanceId}"
@@ -912,6 +914,42 @@ fun AppNavigation(
         }
         // [destiny/v7-full] The 56-screen design spec, rendered as the app's
         // REAL interface: structured V7 elements, dark palette, four tabs.
+        // [fork/openbots] Hermes HQ 5-tab 主框架:chat 本体 + Sessions/Jobs/Kanban/More。
+        composable(Routes.HQ_HOME) {
+            val chatSession = remember { java.util.UUID.randomUUID().toString() }
+            com.mibot.ui.hq.HqShell(
+                botsContent = {
+                    ChatSplitScaffoldRoute(
+                        initialSessionId = null,
+                        navController = navController,
+                        chatRepository = chatRepository,
+                        providerRepository = providerRepository,
+                        memoryRepository = memoryRepository,
+                        skillRepository = skillRepository,
+                        mcpRepository = mcpRepository,
+                    )
+                },
+                onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
+                onDeleteSession = { },
+                onOpenUrl = { url -> android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).also { navController.context.startActivity(it) } },
+                onMoreEntry = { entry ->
+                    when (entry.id) {
+                        "settings" -> navController.safeNavigate(Routes.SETTINGS)
+                        "models" -> navController.safeNavigate(Routes.PROVIDER_LIST)
+                        "groups" -> navController.safeNavigate(Routes.MODEL_GROUPS)
+                        "bots" -> navController.safeNavigate(com.openminis.app.ui.glass.GlassRoutes.BOTS)
+                        "plugins" -> navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
+                        "groupchats" -> navController.safeNavigate(com.openminis.app.mibot.groups.GroupRoutes.LIST)
+                        "memory" -> navController.safeNavigate(com.openminis.app.mibot.memory.MemoryRoutes.LIST)
+                        "usage" -> navController.safeNavigate(com.openminis.app.mibot.usage.UsageRoutes.PAGE)
+                        "files" -> navController.safeNavigate(com.openminis.app.mibot.files.FilesRoutes.PAGE)
+                        "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.PAGE)
+                        "calls" -> navController.safeNavigate(com.openminis.app.mibot.phone.CallRoutes.PAGE)
+                        else -> {}
+                    }
+                },
+            )
+        }
         composable("destiny_v7_home") {
             com.openminis.app.mibot.v7.DestinyV7Home(v7Actions, chatRepository = chatRepository)
         }
