@@ -1,8 +1,5 @@
 package com.mibot.ui.hq
 
-/** 任务占位(UI 用):goal 显示;数据由 MainActivity 映射。 */
-data class HqJob(val id: String = "", val goal: String)
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +22,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+
+/** 任务占位(UI 用):goal 显示;数据由 MainActivity 映射。 */
+data class HqJob(val id: String = "", val goal: String)
 import androidx.compose.animation.core.tween
 import com.mibot.chat.ConversationSummary
 import com.mibot.core.record.RunSummary
