@@ -86,6 +86,11 @@ object Zones {
             label = "能力",
             subtitle = "它能动手 · 替你做事",
             groups = listOf(
+                ZoneGroup("主动", listOf(
+                    ZoneEntry("主动能力", "激进程度 · 敏感推断 · 消息归纳", "zone_mika_active", "Mika", 0),
+                    ZoneEntry("微信入口", "扫码绑定 · 微信里派活", "zone_mika_wechat", "Mika", 1),
+                    ZoneEntry("AI 接打电话", "自动接听 · 帮打 · 任务单", "zone_mika_call", "Mika", 2),
+                )),
                 ZoneGroup("设备", listOf(
                     ZoneEntry("后台操控", "虚拟屏 · 无障碍 · 屏幕 · 点击", "zone_phone", "Mika", 0),
                     ZoneEntry("沙箱", "Linux 发行版 · 容器 · 终端", "zone_sandbox", "Mika", 1),
@@ -169,6 +174,9 @@ fun ZoneEntry.navigate(actions: V7Actions) {
         "zone_queue" -> actions.onNavigate("destiny_queue")
         "zone_app_access" -> actions.onAppAccess()
         "zone_gateway" -> actions.onNavigate("mibot_gateway")
+        "zone_mika_active" -> actions.onNavigate("mika_active")
+        "zone_mika_wechat" -> actions.onNavigate("mika_wechat")
+        "zone_mika_call" -> actions.onNavigate("mika_call")
         else -> actions.onNavigate(route)
     }
 }
