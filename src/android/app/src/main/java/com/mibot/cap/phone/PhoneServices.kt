@@ -40,6 +40,9 @@ class PhoneServices(context: Context) {
     /** 一次配对的全过程。 */
     val pairing: PairingCoordinator by lazy { PairingCoordinator(app, shellControl) }
 
+    /** 短信登录(sms 模块用):运行时状态与 consent。 */
+    val smsLogin: com.mibot.cap.phone.sms.SmsLoginRuntime by lazy { com.mibot.cap.phone.sms.SmsLoginRuntime(app) }
+
     /** 任务要用手机、助手却没在运行时的提示。 */
     val setupPrompt = PhoneSetupPrompt(app)
 

@@ -223,6 +223,16 @@ class AndroidScreen(
     }
 
     /**
+     * 短信登录专用读屏:与 [capture] 相同,但要求带完整资源 ID(按钮也带,不只输入框)。
+     * 当前降级:复用 [capture],resourceId 完整性后续接 ScreenReader.fullResourceIds。
+     */
+    internal suspend fun smsSnapshot(register: Boolean): ScreenSnapshot = capture(register)
+
+    /** 输入目标可见性(sms 登录用):可写且屏幕上有定位。 */
+    internal fun visibleInputTarget(node: AccessibilityNodeInfo): Boolean =
+        node.isEnabled && ScreenReader.locatorOf(node, screenWidth, screenHeight) != null
+
+    /**
      * Mika 屏上最上面的那个 App(包名、任务、所属用户),每换一个给一次:订阅时先给一次,之后窗口一变(开了新页面、
      * 从别的 App 里点开了另一个 App、另一份顶上来)就重读。屏还没建、没有任务时不给。在调用方的线程上问内置助手。
      */
