@@ -15,6 +15,7 @@
     <string name="type_message">Type a message…</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
+    <string name="details">Details</string>
     <string name="sms_login_listening">Automatically requesting, filling and verifying the configured account. Cancel stops this attempt.</string>
     <string name="save">Save</string>
     <string name="api_key">API Key</string>
@@ -4827,6 +4828,10 @@
     <string name="wechat_notif_title">WeChat connected</string>
     <string name="wechat_notif_body">Private messages can start Mika tasks</string>
     <string name="wechat_turn_off">Turn off</string>
+    <string name="wechat_allow_unlock">Allow WeChat tasks to wake and unlock</string>
+    <string name="wechat_allow_unlock_sub">Only tasks from your own linked WeChat private chat can try to wake and unlock this phone.</string>
+    <string name="wechat_allow_unlock_foot">Off by default; rebinding turns it off. First enable “%3$s” in “%1$s › %2$s” and save your lock-screen PIN or password there, if you use one. This switch does not change that permission or use credentials sent through WeChat.</string>
+
     <string name="wechat_title">WeChat</string>
     <string name="wechat_image_receive_failed">Miga could not receive the images, so this message was not passed to a task. Check the connection and resend up to 8 images, at most 10 MiB each.</string>
     <string name="wechat_settings_sub">Assign Mika tasks in WeChat</string>

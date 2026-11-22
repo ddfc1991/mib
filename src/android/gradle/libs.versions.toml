@@ -12,6 +12,7 @@ serializationJson = "1.7.3"
 coroutines = "1.9.0"
 commonsCompress = "1.28.0"
 conscrypt = "2.7.0"
+zxing = "3.5.3"
 
 [libraries]
 protobuf-lite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf" }
@@ -24,6 +25,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 conscrypt-openjdk-uber = { module = "org.conscrypt:conscrypt-openjdk-uber", version.ref = "conscrypt" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]

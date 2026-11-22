@@ -168,8 +168,6 @@ fun ListRow(
     }
 }
 
-enum class ValueTone { Plain, Ok, Warn, Bad, Link }
-
 /** 行尾的值。 */
 @Composable
 fun RowValue(text: String, tone: ValueTone = ValueTone.Plain) {

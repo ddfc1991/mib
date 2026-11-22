@@ -169,6 +169,22 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         prefs.edit().putFloat(CAPSULE_CARD_HEIGHT, fraction.coerceIn(0f, 1f)).apply()
     }
 
+    fun themeAccent(): ThemeAccent = ThemeAccent.parse(prefs.getString(THEME_ACCENT, null))
+
+    /** 强调色的当前值,之后每次改动再发一次。 */
+    fun themeAccentChanges(): Flow<ThemeAccent> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == null || key == THEME_ACCENT) trySend(themeAccent())
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        send(themeAccent())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
+
+    fun setThemeAccent(accent: ThemeAccent) {
+        prefs.edit().putString(THEME_ACCENT, accent.name).commit()
+    }
+
     /** 背景图/皮肤规格(见 [SkinSpec]);mib-src 融合版,皮肤图暂由 Miga SkinImage 提供。 */
     fun skin(): SkinSpec = SkinSpec(
         version = prefs.getLong(SKIN_VERSION, 0L),
@@ -217,6 +233,7 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val KEEP_SCREEN_ON = "keep_screen_on"
         private const val MUTE_TARGET = "mute_target"
         private const val OPERATING_PACE = "operating_pace"
+        private const val THEME_ACCENT = "theme_accent"
         private const val SKIN_VERSION = "skin_version"
         private const val SKIN_SCRIM = "skin_scrim"
         private const val SKIN_BLUR = "skin_blur"
