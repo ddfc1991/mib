@@ -27,6 +27,8 @@ internal data class RawResponse(val status: Int, val retryAfter: String?, val bo
 
 /** 各适配器共用的 HTTP 执行(enqueue + 协程取消)与 Retry-After 解析。 */
 internal object HttpSupport {
+    private val RETRY_AFTER_BODY = Regex("""(?:try again in|retry after|wait|retry in)\s+(\d+(?:\.\d+)?)\s*(?:s|sec|second)""", RegexOption.IGNORE_CASE)
+
     suspend fun execute(http: OkHttpClient, req: Request): RawResponse =
         observe(req) { attempt -> executeRaw(http, req, attempt) }.also(::requireProxyAccepted)
 
@@ -152,5 +154,11 @@ internal object HttpSupport {
         }
     }
 
-    fun retryAfterMs(header: String?): Long? = header?.trim()?.toDoubleOrNull()?.let { (it * 1000).toLong() }
+    fun retryAfterMs(header: String?, body: String? = null): Long? {
+        header?.trim()?.toDoubleOrNull()?.let { return (it * 1000).toLong() }
+        if (body != null) {
+            RETRY_AFTER_BODY.find(body)?.groupValues?.get(1)?.toDoubleOrNull()?.let { return (it * 1000).toLong() }
+        }
+        return null
+    }
 }
