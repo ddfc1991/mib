@@ -3,8 +3,8 @@
 # `:app` Android module resolves its dependencies by explicit coordinates, so
 # this catalog does not carry the app/Compose coordinates. kotlin is pinned to
 # 2.1.0 to match the plugin versions in the root build.gradle.kts.
-commonmark = "0.30.1"
 [versions]
+commonmark = "0.30.1"
 kotlin = "2.1.0"
 protobuf = "4.36.2"
 junit = "4.13.2"
