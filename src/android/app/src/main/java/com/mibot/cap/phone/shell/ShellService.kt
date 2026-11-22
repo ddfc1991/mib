@@ -18,6 +18,7 @@ import android.net.Uri
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.os.Binder
+import android.os.IBinder
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -68,6 +69,10 @@ class ShellService(
     private val requestedOrientations = ConcurrentHashMap<Int, Int>()
     /** 被静音的包 → 静音前的 PLAY_AUDIO 模式("default" 表示原先未设置),落在 [stateDir] 里,进程被杀后下次启动接着恢复。 */
     private val muted = AudioMuteLedger(File(stateDir, "mika_audio_mute_$allowedUid"))
+    /** 通话音频(calls 模块用):probe/open/stop/flush 走这里。 */
+    private val callAudio = ShellCallAudio(context)
+    /** 已返回给调用方的通话音频管道(openCallAudio 后清,onTransact 前用)。 */
+    private val returnedCallPipes = ThreadLocal<List<ParcelFileDescriptor>>()
     /** Mika 所在的用户:本来那份 App 装在这里;别的用户里的是另一份(分身、工作资料)。 */
     private val myUser = allowedUid / PER_USER_RANGE
 
@@ -1530,6 +1535,29 @@ class ShellService(
         }
         watch?.close()
         all.forEach { it.release() }
+    }
+
+    override fun probeCallAudio(mode: Int): Bundle = asCallAudioShell { callAudio.probe(mode) }
+
+    override fun openCallAudio(mode: Int, owner: IBinder): Bundle = asCallAudioShell {
+        callAudio.open(mode, owner).also { result ->
+            if (result.getBoolean("ready")) {
+                val down = result.getParcelable<ParcelFileDescriptor>("downlink")
+                val up = result.getParcelable<ParcelFileDescriptor>("uplink")
+                returnedCallPipes.set(listOfNotNull(down, up))
+            }
+        }
+    }
+
+    override fun stopCallAudio(owner: IBinder) = asCallAudioShell { callAudio.stop(owner) }
+
+    override fun flushCallAudio(owner: IBinder): Boolean = asCallAudioShell { callAudio.flush(owner) }
+
+    override fun callAudioStats(owner: IBinder): Bundle = asCallAudioShell { callAudio.stats(owner) }
+
+    private inline fun <T> asCallAudioShell(block: () -> T): T {
+        val identity = Binder.clearCallingIdentity()
+        return try { block() } finally { Binder.restoreCallingIdentity(identity) }
     }
 
     override fun destroy() {
