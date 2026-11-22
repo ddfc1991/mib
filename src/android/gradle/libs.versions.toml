@@ -15,10 +15,10 @@ commonsCompress = "1.28.0"
 conscrypt = "2.7.0"
 zxing = "3.5.3"
 
+[libraries]
 commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
 commonmark-ext-gfm-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
 commonmark-ext-gfm-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
-[libraries]
 protobuf-lite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf" }
 otel-proto = { module = "io.opentelemetry.proto:opentelemetry-proto", version = "1.11.1-alpha" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
