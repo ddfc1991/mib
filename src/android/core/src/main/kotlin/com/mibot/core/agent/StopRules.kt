@@ -82,6 +82,7 @@ internal fun userReason(e: ModelError): String = when (e) {
     is ModelError.ReasoningEffortRejected ->
         "模型不接受所选的思考强度。服务端回复：${quoted(e.detail)}。请到设置 › 模型,把思考强度改为默认或服务端支持的档位。"
     is ModelError.RateLimited -> "模型服务限流,重试后仍然请求太频繁。请稍后再试,或检查账户的调用频率限制。"
+    is ModelError.ProactiveBudgetExceeded -> "主动能力今日的预算已用完,明天再来。"
     is ModelError.Network -> "连接模型服务失败,重试后仍然不通。请检查网络和 Base URL。"
     is ModelError.Proxy -> when (e.failure) {
         ProxyFailure.Unreachable ->
