@@ -972,6 +972,7 @@ fun AppNavigation(
                         "files" -> navController.safeNavigate(Routes.SETTINGS)
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
+                        "preview" -> navController.safeNavigate(Routes.HQ_PREVIEW)
                         else -> {}
                     }
                 },
