@@ -26,8 +26,11 @@ open class MikaApp : Application(), PhoneServices.Owner {
     /** 手机能力(calls 模块用):hub/shell/pairing 等共享服务。 */
     override val phone: PhoneServices by lazy { PhoneServices(this) }
 
+    /** 通话功能(calls 模块用):CallRuntime 是本地状态与实时语音的宿主。 */
+    val calls: com.mibot.calls.CallRuntime by lazy { com.mibot.calls.CallRuntime(this) }
+
     /** 前台可见状态(calls/proactive 用):true=app 在前台。 */
-    val foreground: AppForeground by lazy { AppForeground(this) }
+    val foreground: AppForeground = AppForeground()
 
     /** 模型提供者(5 模块用):modelFor(Main) 暂给 null,AI 总结等降级;后续接 mib-src LLMProvider。 */
     val providers: ModelProviders = ModelProviders()

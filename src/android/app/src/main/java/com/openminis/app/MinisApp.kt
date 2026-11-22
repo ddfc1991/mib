@@ -281,6 +281,8 @@ class MinisApp : com.mibot.MikaApp(), ImageLoaderFactory, WebOwner {
     @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
     override fun onCreate() {
         super.onCreate()
+        // OpenBots:注册前台可见状态(5 模块用;AppForeground 数 onStart/onStop 的 Activity)。
+        registerActivityLifecycleCallbacks(foreground)
         // [T-oauth-wait-fgs] Before anything can start an OAuth callback server:
         // gives it a context to keep the process out of the freezer with.
         com.openminis.app.service.OAuthWaitKeepAlive.install(this)
