@@ -582,7 +582,8 @@ fun AppNavigation(
         initialDeepLink is DeepLinkAction.OpenSettingsScreen -> initialDeepLink.route
         // [destiny/v7-full] The 56-screen design spec IS the app UI now.
         // The original native chat scaffold stays reachable as 「原功能」.
-        else -> "destiny_v7_home"
+        // [fork/openbots] Hermes HQ 为主默认;V7 设计规格经 More/入口可达。
+        else -> Routes.HQ_HOME
     }
     // [destiny/v7-full] One action bundle shared by every V7 screen, so each
     // design screen can reach the real chat / voice / servers / MCP features.
