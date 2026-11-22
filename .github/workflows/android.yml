@@ -135,7 +135,23 @@ jobs:
           MIBOT_KEYSTORE_PASSWORD: ${{ secrets.MIBOT_KEYSTORE_PASSWORD }}
           MIBOT_KEY_ALIAS: ${{ secrets.MIBOT_KEY_ALIAS }}
           MIBOT_KEY_PASSWORD: ${{ secrets.MIBOT_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon :app:assembleDebug :mibot-life:assembleDebug -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8"
+        run: |
+          ./gradlew --no-daemon :app:assembleDebug :mibot-life:assembleDebug -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8" 2>&1 | tee /tmp/build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            echo "::group::build errors"
+            grep -E "^e: |error:|unresolved reference|cannot find symbol|FAILURE:" /tmp/build.log | head -80
+            echo "::endgroup::"
+            exit "$status"
+          fi
+
+      - name: Upload build log (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: /tmp/build.log
+          retention-days: 7
 
       - name: Collect APK
         run: |
