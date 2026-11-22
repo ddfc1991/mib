@@ -95,6 +95,8 @@ object Routes {
     const val SETTINGS = "settings"
     /** Hermes HQ 5-tab 主框架(openbots 融合版)。 */
     const val HQ_HOME = "hq_home"
+    /** Hermes HQ 截图 1:1 空白 UI 预览版(无记录)。 */
+    const val HQ_PREVIEW = "hq_preview"
     const val PROVIDER_LIST = "providers"
     const val ADD_PROVIDER = "add_provider"
     const val PROVIDER_DETAIL = "provider/{instanceId}"
@@ -936,6 +938,27 @@ fun AppNavigation(
                 onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
                 onDeleteSession = { },
                 onOpenUrl = { url -> android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).also { navController.context.startActivity(it) } },
+                onMoreEntry = { entry ->
+                    when (entry.id) {
+                        "settings" -> navController.safeNavigate(Routes.SETTINGS)
+                        "models" -> navController.safeNavigate(Routes.PROVIDER_LIST)
+                        "groups" -> navController.safeNavigate(Routes.MODEL_GROUPS)
+                        "bots" -> navController.safeNavigate(com.openminis.app.ui.glass.GlassRoutes.BOTS)
+                        "plugins" -> navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
+                        "groupchats" -> navController.safeNavigate(com.openminis.app.mibot.groups.GroupRoutes.LIST)
+                        "memory" -> navController.safeNavigate(Routes.MEMORY)
+                        "usage" -> navController.safeNavigate(Routes.USAGE_STATS)
+                        "files" -> navController.safeNavigate(Routes.SETTINGS)
+                        "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
+                        "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
+                        else -> {}
+                    }
+                },
+            )
+        }
+        composable(Routes.HQ_PREVIEW) {
+            com.mibot.ui.hq.HqUiPreviewScreen(
+                onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
                 onMoreEntry = { entry ->
                     when (entry.id) {
                         "settings" -> navController.safeNavigate(Routes.SETTINGS)
