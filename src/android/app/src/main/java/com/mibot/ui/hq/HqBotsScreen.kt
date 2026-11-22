@@ -64,7 +64,7 @@ fun HqTopPebbles(
 /** Bots 列表屏：大标题 + 图标胶囊 + 顶排大 blob + 分组列表。 */
 @Composable
 fun HqBotsScreen(
-    personas: List<com.wangzan101.miga.settings.Persona> = emptyList(),
+    personas: List<com.mibot.settings.Persona> = emptyList(),
     onOpenBot: (HqBot) -> Unit,
     modifier: Modifier = Modifier,
 ) {

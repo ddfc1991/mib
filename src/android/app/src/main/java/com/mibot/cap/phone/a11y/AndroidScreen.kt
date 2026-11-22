@@ -232,6 +232,15 @@ class AndroidScreen(
     internal fun visibleInputTarget(node: AccessibilityNodeInfo): Boolean =
         node.isEnabled && ScreenReader.locatorOf(node, screenWidth, screenHeight) != null
 
+    /** 短信登录,见 [SmsLogin]。 */
+    internal val smsLogin = SmsLogin(this)
+
+    suspend fun prepareSmsLogin(p: com.mibot.core.cap.phone.sms.SmsLoginProfile, authorize: (() -> Boolean) -> Boolean): Boolean = smsLogin.prepareSmsLogin(p, authorize)
+    suspend fun submitSmsLogin(p: com.mibot.core.cap.phone.sms.SmsLoginProfile, code: CharArray, authorize: (() -> Boolean) -> Boolean): Boolean = smsLogin.submitSmsLogin(p, code, authorize)
+    suspend fun smsLoginOutcome(p: com.mibot.core.cap.phone.sms.SmsLoginProfile, code: CharArray): com.mibot.core.cap.phone.sms.SmsLoginOutcome = smsLogin.smsLoginOutcome(p, code)
+    suspend fun fillSmsLoginCode(p: com.mibot.core.cap.phone.sms.SmsLoginProfile, code: CharArray, authorize: (() -> Boolean) -> Boolean): Boolean = smsLogin.fillSmsLoginCode(p, code, authorize)
+    suspend fun requestSmsLoginCode(p: com.mibot.core.cap.phone.sms.SmsLoginProfile, authorize: (() -> Boolean) -> Boolean): Boolean = smsLogin.requestSmsLoginCode(p, authorize)
+
     /**
      * Mika 屏上最上面的那个 App(包名、任务、所属用户),每换一个给一次:订阅时先给一次,之后窗口一变(开了新页面、
      * 从别的 App 里点开了另一个 App、另一份顶上来)就重读。屏还没建、没有任务时不给。在调用方的线程上问内置助手。
