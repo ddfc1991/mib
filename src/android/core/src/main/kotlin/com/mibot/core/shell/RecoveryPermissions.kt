@@ -37,11 +37,6 @@ enum class RecoveryCapability {
  * 每项能力的两件事分开记:[applied] 是 Mika 已经替用户在系统里打开、此刻有效的;
  * [declined] 是用户亲手关掉的,之后不再自动打开。两边都没有的就是「没动过」,按默认打开。
  */
-fun interface ShellCommandRunner {
-    /** 在设备的 shell 里跑一条命令(带超时);返回(退出码, 输出)。null 表示通道没就绪。 */
-    suspend fun run(command: String, timeoutMs: Long = 30000): Pair<Int, String>?
-}
-
 data class RecoveryConsent(
     val applied: Set<RecoveryCapability> = emptySet(),
     val declined: Set<RecoveryCapability> = emptySet(),

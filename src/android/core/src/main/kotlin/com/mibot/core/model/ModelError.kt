@@ -12,6 +12,8 @@ sealed class ModelError(message: String, cause: Throwable? = null) : Exception(m
      * 只会出现在主动能力的后台调用里,调用方应安静停下,不当作用户任务的失败去提示。
      */
     class ProactiveBudgetExceeded(val limit: Long, val used: Long, val byCalls: Boolean = false) : ModelError("主动能力今日的预算已用完")
+    /** 请求头里出现了不能用的字符;一般是因为把不该放的值写进去了。 */
+    class IllegalHeader(val header: String) : ModelError("请求头含有无法使用的字符")
     class ContextTooLong : ModelError("对话内容超出模型上下文长度")
     /**
      * 服务商那里没有这个模型(或地址不对,请求的接口不存在);[model] 是请求的模型名,不知道时为空。
