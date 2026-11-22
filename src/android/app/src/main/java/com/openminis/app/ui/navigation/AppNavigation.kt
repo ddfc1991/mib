@@ -229,6 +229,9 @@ object Routes {
     const val MIBOT_WALLET = "mibot_wallet"
     const val MIBOT_VOICE = "mibot_voice"
     const val MIBOT_TASK_QUEUE = "mibot_task_queue"
+    const val MIBOT_CALLS = "mibot_calls"
+    const val MIBOT_SMS_LOGIN = "mibot_sms_login"
+    const val MIBOT_PROACTIVE = "mibot_proactive"
 
     fun scheduledTaskRuns(taskId: String): String = "scheduled_tasks/runs/$taskId"
 
@@ -945,7 +948,7 @@ fun AppNavigation(
                         "usage" -> navController.safeNavigate(Routes.USAGE_STATS)
                         "files" -> navController.safeNavigate(Routes.SETTINGS)
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
-                        "calls" -> navController.safeNavigate(Routes.MIBOT_WECHAT)
+                        "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         else -> {}
                     }
                 },
@@ -2097,6 +2100,51 @@ fun AppNavigation(
         //   · 语音 → 真实 SpeechRecognizer 页面
         //   · 手机控制 → 真读系统无障碍状态 + 如实说明运行时未接入
         //   · 任务队列 → 派单作业表 + 落盘执行队列，两张真表并列
+
+        composable(Routes.MIBOT_CALLS) {
+            val mika = context.applicationContext as? com.mibot.MikaApp
+            val runtime = mika?.calls
+            if (runtime != null) {
+                com.mibot.ui.CallSettingsScreen(runtime, onBack = { navController.safePopBackStack() })
+            } else {
+                com.openminis.app.mibot.v7.DestinyV7NotWired(
+                    which = "calls",
+                    onBack = { navController.safePopBackStack() },
+                    onOpenPermissions = { navController.safeNavigate(Routes.PERMISSIONS) },
+                    onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
+                )
+            }
+        }
+
+        composable(Routes.MIBOT_SMS_LOGIN) {
+            val phone = com.mibot.cap.phone.PhoneServices.of(context)
+            if (phone != null) {
+                com.mibot.ui.SmsLoginSettingsScreen(onBack = { navController.safePopBackStack() })
+            } else {
+                com.openminis.app.mibot.v7.DestinyV7NotWired(
+                    which = "sms_login",
+                    onBack = { navController.safePopBackStack() },
+                    onOpenPermissions = { navController.safeNavigate(Routes.PERMISSIONS) },
+                    onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
+                )
+            }
+        }
+
+        composable(Routes.MIBOT_PROACTIVE) {
+            val mika = context.applicationContext as? com.mibot.MikaApp
+            val runtime = mika?.proactive
+            if (runtime != null) {
+                com.mibot.proactive.ProactiveScreen(onBack = { navController.safePopBackStack() })
+            } else {
+                com.openminis.app.mibot.v7.DestinyV7NotWired(
+                    which = "proactive",
+                    onBack = { navController.safePopBackStack() },
+                    onOpenPermissions = { navController.safeNavigate(Routes.PERMISSIONS) },
+                    onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
+                )
+            }
+        }
+
         composable(Routes.MIBOT_WECHAT) {
             val mika = context.applicationContext as? com.mibot.MikaApp
             val runtime = mika?.wechat
