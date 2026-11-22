@@ -2098,12 +2098,18 @@ fun AppNavigation(
         //   · 手机控制 → 真读系统无障碍状态 + 如实说明运行时未接入
         //   · 任务队列 → 派单作业表 + 落盘执行队列，两张真表并列
         composable(Routes.MIBOT_WECHAT) {
-            com.openminis.app.mibot.v7.DestinyV7NotWired(
-                which = "wechat",
-                onBack = { navController.safePopBackStack() },
-                onOpenPermissions = { navController.safeNavigate(Routes.PERMISSIONS) },
-                onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
-            )
+            val mika = context.applicationContext as? com.mibot.MikaApp
+            val runtime = mika?.wechat
+            if (runtime != null) {
+                com.mibot.ui.WechatSettingsScreen(runtime, onBack = { navController.safePopBackStack() })
+            } else {
+                com.openminis.app.mibot.v7.DestinyV7NotWired(
+                    which = "wechat",
+                    onBack = { navController.safePopBackStack() },
+                    onOpenPermissions = { navController.safeNavigate(Routes.PERMISSIONS) },
+                    onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
+                )
+            }
         }
         composable(Routes.MIBOT_APP_ACCESS) {
             com.openminis.app.mibot.v7.DestinyV7AppAccessScreen(
