@@ -15,6 +15,7 @@
     <string name="type_message">Type a message…</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
+    <string name="sms_login_listening">Automatically requesting, filling and verifying the configured account. Cancel stops this attempt.</string>
     <string name="save">Save</string>
     <string name="api_key">API Key</string>
     <string name="label">Label</string>

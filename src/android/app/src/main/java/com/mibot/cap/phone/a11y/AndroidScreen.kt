@@ -97,7 +97,7 @@ import kotlin.math.roundToInt
  */
 class AndroidScreen(
     private val a11y: ScreenAccessibility,
-    private val shell: IMikaShell,
+    internal val shell: IMikaShell,
     private val display: LazyAgentDisplay,
     /** 剪贴板暂时换成 Mika 的文字时为 true,还原后为 false;任务服务据此记下,进程意外结束后下次启动还原。 */
     private val clipHeld: (Boolean) -> Unit = {},
@@ -132,9 +132,9 @@ class AndroidScreen(
         { _, _, _, _ -> AppWait.Unsupported },
 ) : ScreenPort {
     /** 屏还没建时为 -1;只在确认屏已建好之后用。 */
-    private val displayId get() = display.current?.displayId ?: -1
+    internal val displayId get() = display.current?.displayId ?: -1
     /** 屏已经建好(不等于打开过 App)。 */
-    private val hasDisplay get() = display.current != null
+    internal val hasDisplay get() = display.current != null
     private val screenWidth get() = display.current?.width ?: display.width
     private val screenHeight get() = display.current?.height ?: display.height
     private val ids = NodeIds()
@@ -1463,7 +1463,7 @@ class AndroidScreen(
     @Volatile private var copiedPackages: Set<String> = emptySet()
 
     /** 任务所属的用户;任务不存在或问不到为 -1。 */
-    private fun userOf(task: Int): Int = if (task < 0) -1 else runCatching { shell.userOfTask(task) }.getOrDefault(-1)
+    internal fun userOf(task: Int): Int = if (task < 0) -1 else runCatching { shell.userOfTask(task) }.getOrDefault(-1)
 
     // ---------- 核实 ----------
 
@@ -1936,7 +1936,7 @@ class AndroidScreen(
      * 把编号解析成可操作的节点;经过重定位时第二个值是找回的元素现在的名字,否则为 null。
      * 最新快照里的节点还在且没变就直接用;快照过期或节点变了,按原元素特征在当前界面里找唯一对应者。
      */
-    private fun resolve(ref: String, snapshotId: String): Pair<AccessibilityNodeInfo, String?>? {
+    internal fun resolve(ref: String, snapshotId: String): Pair<AccessibilityNodeInfo, String?>? {
         val (entry, snapshot) = when (val l = ids.lookup(ref, snapshotId)) {
             is NodeIds.Lookup.Unknown -> return null
             is NodeIds.Lookup.Current -> {
@@ -1960,7 +1960,7 @@ class AndroidScreen(
         return now == entry.locator.copy(context = null)
     }
 
-    private sealed interface Field {
+    internal sealed interface Field {
         /** [tapped]:给的元素本身不是输入框,点了它之后才出现(或聚焦了)真正的输入框。 */
         class Found(val node: AccessibilityNodeInfo, val tapped: Boolean = false, val relocatedTo: String? = null) : Field
         class Missing(val reason: String) : Field
@@ -1971,7 +1971,7 @@ class AndroidScreen(
      * 可点、不是按钮、带提示语或名字像搜索)时先点它,点成功且出现了一个点之前没有的、拿着焦点的输入框,才用那个框。
      * 没给编号:当前拿着输入焦点的框。
      */
-    private suspend fun findField(ref: String?, snapshotId: String?, tapToFocus: Boolean = true): Field {
+    internal suspend fun findField(ref: String?, snapshotId: String?, tapToFocus: Boolean = true): Field {
         if (ref != null && snapshotId != null) {
             val (node, relocatedTo) = resolve(ref, snapshotId) ?: return Field.Missing("ref_expired")
             val editable = if (ScreenReader.canSetText(node)) node else descendant(node, ScreenReader::canSetText)
@@ -2089,7 +2089,7 @@ class AndroidScreen(
      * 网页里的编辑区(contenteditable)只认真实输入:SET_TEXT 只改了网页上的字,编辑器收不到 input 事件,
      * App 会当作没输入(「完成」不亮、退出不保存)。这类输入框改用选中原内容再粘贴或按删除键。
      */
-    private fun inWebView(node: AccessibilityNodeInfo) = ancestorOrSelf(node) { it.className == WEB_VIEW } != null
+    internal fun inWebView(node: AccessibilityNodeInfo) = ancestorOrSelf(node) { it.className == WEB_VIEW } != null
 
     /**
      * 选中原内容后粘贴(或按删除键清空)。返回 null 表示剪贴板不能安全使用,没有改动任何文字;
@@ -2144,7 +2144,7 @@ class AndroidScreen(
         }
     }
 
-    private fun setText(node: AccessibilityNodeInfo, text: String): Boolean {
+    internal fun setText(node: AccessibilityNodeInfo, text: String): Boolean {
         val args = Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text) }
         return node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
     }
