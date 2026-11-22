@@ -32,7 +32,7 @@ fun SmsLoginSettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val runtime = remember { PhoneServices.of(context).smsLogin }
     val access = remember { (context.applicationContext as com.mibot.MikaApp).appAccess }
-    DisposableEffect(access) { val protection = access.protectUi(); onDispose { protection.close() } }
+    DisposableEffect(access) { val protection = access?.protectUi(); onDispose { protection?.close() } }
     val consent by runtime.settings.state.collectAsState()
     var permitted by remember { mutableStateOf(runtime.permitted(context)) }
     var disclosure by remember { mutableStateOf(false) }

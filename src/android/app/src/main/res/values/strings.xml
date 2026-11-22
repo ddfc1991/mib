@@ -5088,4 +5088,8 @@
     <string name="proactive_learn_week_none">Not made yet. A week is summed up after it ends, or when you ask below.</string>
     <string name="proactive_learn_week_of">Weekly digest · %1$s</string>
     <string name="proactive_learn_week_this">This week\'s digest</string>
+    <string name="settings_token_budget_unlimited">不限制</string>
+    <string name="settings_token_budget_custom">自定义</string>
+    <string name="settings_token_budget_invalid">输入无效</string>
+    <string name="settings_token_budget_apply">应用</string>
 </resources>
