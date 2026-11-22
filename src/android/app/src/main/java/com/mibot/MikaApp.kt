@@ -54,6 +54,24 @@ open class MikaApp : Application(), PhoneServices.Owner {
         )
     }
 
+    /** 主动能力(proactive 模块):通知监听/归纳/提醒;判定模型与用量占位(null/0),功能降级。 */
+    val proactive: com.mibot.proactive.ProactiveRuntime by lazy {
+        com.mibot.proactive.ProactiveRuntime.create(
+            this,
+            { com.mibot.proactive.AppGate(true, emptySet()) },
+            kotlinx.coroutines.flow.flowOf(com.mibot.proactive.AppGate(true, emptySet())),
+            com.mibot.proactive.TriageHooks(
+                target = { null },
+                model = { _ -> null },
+                tokensToday = { 0L },
+                callsToday = { 0L },
+                usageVersion = { kotlinx.coroutines.flow.MutableStateFlow(0L) },
+                busy = kotlinx.coroutines.flow.MutableStateFlow(false),
+            ),
+            { phone.shellManager.commandRunner },
+        )
+    }
+
     /** 5 模块需要的模型提供者接口;当前占位,返回 null。 */
     class ModelProviders {
         fun modelFor(role: ModelRole): ChatModel? = null
