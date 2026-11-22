@@ -169,6 +169,36 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         prefs.edit().putFloat(CAPSULE_CARD_HEIGHT, fraction.coerceIn(0f, 1f)).apply()
     }
 
+    /** 背景图/皮肤规格(见 [SkinSpec]);mib-src 融合版,皮肤图暂由 Miga SkinImage 提供。 */
+    fun skin(): SkinSpec = SkinSpec(
+        version = prefs.getLong(SKIN_VERSION, 0L),
+        scrim = prefs.getInt(SKIN_SCRIM, SkinSpec.DEFAULT_SCRIM).coerceIn(SkinSpec.MIN_SCRIM, SkinSpec.MAX_SCRIM),
+        blur = SkinBlur.parse(prefs.getString(SKIN_BLUR, null)),
+        focus = prefs.getFloat(SKIN_FOCUS, 0f).coerceIn(-1f, 1f),
+        accentFromImage = prefs.getBoolean(SKIN_ACCENT_FOLLOW, true),
+        hue = if (prefs.contains(SKIN_HUE)) prefs.getFloat(SKIN_HUE, 0f) else null,
+    )
+
+    fun skinChanges(): Flow<SkinSpec> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == null || key in SKIN_KEYS) trySend(skin())
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        send(skin())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
+
+    fun setSkin(spec: SkinSpec) {
+        prefs.edit()
+            .putLong(SKIN_VERSION, spec.version)
+            .putInt(SKIN_SCRIM, spec.scrim.coerceIn(SkinSpec.MIN_SCRIM, SkinSpec.MAX_SCRIM))
+            .putString(SKIN_BLUR, spec.blur.name)
+            .putFloat(SKIN_FOCUS, spec.focus.coerceIn(-1f, 1f))
+            .putBoolean(SKIN_ACCENT_FOLLOW, spec.accentFromImage)
+            .also { e -> if (spec.hue == null) e.remove(SKIN_HUE) else e.putFloat(SKIN_HUE, spec.hue) }
+            .commit()
+    }
+
     companion object {
         const val PREFS = "feature_flags"
         /** 每个任务步数上限能设的最大值;0/null 表示不限制。 */
@@ -187,6 +217,13 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val KEEP_SCREEN_ON = "keep_screen_on"
         private const val MUTE_TARGET = "mute_target"
         private const val OPERATING_PACE = "operating_pace"
+        private const val SKIN_VERSION = "skin_version"
+        private const val SKIN_SCRIM = "skin_scrim"
+        private const val SKIN_BLUR = "skin_blur"
+        private const val SKIN_FOCUS = "skin_focus"
+        private const val SKIN_ACCENT_FOLLOW = "skin_accent_follow"
+        private const val SKIN_HUE = "skin_hue"
+        private val SKIN_KEYS = setOf(SKIN_VERSION, SKIN_SCRIM, SKIN_BLUR, SKIN_FOCUS, SKIN_ACCENT_FOLLOW, SKIN_HUE)
         private const val SELF_CONFIG = "self_config"
         private const val THEME_MODE = "theme_mode"
         private const val CAPSULE_MODE = "capsule_mode"
