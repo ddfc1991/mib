@@ -394,6 +394,9 @@ androidComponents {
 }
 
 dependencies {
+    implementation(libs.commonmark)
+    implementation(libs.commonmark.ext.gfm.tables)
+    implementation(libs.commonmark.ext.gfm.strikethrough)
     // Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2025.09.00")
     implementation(composeBom)

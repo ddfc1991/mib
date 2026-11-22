@@ -3,6 +3,7 @@
 # `:app` Android module resolves its dependencies by explicit coordinates, so
 # this catalog does not carry the app/Compose coordinates. kotlin is pinned to
 # 2.1.0 to match the plugin versions in the root build.gradle.kts.
+commonmark = "0.30.1"
 [versions]
 kotlin = "2.1.0"
 protobuf = "4.36.2"
@@ -14,6 +15,9 @@ commonsCompress = "1.28.0"
 conscrypt = "2.7.0"
 zxing = "3.5.3"
 
+commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
+commonmark-ext-gfm-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
+commonmark-ext-gfm-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
 [libraries]
 protobuf-lite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf" }
 otel-proto = { module = "io.opentelemetry.proto:opentelemetry-proto", version = "1.11.1-alpha" }
