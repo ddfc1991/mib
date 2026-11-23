@@ -90,7 +90,7 @@
     <string name="calls_outgoing_title">Arama yap</string>
     <string name="calls_rules">Yanıtlama kuralları</string>
     <string name="calls_setup_credentials">Gerçek zamanlı ses kimlik bilgilerini yapılandırın.</string>
-    <string name="calls_setup_shell">Önce yerleşik Miga asistanını bağlayın.</string>
+    <string name="calls_setup_shell">Önce yerleşik Omega asistanını bağlayın.</string>
     <string name="calls_sim_clear_preferred">Tercih edilen SIM\'i temizle</string>
     <string name="calls_sim_preferred">Tercih edilen SIM: %1$s</string>
     <string name="calls_sim_save_preferred">Bu SIM\'i varsayılan olarak kullan</string>

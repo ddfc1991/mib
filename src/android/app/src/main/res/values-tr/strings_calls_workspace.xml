@@ -12,7 +12,7 @@
     <string name="calls_sim_ask_each_time">Tercih edilen SIM yok</string>
     <string name="calls_task_back_to_edit">Düzenlemeye dön</string>
     <string name="calls_task_confirm_dial">Onayla ve ara</string>
-    <string name="calls_task_confirm_note">Miga bu arama için bu özeti kullanır. Arama, seçilen SIM\'i kullanır ve operatör ile gerçek zamanlı ses ücretleri doğurabilir.</string>
+    <string name="calls_task_confirm_note">Omega bu arama için bu özeti kullanır. Arama, seçilen SIM\'i kullanır ve operatör ile gerçek zamanlı ses ücretleri doğurabilir.</string>
     <string name="calls_task_constraints">Neyin vaat edilmemesi gerektiği</string>
     <string name="calls_task_context">Ek bağlam</string>
     <string name="calls_task_filled">Eklendi</string>

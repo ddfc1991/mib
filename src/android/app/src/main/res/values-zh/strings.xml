@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Destiny</string>
+    <string name="app_name">Omega</string>
     <!-- [destiny/v7] 远程接入 · 服务器，放在设置 › 网络里 Tailscale 下面。 -->
     <string name="destiny_servers_title">服务器</string>
     <string name="destiny_servers_subtitle">经 Tailscale 管理你的机器 · 只存清单，巡检交给 Agent</string>

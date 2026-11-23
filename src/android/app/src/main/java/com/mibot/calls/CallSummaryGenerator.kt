@@ -27,7 +27,7 @@ internal object CallSummaryGenerator {
             // Device submission status is metadata, never a statement by either party.
             if (line.role == "system") return@mapNotNull null
             val text = line.text.trim().takeIf(String::isNotBlank) ?: return@mapNotNull null
-            "${if (line.role == "assistant") "Miga" else otherParty}: $text"
+            "${if (line.role == "assistant") "Omega" else otherParty}: $text"
         }.joinToString("\n").takeLast(MAX_INPUT_CHARS)
         if (input.isBlank()) return null
         val message = Message(Role.User, listOf(Part.Text(input)), Author.User)

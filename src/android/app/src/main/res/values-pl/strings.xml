@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Destiny</string>
+    <string name="app_name">Omega</string>
     <string name="new_chat">Nowy czat</string>
     <string name="settings">Ustawienia</string>
     <string name="providers">Dostawcy</string>
@@ -1367,7 +1367,7 @@
     <string name="backup_reading">Odczytywanie…</string>
     <string name="backup_section_backup">Kopia zapasowa</string>
     <string name="backup_info_created">Utworzono</string>
-    <string name="backup_info_snapshot">Migawka</string>
+    <string name="backup_info_snapshot">Omegawka</string>
     <string name="backup_info_from">Z</string>
     <string name="backup_info_encrypted">Zaszyfrowane</string>
     <string name="backup_info_unknown">Nieznane</string>

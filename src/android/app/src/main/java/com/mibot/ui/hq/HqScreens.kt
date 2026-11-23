@@ -85,7 +85,7 @@ fun HqSessionsScreen(
                     Spacer(Modifier.width(6.dp))
                     Icon(MikaIcons.Down, null, tint = Hq.ink2, modifier = Modifier.size(14.dp))
                 }
-                Text("Miga", style = HqType.Caption, color = Hq.ink2)
+                Text("Omega", style = HqType.Caption, color = Hq.ink2)
             }
             Row(
                 modifier = Modifier
@@ -220,7 +220,7 @@ fun HqJobsScreen(
 
         if (visibleJobs.isEmpty() && visibleRuns.isEmpty()) {
             Text(
-                if (q.isNotEmpty()) "没有匹配的任务" else "还没有任务——去对话里跟 Miga 聊聊吧",
+                if (q.isNotEmpty()) "没有匹配的任务" else "还没有任务——去对话里跟  聊聊吧",
                 style = HqType.Caption, color = Hq.ink3,
                 modifier = Modifier.padding(horizontal = HqSpace.Page, vertical = 24.dp),
             )
@@ -276,7 +276,7 @@ fun HqJobsScreen(
     }
 }
 
-/** Kanban 屏：Miga 运行中任务卡片。 */
+/** Kanban 屏： 运行中任务卡片。 */
 @Composable
 fun HqKanbanScreen(tasks: List<HqJob> = emptyList(), onOpenTask: (HqJob) -> Unit = {}, modifier: Modifier = Modifier) {
     var showHelp by remember { mutableStateOf(false) }
@@ -285,7 +285,7 @@ fun HqKanbanScreen(tasks: List<HqJob> = emptyList(), onOpenTask: (HqJob) -> Unit
             onDismissRequest = { showHelp = false },
             confirmButton = { TextButton(onClick = { showHelp = false }) { Text("知道了", color = Hq.accent) } },
             title = { Text("看板", color = Hq.ink) },
-            text = { Text("这是 Miga 运行中任务卡片（Blocked/Triage/Todo 列）。「+」发新任务：去对话页跟 Miga 说目标即可。", color = Hq.ink2) },
+            text = { Text("这是 Omega 运行中任务卡片（Blocked/Triage/Todo 列）。「+」发新任务：去对话页跟 Omega 说目标即可。", color = Hq.ink2) },
         )
     }
     Column(
@@ -303,7 +303,7 @@ fun HqKanbanScreen(tasks: List<HqJob> = emptyList(), onOpenTask: (HqJob) -> Unit
         ) {
             Column(Modifier.weight(1f)) {
                 Text("看板", style = HqType.ScreenTitle, color = Hq.ink)
-                Text("Miga 任务", style = HqType.Caption, color = Hq.ink)
+                Text(" 任务", style = HqType.Caption, color = Hq.ink)
             }
             Icon(MikaIcons.ListPlus, "发任务", tint = Hq.ink, modifier = Modifier.size(20.dp).clickable { showHelp = true })
             Spacer(Modifier.width(16.dp))

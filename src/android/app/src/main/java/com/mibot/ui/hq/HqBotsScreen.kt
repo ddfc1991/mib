@@ -69,7 +69,7 @@ fun HqBotsScreen(
     modifier: Modifier = Modifier,
 ) {
     // 主 agent(本能全能) + 分出的 bot(personas 真实数据)
-    val mainBot = HqBot("Miga", "主智能体", "本能全能 · 随时可分 bot 干活", "在线")
+    val mainBot = HqBot("Omega", "主智能体", "本能全能 · 随时可分 bot 干活", "在线")
     val botList = personas.map { HqBot(it.name, "分出的 bot", it.description.ifBlank { "自定义人格" }, "就绪") }
     Column(
         modifier = modifier
