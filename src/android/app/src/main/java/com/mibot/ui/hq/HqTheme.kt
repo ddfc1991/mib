@@ -98,6 +98,5 @@ object HqSpace {
     val S8 = 8.dp
     val S12 = 12.dp
     val S16 = 16.dp
-    val S20 = 20.dp
     val Page = 16.dp
 }

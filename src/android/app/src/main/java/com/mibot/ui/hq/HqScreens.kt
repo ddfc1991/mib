@@ -143,11 +143,14 @@ fun HqSessionsScreen(
 
 @Composable
 private fun HqSessionRow(s: ConversationSummary, onClick: () -> Unit = {}, onDelete: () -> Unit = {}) {
+    // [openbots/aesthetic] 副标题不再写"点击打开"这类废话:有页面来源就显示页面标题,
+    // 是分支就写"分支会话",都没有就不显示副标题(界面自己说话,不占一行空话)。
+    val subtitle = s.page?.title?.ifBlank { null } ?: s.branchOf?.let { "分支会话" }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = HqSpace.Page, vertical = 10.dp),
+            .padding(horizontal = HqSpace.Page, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PebbleAvatar(s.title, Modifier.size(28.dp))
@@ -157,8 +160,10 @@ private fun HqSessionRow(s: ConversationSummary, onClick: () -> Unit = {}, onDel
                 Text(s.title, style = HqType.RowTitle, color = Hq.ink, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(timeLabel(s.updatedAt), style = HqType.Caption, color = Hq.ink3)
             }
-            Spacer(Modifier.height(2.dp))
-            Text("点击打开", style = HqType.Caption, color = Hq.ink2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(subtitle, style = HqType.Caption, color = Hq.ink2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
         }
         Spacer(Modifier.width(8.dp))
         Icon(MikaIcons.More, null, tint = Hq.ink2, modifier = Modifier.size(16.dp).clickable { onDelete() })
