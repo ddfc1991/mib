@@ -110,17 +110,18 @@ val LightColors = MikaColors(
 )
 
 val DarkColors = MikaColors(
-    bg = Color(0xFF0E0E10),
-    surface = Color(0xFF1A1A1D),
+    // [openbots/unify] 子页面配色对齐 Hermes HQ:OLED 纯黑底 + iOS 深灰卡 + 白字 + HQ 蓝。
+    bg = Color(0xFF0A0A0A),
+    surface = Color(0xFF1C1C1E),
     fill = Color(0x0FFFFFFF),
-    ink = Color(0xFFF2F2F4),
-    ink2 = Color(0xFFA4A5AD),
-    ink3 = Color(0xFF6C6D75),
+    ink = Color(0xFFFFFFFF),
+    ink2 = Color(0xFF8E8E93),
+    ink3 = Color(0xFFD1D1D6),
     inkSoft = Color(0xFFC6C6CD),
     hair = Color(0x14FFFFFF),
-    edge = Color(0x0FFFFFFF),
-    accent = Color(0xFF3D97FF),
-    accentSoft = Color(0x293D97FF),
+    edge = Color(0xFF2C2C2E),
+    accent = Color(0xFF0A84FF),
+    accentSoft = Color(0x290A84FF),
     onAccent = Color(0xFFFFFFFF),
     ok = Color(0xFF3CCF7A),
     okSoft = Color(0x243CCF7A),
