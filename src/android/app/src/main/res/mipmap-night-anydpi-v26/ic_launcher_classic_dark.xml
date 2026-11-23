@@ -18,6 +18,6 @@
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_bg_force_dark" />
-    <foreground android:drawable="@drawable/ic_launcher_fg_destiny_dark" />
-    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+    <foreground android:drawable="@drawable/ic_launcher_fg_hermes" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome_hermes" />
 </adaptive-icon>
