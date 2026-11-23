@@ -108,7 +108,8 @@ fun HqSessionsScreen(
                 modifier = Modifier.padding(horizontal = HqSpace.Page, vertical = 24.dp),
             )
         } else {
-            visible.forEach { s ->
+            visible.forEachIndexed { i, s ->
+                HqStaggerIn(index = i) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -120,6 +121,7 @@ fun HqSessionsScreen(
                             color = Hq.ink,
                         )
                     }
+                }
                 }
             }
         }
