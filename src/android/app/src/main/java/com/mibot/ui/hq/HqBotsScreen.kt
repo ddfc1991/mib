@@ -70,7 +70,14 @@ fun HqBotsScreen(
 ) {
     // 主 agent(本能全能) + 分出的 bot(personas 真实数据)
     val mainBot = HqBot("Omega", "主智能体", "本能全能 · 随时可分 bot 干活", "在线")
-    val botList = personas.map { HqBot(it.name, "分出的 bot", it.description.ifBlank { "自定义人格" }, "就绪") }
+    // [openbots] 副标题显示工作方向:优先 persona 描述,没有就取提示词首行(方向常写在首行)。
+    val botList = personas.map { p ->
+        HqBot(
+            p.name, "分出的 bot",
+            p.description.ifBlank { promptHeadline(p.prompt) },
+            "就绪",
+        )
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -142,8 +149,7 @@ fun HqBotsScreen(
 
 /** 列表项：blob 28dp + 标题 + 右上时间 + 摘要 2 行 + 行尾 ⋯。 */
 @Composable
-fun HqBotRow(bot: HqBot, onOpen: (HqBot) -> Unit, modifier: Modifier = Modifier) {
-    Row(
+fun HqBotRow(bot: HqBot, onOpen: (HqBot) -> Unit, modifier: Modifier = Modifier) {    Row(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onOpen(bot) }
@@ -163,4 +169,13 @@ fun HqBotRow(bot: HqBot, onOpen: (HqBot) -> Unit, modifier: Modifier = Modifier)
         Spacer(Modifier.width(8.dp))
         Icon(MikaIcons.More, null, tint = Hq.ink2, modifier = Modifier.size(16.dp))
     }
+}
+
+/**
+ * 提示词首行作为工作方向摘要(前 30 字):人设的方向/定位常写在首行(如"你是一名造码工程师…")。
+ * 首行为空时退回"自定义人格"。
+ */
+private fun promptHeadline(prompt: String): String {
+    val first = prompt.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() } ?: return "自定义人格"
+    return if (first.length > 30) first.take(30) + "…" else first
 }
