@@ -125,19 +125,19 @@ private fun SearchBox(value: String, onChange: (String) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = OmegaSpace.Screen)
-            .frosted(OmegaRadius.Pill)
-            .padding(horizontal = OmegaSpace.M, vertical = 9.dp),
+            .padding(horizontal = MibotSpace.Screen)
+            .frosted(MibotRadius.Pill)
+            .padding(horizontal = MibotSpace.M, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Glyph(LineIcons.Search, size = OmegaIcon.Dense, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.width(OmegaSpace.S))
+        Glyph(LineIcons.Search, size = MibotIcon.Dense, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(MibotSpace.S))
         Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) Text(t("搜索服务", "Search services"), fontSize = OmegaType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+            if (value.isEmpty()) Text(t("搜索服务", "Search services"), fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
             BasicTextField(
                 value, onChange, singleLine = true,
-                textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = OmegaType.Body),
-                cursorBrush = SolidColor(OmegaTokens.accent()), modifier = Modifier.fillMaxWidth(),
+                textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = MibotType.Body),
+                cursorBrush = SolidColor(MibotTokens.accent()), modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -147,8 +147,8 @@ private fun SearchBox(value: String, onChange: (String) -> Unit) {
 private fun SubHeader(text: String) {
     Text(
         text,
-        modifier = Modifier.padding(start = OmegaSpace.M + 2.dp, top = OmegaSpace.M, bottom = 2.dp),
-        fontSize = OmegaType.Section, fontWeight = OmegaType.Semi, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = MibotSpace.M + 2.dp, top = MibotSpace.M, bottom = 2.dp),
+        fontSize = MibotType.Section, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -163,24 +163,24 @@ private fun ServiceRow(
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
                 .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-                .padding(horizontal = OmegaSpace.M + 2.dp, vertical = 7.dp),
+                .padding(horizontal = MibotSpace.M + 2.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BrandLogo(logo, name, color, size = 36.dp)
-            Spacer(Modifier.width(OmegaSpace.M))
+            Spacer(Modifier.width(MibotSpace.M))
             Column(Modifier.weight(1f)) {
-                Text(name, fontSize = OmegaType.Body, lineHeight = OmegaType.BodyLine, fontWeight = OmegaType.Medium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(subtitle, fontSize = OmegaType.Secondary, lineHeight = OmegaType.SecondaryLine, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                Text(name, fontSize = MibotType.Body, lineHeight = MibotType.BodyLine, fontWeight = MibotType.Medium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     color = if (subtitleWarn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Spacer(Modifier.width(OmegaSpace.S))
+            Spacer(Modifier.width(MibotSpace.S))
             trailing()
             if (chevron) {
                 Spacer(Modifier.width(4.dp))
-                Glyph(LineIcons.ChevronRight, size = OmegaIcon.Small, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                Glyph(LineIcons.ChevronRight, size = MibotIcon.Small, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             }
         }
-        if (showDivider) OmegaDivider(inset = OmegaSpace.M * 2 + 38.dp)
+        if (showDivider) MibotDivider(inset = MibotSpace.M * 2 + 38.dp)
     }
 }
 
@@ -210,12 +210,12 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
     }
     val freeOnes = services.filter { it.freeModels && it.id !in connectedIds }
 
-    OmegaScaffold(
+    MibotScaffold(
         title = t("账号", "Accounts"),
         onBack = onBack,
         actions = {
-            Box(Modifier.size(OmegaIcon.TopButton).clip(CircleShape).clickable(onClick = onAudit).semantics { contentDescription = "audit" }, contentAlignment = Alignment.Center) {
-                Glyph(LineIcons.History, size = OmegaIcon.Standard, tint = MaterialTheme.colorScheme.onBackground)
+            Box(Modifier.size(MibotIcon.TopButton).clip(CircleShape).clickable(onClick = onAudit).semantics { contentDescription = "audit" }, contentAlignment = Alignment.Center) {
+                Glyph(LineIcons.History, size = MibotIcon.Standard, tint = MaterialTheme.colorScheme.onBackground)
             }
         },
     ) {
@@ -223,23 +223,23 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
         SearchBox(query) { query = it }
 
         // Primary entry: auto-discover & connect.
-        OmegaSpacer(10.dp)
-        OmegaCard(onClick = onDiscover, padding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)) {
+        MibotSpacer(10.dp)
+        MibotCard(onClick = onDiscover, padding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(38.dp).clip(CircleShape).background(OmegaTokens.accent().copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
-                    Glyph(LineIcons.Radar, size = OmegaIcon.Standard, tint = OmegaTokens.accent(), duotone = true)
+                Box(Modifier.size(38.dp).clip(CircleShape).background(MibotTokens.accent().copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+                    Glyph(LineIcons.Radar, size = MibotIcon.Standard, tint = MibotTokens.accent(), duotone = true)
                 }
-                Spacer(Modifier.width(OmegaSpace.M))
+                Spacer(Modifier.width(MibotSpace.M))
                 Column(Modifier.weight(1f)) {
-                    Text(t("自动发现并连接", "Discover & connect"), fontSize = OmegaType.TitleSmall, fontWeight = OmegaType.Semi, color = MaterialTheme.colorScheme.onSurface)
+                    Text(t("自动发现并连接", "Discover & connect"), fontSize = MibotType.TitleSmall, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface)
                     Text(t("从手机上的 App、系统账户和内置浏览器的登录里找出账号，逐个自动连接", "Finds accounts from your apps, system accounts and built-in browser logins, then connects them one by one"),
-                        fontSize = OmegaType.Secondary, lineHeight = OmegaType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Glyph(LineIcons.ChevronRight, size = OmegaIcon.Small, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Glyph(LineIcons.ChevronRight, size = MibotIcon.Small, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        Row(Modifier.fillMaxWidth().padding(horizontal = OmegaSpace.Screen + OmegaSpace.M, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = MibotSpace.Screen + MibotSpace.M, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 if (busy) t("巡查中…", "Checking…") else t("立即巡查所有账号", "Check all accounts now"),
                 modifier = Modifier.clickable(enabled = !busy && entries.isNotEmpty()) {
@@ -254,24 +254,24 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
                         Toast.makeText(ctx, tc(ctx, "巡查完成：${entries.size} 个账号", "Checked ${entries.size} accounts"), Toast.LENGTH_SHORT).show()
                     }
                 },
-                fontSize = OmegaType.Body, fontWeight = OmegaType.Semi, color = OmegaTokens.accent(),
+                fontSize = MibotType.Body, fontWeight = MibotType.Semi, color = MibotTokens.accent(),
             )
             Spacer(Modifier.weight(1f))
-            Text(t("每日自动签到", "Daily check-in"), fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("每日自动签到", "Daily check-in"), fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
-            OmegaSwitch(dailyOn, { v -> dailyOn = v; VaultCheckin.setEnabled(ctx, v) })
+            MibotSwitch(dailyOn, { v -> dailyOn = v; VaultCheckin.setEnabled(ctx, v) })
         }
         if (ignored.isNotEmpty()) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = OmegaSpace.Screen + OmegaSpace.M, vertical = 2.dp)) {
-                Text(t("已忽略 ${ignored.size} 个", "${ignored.size} ignored"), fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                Text(if (showIgnored) t("收起", "Hide") else t("查看", "View"), fontSize = OmegaType.Secondary, color = OmegaTokens.accent(), modifier = Modifier.clickable { showIgnored = !showIgnored })
+            Row(Modifier.fillMaxWidth().padding(horizontal = MibotSpace.Screen + MibotSpace.M, vertical = 2.dp)) {
+                Text(t("已忽略 ${ignored.size} 个", "${ignored.size} ignored"), fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text(if (showIgnored) t("收起", "Hide") else t("查看", "View"), fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { showIgnored = !showIgnored })
             }
             AnimatedVisibility(showIgnored) {
-                OmegaCard(Modifier.padding(top = 6.dp)) {
+                MibotCard(Modifier.padding(top = 6.dp)) {
                     val list = services.filter { it.id in ignored }
                     list.forEachIndexed { i, s ->
                         ServiceRow(s.logo, s.color, s.name, t("已忽略", "Ignored"), trailing = {
-                            Text(t("恢复", "Restore"), fontSize = OmegaType.Secondary, color = OmegaTokens.accent(), modifier = Modifier.clickable { VaultServices.setIgnored(ctx, s.id, false); ignoredTick++ })
+                            Text(t("恢复", "Restore"), fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { VaultServices.setIgnored(ctx, s.id, false); ignoredTick++ })
                         }, chevron = false, onClick = null, showDivider = i < list.lastIndex)
                     }
                 }
@@ -279,22 +279,22 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
         }
 
         // Connected services, grouped.
-        Row(Modifier.fillMaxWidth().padding(start = OmegaSpace.Screen + OmegaSpace.M, end = OmegaSpace.Screen + OmegaSpace.M, top = 12.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(t("已连接 · ${groups.size} 个服务", "Connected · ${groups.size} services"), fontSize = OmegaType.Section, fontWeight = OmegaType.Semi, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth().padding(start = MibotSpace.Screen + MibotSpace.M, end = MibotSpace.Screen + MibotSpace.M, top = 12.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(t("已连接 · ${groups.size} 个服务", "Connected · ${groups.size} services"), fontSize = MibotType.Section, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
             Box(Modifier.clip(CircleShape).clickable {
                 Toast.makeText(ctx, tc(ctx, "密钥用 Android Keystore 加密保存；AI 只能按每个账号的权限请求使用，永远看不到明文。", "Secrets are Keystore-encrypted; the AI can only request use under each account's permission and never sees plaintext."), Toast.LENGTH_LONG).show()
-            }.padding(2.dp)) { Glyph(LineIcons.Info, size = OmegaIcon.Small, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }.padding(2.dp)) { Glyph(LineIcons.Info, size = MibotIcon.Small, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
-        OmegaCard {
-            Row(Modifier.fillMaxWidth().clickable { masked = !masked; VaultServices.setMasked(ctx, masked) }.padding(horizontal = OmegaSpace.M + 2.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (masked) t("账号已打码", "Accounts masked") else t("显示账号", "Accounts shown"), fontSize = OmegaType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                Glyph(if (masked) LineIcons.EyeOff else LineIcons.Eye, size = OmegaIcon.Standard, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        MibotCard {
+            Row(Modifier.fillMaxWidth().clickable { masked = !masked; VaultServices.setMasked(ctx, masked) }.padding(horizontal = MibotSpace.M + 2.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (masked) t("账号已打码", "Accounts masked") else t("显示账号", "Accounts shown"), fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Glyph(if (masked) LineIcons.EyeOff else LineIcons.Eye, size = MibotIcon.Standard, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (shownGroups.isEmpty()) {
                 Text(
                     t("还没有连接的账号。点上面的「自动发现并连接」，或在下面的列表里点 +。", "Nothing connected yet. Use Discover & connect above, or tap + below."),
-                    fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = OmegaSpace.M + 2.dp, vertical = 10.dp),
+                    fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = MibotSpace.M + 2.dp, vertical = 10.dp),
                 )
             }
             VaultServices.categories.forEach { (cat, zh, en) ->
@@ -316,11 +316,11 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
 
         // Free credits worth claiming.
         if (freeOnes.isNotEmpty()) {
-            OmegaSectionHeader(t("免费额度 · 值得关注", "Free credits worth a look"))
-            OmegaCard {
-                Row(Modifier.fillMaxWidth().clickable { freeOpen = !freeOpen }.padding(horizontal = OmegaSpace.M + 2.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(t("${freeOnes.size} 个可以免费领", "${freeOnes.size} you can claim free"), fontSize = OmegaType.Body, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                    Glyph(LineIcons.ChevronDown, size = OmegaIcon.Dense, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            MibotSectionHeader(t("免费额度 · 值得关注", "Free credits worth a look"))
+            MibotCard {
+                Row(Modifier.fillMaxWidth().clickable { freeOpen = !freeOpen }.padding(horizontal = MibotSpace.M + 2.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(t("${freeOnes.size} 个可以免费领", "${freeOnes.size} you can claim free"), fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    Glyph(LineIcons.ChevronDown, size = MibotIcon.Dense, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 AnimatedVisibility(freeOpen) {
                     Column {
@@ -338,8 +338,8 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
         VaultServices.addCategories.forEach { (cat, label) ->
             val list = notConnected.filter { it.cat == cat }
             if (list.isEmpty()) return@forEach
-            OmegaSectionHeader(t(label.first, label.second))
-            OmegaCard {
+            MibotSectionHeader(t(label.first, label.second))
+            MibotCard {
                 list.forEachIndexed { i, s ->
                     ServiceRow(s.logo, s.color, s.name, s.sub, trailing = {
                         PlusButton({ VaultConnect.requestSheet(s.id); onDiscover() }, t("连接 ${s.name}", "Connect ${s.name}"))
@@ -348,17 +348,17 @@ fun VaultListScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onNew: () -> U
             }
         }
 
-        OmegaSectionHeader(t("其他网站", "Other sites"))
-        OmegaCard(onClick = onNew) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = OmegaSpace.M + 2.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(30.dp).clip(OmegaRadius.RowShape).background(OmegaTokens.accent().copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
-                    Glyph(LineIcons.Plus, size = OmegaIcon.Dense, tint = OmegaTokens.accent())
+        MibotSectionHeader(t("其他网站", "Other sites"))
+        MibotCard(onClick = onNew) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = MibotSpace.M + 2.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(30.dp).clip(MibotRadius.RowShape).background(MibotTokens.accent().copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+                    Glyph(LineIcons.Plus, size = MibotIcon.Dense, tint = MibotTokens.accent())
                 }
-                Spacer(Modifier.width(OmegaSpace.M))
-                Text(t("手动添加账号 / 网站登录", "Add an account manually"), fontSize = OmegaType.Body, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(Modifier.width(MibotSpace.M))
+                Text(t("手动添加账号 / 网站登录", "Add an account manually"), fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurface)
             }
         }
-        OmegaFootnote(t(
+        MibotFootnote(t(
             "AI 通过 {{vault:ID}} 占位符或沙箱里的 vault 命令请求使用账号；每次使用都记入使用记录。支付、删除、以你名义发送等高风险操作总是需要确认。Logo 来自 Simple Icons（CC0）与 LobeHub Icons（MIT）。",
             "The AI requests accounts via {{vault:ID}} placeholders or the `vault` CLI; every use is logged. Paying, deleting and sending as you always need confirmation. Logos: Simple Icons (CC0), LobeHub Icons (MIT).",
         ))
@@ -375,9 +375,9 @@ fun VaultServiceScreen(key: String, onBack: () -> Unit, onOpen: (String) -> Unit
     val entries by remember { VaultStore.entries(ctx) }.collectAsState()
     val g = remember(entries) { VaultServices.groups(ctx, entries).find { it.key == key } }
     val masked = remember { VaultServices.masked(ctx) }
-    OmegaScaffold(title = g?.name ?: t("服务", "Service"), onBack = onBack) {
-        OmegaSpacer(6.dp)
-        OmegaCard {
+    MibotScaffold(title = g?.name ?: t("服务", "Service"), onBack = onBack) {
+        MibotSpacer(6.dp)
+        MibotCard {
             g?.entries?.forEachIndexed { i, e ->
                 val h = VaultServices.health(e)
                 val bal = e.status?.let { listOfNotNull(it.balance, it.credits, it.points, it.quota).joinToString(" · ") }.orEmpty()
@@ -398,9 +398,9 @@ fun VaultServiceScreen(key: String, onBack: () -> Unit, onOpen: (String) -> Unit
             }
         }
         g?.service?.let { s ->
-            OmegaSpacer(12.dp)
+            MibotSpacer(12.dp)
             Row(Modifier.padding(horizontal = 16.dp)) {
-                OmegaButton(t("再连接一个账号", "Connect another account"), { VaultConnect.requestSheet(s.id); onDiscover() }, modifier = Modifier.fillMaxWidth())
+                MibotButton(t("再连接一个账号", "Connect another account"), { VaultConnect.requestSheet(s.id); onDiscover() }, modifier = Modifier.fillMaxWidth())
             }
         }
     }
@@ -414,8 +414,8 @@ fun VaultServiceScreen(key: String, onBack: () -> Unit, onOpen: (String) -> Unit
 private fun SourceTag(text: String) {
     Text(
         text,
-        modifier = Modifier.clip(OmegaRadius.Pill).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)).padding(horizontal = 6.dp, vertical = 1.dp),
-        fontSize = OmegaType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.clip(MibotRadius.Pill).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)).padding(horizontal = 6.dp, vertical = 1.dp),
+        fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -446,11 +446,11 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
     }
 
     Box(Modifier.fillMaxSize()) {
-    OmegaScaffold(title = t("自动发现并连接", "Discover & connect"), onBack = onBack) {
+    MibotScaffold(title = t("自动发现并连接", "Discover & connect"), onBack = onBack) {
         if (tasks.isNotEmpty()) {
             val done = tasks.count { it.phase == VaultConnect.Phase.CONNECTED }
-            OmegaSectionHeader(t("连接进度 · $done/${tasks.size}", "Progress · $done/${tasks.size}"), t("清除已完成", "Clear done")) { VaultConnect.clearFinished() }
-            OmegaCard {
+            MibotSectionHeader(t("连接进度 · $done/${tasks.size}", "Progress · $done/${tasks.size}"), t("清除已完成", "Clear done")) { VaultConnect.clearFinished() }
+            MibotCard {
                 tasks.forEachIndexed { i, tk ->
                     val (label, kind) = when (tk.phase) {
                         VaultConnect.Phase.WAITING -> t("等待", "Waiting") to ChipKind.NEUTRAL
@@ -468,14 +468,14 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
                         subtitleWarn = tk.phase == VaultConnect.Phase.FAILED,
                         trailing = {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                if (tk.phase == VaultConnect.Phase.CONNECTING) CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.6.dp, color = OmegaTokens.accent())
+                                if (tk.phase == VaultConnect.Phase.CONNECTING) CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.6.dp, color = MibotTokens.accent())
                                 StatusChip(label, kind)
                                 when (tk.phase) {
-                                    VaultConnect.Phase.IN_APP -> if (tk.service.needsKey) Text(t("取 Key", "Get key"), fontSize = OmegaType.Secondary, color = OmegaTokens.accent(), modifier = Modifier.clickable { VaultConnect.enqueue(ctx, listOf(tk.service to null)) })
+                                    VaultConnect.Phase.IN_APP -> if (tk.service.needsKey) Text(t("取 Key", "Get key"), fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { VaultConnect.enqueue(ctx, listOf(tk.service to null)) })
                                     VaultConnect.Phase.FAILED, VaultConnect.Phase.SKIPPED, VaultConnect.Phase.UNVERIFIED ->
-                                        Text(t("重试", "Retry"), fontSize = OmegaType.Secondary, color = OmegaTokens.accent(), modifier = Modifier.clickable { VaultConnect.retry(ctx, tk.service.id) })
+                                        Text(t("重试", "Retry"), fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { VaultConnect.retry(ctx, tk.service.id) })
                                     VaultConnect.Phase.WAITING, VaultConnect.Phase.NEEDS_YOU, VaultConnect.Phase.CONNECTING ->
-                                        Text(t("跳过", "Skip"), fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.clickable { VaultConnect.skip(tk.service.id) })
+                                        Text(t("跳过", "Skip"), fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.clickable { VaultConnect.skip(tk.service.id) })
                                     else -> {}
                                 }
                             }
@@ -486,43 +486,43 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
             }
         }
 
-        OmegaSectionHeader(t("AI 服务商 · 自动获取 Key", "AI providers · fetch keys"), if (aiChecked.size == aiServices.size) t("全不选", "None") else t("全选", "All")) {
+        MibotSectionHeader(t("AI 服务商 · 自动获取 Key", "AI providers · fetch keys"), if (aiChecked.size == aiServices.size) t("全不选", "None") else t("全选", "All")) {
             if (aiChecked.size == aiServices.size) aiChecked.clear() else { aiChecked.clear(); aiChecked.addAll(aiServices.map { it.id }) }
         }
-        OmegaCard {
+        MibotCard {
             aiServices.forEachIndexed { i, sv ->
                 val on = sv.id in aiChecked
                 val host = android.net.Uri.parse(sv.webStart).host.orEmpty()
-                Row(Modifier.fillMaxWidth().clickable { if (on) aiChecked.remove(sv.id) else aiChecked.add(sv.id) }.padding(horizontal = OmegaSpace.M + 2.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().clickable { if (on) aiChecked.remove(sv.id) else aiChecked.add(sv.id) }.padding(horizontal = MibotSpace.M + 2.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                     CheckMark(on, size = 20.dp, ringWhenOff = true)
-                    Spacer(Modifier.width(OmegaSpace.M))
+                    Spacer(Modifier.width(MibotSpace.M))
                     BrandLogo(sv.logo, sv.name, sv.color, size = 28.dp)
-                    Spacer(Modifier.width(OmegaSpace.M))
+                    Spacer(Modifier.width(MibotSpace.M))
                     Column(Modifier.weight(1f)) {
-                        Text(sv.name, fontSize = OmegaType.Body, fontWeight = OmegaType.Medium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-                        Text(if (sv.auth == "oauth_openrouter") "OAuth · $host" else host, fontSize = OmegaType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        Text(sv.name, fontSize = MibotType.Body, fontWeight = MibotType.Medium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                        Text(if (sv.auth == "oauth_openrouter") "OAuth · $host" else host, fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                     }
-                    Text(t("方式", "Options"), fontSize = OmegaType.Secondary, color = OmegaTokens.accent(), modifier = Modifier.clickable { VaultConnect.requestSheet(sv.id) }.padding(4.dp))
+                    Text(t("方式", "Options"), fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { VaultConnect.requestSheet(sv.id) }.padding(4.dp))
                 }
-                if (i < aiServices.lastIndex) OmegaDivider(inset = OmegaSpace.M * 2 + 50.dp)
+                if (i < aiServices.lastIndex) MibotDivider(inset = MibotSpace.M * 2 + 50.dp)
             }
         }
-        OmegaSpacer(10.dp)
+        MibotSpacer(10.dp)
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            OmegaButton(t("一键获取全部（${aiChecked.size}）", "Fetch all keys (${aiChecked.size})"), enabled = aiChecked.isNotEmpty(), modifier = Modifier.fillMaxWidth(), onClick = {
+            MibotButton(t("一键获取全部（${aiChecked.size}）", "Fetch all keys (${aiChecked.size})"), enabled = aiChecked.isNotEmpty(), modifier = Modifier.fillMaxWidth(), onClick = {
                 VaultConnect.enqueue(ctx, aiServices.filter { it.id in aiChecked }.map { it to null }, VaultConnect.Mode.AUTO)
                 aiChecked.clear()
             })
         }
-        OmegaFootnote(t("逐个在后台打开官方控制台：用保存的账号登录、新建名为 Mibot 的 Key、读到后加密保存并真实探测。只在验证码 / 短信 / 扫码时弹出，一次一个；读不到就把页面给你看并标出原因，不会假装成功。",
+        MibotFootnote(t("逐个在后台打开官方控制台：用保存的账号登录、新建名为 Omega 的 Key、读到后加密保存并真实探测。只在验证码 / 短信 / 扫码时弹出，一次一个；读不到就把页面给你看并标出原因，不会假装成功。",
             "Runs each provider's console in the background, one at a time; pops up only for captcha / SMS / QR."))
 
-        OmegaSectionHeader(t("发现的账号 · ${candidates.size}", "Found · ${candidates.size}"), t("重新扫描", "Rescan")) { tick++ }
-        OmegaCard {
+        MibotSectionHeader(t("发现的账号 · ${candidates.size}", "Found · ${candidates.size}"), t("重新扫描", "Rescan")) { tick++ }
+        MibotCard {
             if (candidates.isEmpty()) {
                 Text(
                     t("没有发现新的账号。可以从系统账户里选，或在账号页的列表里点 + 逐个连接。", "Nothing new found. Pick a system account, or tap + on the Accounts page."),
-                    fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                 )
             }
@@ -531,15 +531,15 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
                 Column {
                     Row(
                         Modifier.fillMaxWidth().clickable { if (on) checked.remove(c.service.id) else checked.add(c.service.id) }
-                            .padding(horizontal = OmegaSpace.M + 2.dp, vertical = 8.dp),
+                            .padding(horizontal = MibotSpace.M + 2.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         CheckMark(on, size = 20.dp, ringWhenOff = true)
-                        Spacer(Modifier.width(OmegaSpace.M))
+                        Spacer(Modifier.width(MibotSpace.M))
                         BrandLogo(c.service.logo, c.service.name, c.service.color, size = 32.dp)
-                        Spacer(Modifier.width(OmegaSpace.M))
+                        Spacer(Modifier.width(MibotSpace.M))
                         Column(Modifier.weight(1f)) {
-                            Text(c.service.name, fontSize = OmegaType.Body, fontWeight = OmegaType.Medium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(c.service.name, fontSize = MibotType.Body, fontWeight = MibotType.Medium, color = MaterialTheme.colorScheme.onSurface)
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 2.dp)) {
                                 c.sources.forEach { src ->
                                     SourceTag(when (src) {
@@ -552,31 +552,31 @@ fun VaultDiscoverScreen(onBack: () -> Unit, onManual: () -> Unit) {
                                 c.username?.let { SourceTag(VaultServices.mask(it)) }
                             }
                         }
-                        Text(t("忽略", "Ignore"), fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        Text(t("忽略", "Ignore"), fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.clickable { VaultServices.setIgnored(ctx, c.service.id, true); checked.remove(c.service.id); tick++ })
                     }
-                    if (i < candidates.lastIndex) OmegaDivider(inset = OmegaSpace.M * 2 + 64.dp)
+                    if (i < candidates.lastIndex) MibotDivider(inset = MibotSpace.M * 2 + 64.dp)
                 }
             }
         }
-        OmegaSpacer(10.dp)
+        MibotSpacer(10.dp)
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OmegaButton(t("开始连接（${checked.size}）", "Connect (${checked.size})"), enabled = checked.isNotEmpty(), modifier = Modifier.weight(1f), onClick = {
+            MibotButton(t("开始连接（${checked.size}）", "Connect (${checked.size})"), enabled = checked.isNotEmpty(), modifier = Modifier.weight(1f), onClick = {
                 val sel = candidates.filter { it.service.id in checked }
                 VaultConnect.enqueue(ctx, sel.map { it.service to it.username }, VaultConnect.Mode.AUTO)
                 checked.clear()
             })
-            OmegaButton(t("从系统账户选择", "Pick system account"), tonal = true, modifier = Modifier.weight(1f), onClick = {
+            MibotButton(t("从系统账户选择", "Pick system account"), tonal = true, modifier = Modifier.weight(1f), onClick = {
                 runCatching { chooser.launch(AccountManager.newChooseAccountIntent(null, null, null, null, null, null, null)) }
                     .onFailure { Toast.makeText(ctx, it.message, Toast.LENGTH_SHORT).show() }
             })
         }
-        OmegaSpacer(8.dp)
+        MibotSpacer(8.dp)
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            OmegaButton(t("手动添加账号", "Add manually"), tonal = true, modifier = Modifier.fillMaxWidth(), onClick = onManual)
+            MibotButton(t("手动添加账号", "Add manually"), tonal = true, modifier = Modifier.fillMaxWidth(), onClick = onManual)
         }
-        OmegaFootnote(t(
-            "只读取你授权的来源：本机已装 App 列表、你在系统里选中的账户、Mibot 内置浏览器自己的登录。逐个连接：能用 OAuth 的走授权页（如 OpenRouter）；内置浏览器已登录的直接复用；其余在内置浏览器里打开官方登录/密钥页，验证码、短信码、二次验证和密码都由你来完成，Mibot 绝不绕过；拿到的 Key 或登录会话加密存进台账，随后自动查余额、签到。",
+        MibotFootnote(t(
+            "只读取你授权的来源：本机已装 App 列表、你在系统里选中的账户、Omega 内置浏览器自己的登录。逐个连接：能用 OAuth 的走授权页（如 OpenRouter）；内置浏览器已登录的直接复用；其余在内置浏览器里打开官方登录/密钥页，验证码、短信码、二次验证和密码都由你来完成，Omega 绝不绕过；拿到的 Key 或登录会话加密存进台账，随后自动查余额、签到。",
             "Only sources you grant are read: installed apps, system accounts you pick, and Omega's own browser logins. One at a time: OAuth where available (e.g. OpenRouter); an existing built-in-browser session is reused; otherwise the official login / key page opens in the built-in browser — you enter any codes, 2FA and passwords yourself, nothing is bypassed. The captured key or session is encrypted into the vault, then balance and check-in run.",
         ))
     }

@@ -110,8 +110,8 @@ object VdSelfCheck {
     }
 
     private class Run(val app: Context) {
-        val phone = OmegaPhone.get(app)
-        var shell: IOmegaShell? = null
+        val phone = MibotPhone.get(app)
+        var shell: IMibotShell? = null
         var display: AgentDisplay? = null
         var settings: String? = null
         var launched = false
@@ -193,7 +193,7 @@ object VdSelfCheck {
                 if (ShizukuManager.isReady()) phone.launchViaShizuku()
                 sh = withTimeoutOrNull(HELPER_WAIT_MS) { phone.hub.shell.first { it != null } }
             }
-            val conn: IOmegaShell = sh
+            val conn: IMibotShell = sh
                 ?: return check("helper", Status.FAIL, "not running (${phone.builtin.engine.status.value.javaClass.simpleName})", adviceHelper)
             shell = conn
             return withContext(Dispatchers.IO) {
