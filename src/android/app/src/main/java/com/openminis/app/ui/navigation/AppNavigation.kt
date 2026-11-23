@@ -715,6 +715,9 @@ fun AppNavigation(
             // [destiny/omega-hermes-chat] Full-screen chat wears the Hermes
             // HQ palette (OLED black + blue user bubble) while every other
             // screen keeps the Mibot glass skin.
+            androidx.compose.material3.MaterialTheme(
+                colorScheme = com.openminis.app.ui.theme.HermesDarkColorScheme,
+            ) {
             androidx.compose.runtime.CompositionLocalProvider(
                 com.openminis.app.ui.theme.LocalChatPalette provides com.openminis.app.ui.theme.HermesDarkChatPalette,
             ) {
@@ -727,6 +730,7 @@ fun AppNavigation(
                 mcpRepository = mcpRepository,
                 onBack = { navController.popBackStack() },
             )
+            }
             }
         }
 

@@ -294,6 +294,16 @@ val MibotDarkColorScheme = darkColorScheme(
     error = MibotPalette.ErrorDark,
 )
 
+// [destiny/omega-hermes-chat] Hermes HQ accent (iOS blue #0A84FF) replacing
+// Mibot's cinnabar for the full-screen chat page, so the "选择模型" chip and
+// any other MaterialTheme.primary element inside chat reads Hermes blue.
+val HermesDarkColorScheme = MibotDarkColorScheme.copy(
+    primary = Color(0xFF0A84FF),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFF0A3A66),
+    onPrimaryContainer = Color(0xFFFFFFFF),
+)
+
 /**
  * [T-multi-select-share] Re-themes a subtree light or dark regardless of the app's
  * own appearance, keeping the app's typography (font scale) and shapes. The chat

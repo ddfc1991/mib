@@ -2982,7 +2982,7 @@ fun ChatScreen(
     // [fork/mibot-v2] Under Mibot the shared sky backdrop shows through.
     val mibotChatOn = com.openminis.app.ui.theme.LocalMibotActive.current
     Scaffold(
-        containerColor = if (mibotChatOn) androidx.compose.ui.graphics.Color.Transparent else ChatColors.background,
+        containerColor = ChatColors.background,
         contentWindowInsets = WindowInsets(0),
         // [T-port-sched-pill] The top bar slot is the app bar plus, below it,
         // the scheduled-task pill, so the list (padded by the Scaffold) starts
@@ -3771,8 +3771,8 @@ fun ChatScreen(
                 },
                 windowInsets = WindowInsets.statusBars,
                 colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (mibotChatOn) androidx.compose.ui.graphics.Color.Transparent else ChatColors.background.copy(alpha = 0.92f),
-                    scrolledContainerColor = if (mibotChatOn) androidx.compose.ui.graphics.Color.Transparent else ChatColors.background.copy(alpha = 0.92f),
+                    containerColor = ChatColors.background.copy(alpha = 0.92f),
+                    scrolledContainerColor = ChatColors.background.copy(alpha = 0.92f),
                 ),
                 // [T-android-topbar-shrink] 76dp → 68dp. The earlier
                 // T-topbar-model-row-clip fix bumped 60dp → 76dp to give the

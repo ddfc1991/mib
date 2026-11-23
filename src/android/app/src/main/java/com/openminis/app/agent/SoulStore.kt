@@ -343,7 +343,7 @@ object SoulStore {
      * `SoulStore.defaultContent` byte-for-byte (74c0daf).
      */
     val DEFAULT_CONTENT: String = """---
-name: "Mibot"
+name: "Omega"
 style: ""
 lang: "auto"
 ---
