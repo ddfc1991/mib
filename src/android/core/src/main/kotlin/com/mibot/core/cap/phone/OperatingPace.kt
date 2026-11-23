@@ -29,7 +29,8 @@ enum class OperatingPace {
     }
 
     companion object {
-        val DEFAULT = STANDARD
+        /** 默认快:用户明确反馈默认节奏"笨";设置里可改回。 */
+        val DEFAULT = FAST
 
         /** 存下的名字(大小写不论);认不出为 null。 */
         fun parse(value: String?): OperatingPace? = entries.firstOrNull { it.name.equals(value?.trim(), ignoreCase = true) }

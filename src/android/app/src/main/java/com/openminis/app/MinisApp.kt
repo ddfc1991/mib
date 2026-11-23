@@ -632,6 +632,10 @@ class MinisApp : com.mibot.MikaApp(), ImageLoaderFactory, WebOwner {
         // late, non-UI subsystem from permanently locking the user out
         // of an app whose UI dependencies are in fact ready.
         subsystemsInitialized = true
+        // [openbots] 5 模块模型接线:注入真工厂(proactive 判定/归纳、calls AI 总结等)。
+        // 放这里而不是 onCreate 尾部:providerRepository 等 lateinit 都已就位。
+        runCatching { providers.backend = com.mibot.proactive.MinisModelBackend(this) }
+            .onFailure { Log.w("MinisApp", "model backend inject failed: ${it.message}") }
         // [T-update-channels] Automatic update checks on each return to the
         // foreground, throttled (24 h stable / 6 h beta); off on store builds.
         runCatching { com.openminis.app.data.UpdateAutoChecker.install(this) }

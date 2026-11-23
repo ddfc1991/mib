@@ -9,6 +9,7 @@ import com.mibot.core.run.Delivery
 import com.mibot.core.run.Outbox
 import com.mibot.settings.AppAccessStore
 import com.mibot.teach.TeachRuntime
+import kotlinx.coroutines.flow.map
 
 /**
  * Mika 的 App 容器:挂了一整棵依赖(聊天、任务、记忆、胶囊、MCP 等)。
@@ -34,7 +35,7 @@ open class MikaApp : Application(), PhoneServices.Owner {
     /** 前台可见状态(calls/proactive 用):true=app 在前台。 */
     val foreground: AppForeground = AppForeground()
 
-    /** 模型提供者(5 模块用):modelFor(Main) 暂给 null,AI 总结等降级;后续接 mib-src LLMProvider。 */
+    /** 模型提供者(5 模块用):backend 注入前 modelFor 返回 null(降级);MinisApp 初始化后注入真工厂。 */
     val providers: ModelProviders = ModelProviders()
 
     /** 任务状态(wechat 模块用):占位,run() 恒 null;wechat 的询问/回答暂降级,后续接 Mibot 任务体系。 */
@@ -54,15 +55,20 @@ open class MikaApp : Application(), PhoneServices.Owner {
         )
     }
 
-    /** 主动能力(proactive 模块):通知监听/归纳/提醒;判定模型与用量占位(null/0),功能降级。 */
+    /** 应用访问(主动能力用):禁用 App 名单;文件不存在时全允许。 */
+    private val accessStore by lazy {
+        com.mibot.settings.AppAccessStore(java.io.File(filesDir, "app-access.json"))
+    }
+
+    /** 主动能力(proactive 模块):通知监听/判定/提醒;模型经 [providers](MinisApp 注入),用量账本未接(0)。 */
     val proactive: com.mibot.proactive.ProactiveRuntime by lazy {
         com.mibot.proactive.ProactiveRuntime.create(
             this,
-            { com.mibot.proactive.AppGate(true, emptySet()) },
-            kotlinx.coroutines.flow.flowOf(com.mibot.proactive.AppGate(true, emptySet())),
+            { com.mibot.proactive.AppGate.of(accessStore.current()) },
+            accessStore.state.map { com.mibot.proactive.AppGate.of(it) },
             com.mibot.proactive.TriageHooks(
-                target = { null },
-                model = { _ -> null },
+                target = { providers.triageTarget() },
+                model = { call -> providers.triageModel(call) },
                 tokensToday = { 0L },
                 callsToday = { 0L },
                 usageVersion = { kotlinx.coroutines.flow.MutableStateFlow(0L) },
@@ -72,9 +78,12 @@ open class MikaApp : Application(), PhoneServices.Owner {
         )
     }
 
-    /** 5 模块需要的模型提供者接口;当前占位,返回 null。 */
+    /** 5 模块需要的模型提供者接口;backend 注入前占位(返回 null),注入后委托 [com.mibot.proactive.ModelBackend]。 */
     class ModelProviders {
-        fun modelFor(role: ModelRole): ChatModel? = null
+        var backend: com.mibot.proactive.ModelBackend? = null
+        fun modelFor(role: ModelRole): ChatModel? = backend?.chatModel(role)
+        fun triageTarget(): com.mibot.core.proactive.TriageTarget? = backend?.triageTarget()
+        fun triageModel(call: com.mibot.core.proactive.ProactiveCall): com.mibot.core.proactive.TargetedModel? = backend?.triageModel(call)
     }
 
     /** wechat 需要的任务状态引用;占位,run() 恒 null(wechat 不接 AgentLoop 任务/询问)。 */
