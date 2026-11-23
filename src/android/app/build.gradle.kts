@@ -468,6 +468,10 @@ dependencies {
     // deps/rclone-mobile/backends/backends.go, shared with the iOS build.
     implementation(group = "", name = "rclone", ext = "aar")
 
+    // team-dynamics-plugin (Hassn 动态 feed 插件, Muse 动态): 宿主三行接进。
+    // AAR 由用户提供(2026-11-23 本机编, Kotlin 2.1.0 与宿主一致),flatDir app/libs。
+    implementation(group = "", name = "team-dynamics-plugin-debug", ext = "aar")
+
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")
 

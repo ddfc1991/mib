@@ -98,6 +98,7 @@ fun HqMoreScreen(
             HqMoreEntry("groups", "模型组", MikaIcons.Apps, Hq.accent),
             HqMoreEntry("vault", "账户金库", MikaIcons.Shield, Color(0xFFAF52DE)),
             HqMoreEntry("preview", "UI 预览", MikaIcons.Edit, Hq.accent),
+            HqMoreEntry("dynamics", "动态", MikaIcons.Spark, Color(0xFF32D74B)),
         ), onEntry)
         HqMenuGroup("消息与数据", listOf(
             HqMoreEntry("messaging", "消息", MikaIcons.Message, Hq.ok),

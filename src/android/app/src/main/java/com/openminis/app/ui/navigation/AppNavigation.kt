@@ -97,6 +97,8 @@ object Routes {
     const val HQ_HOME = "hq_home"
     /** Hermes HQ 截图 1:1 空白 UI 预览版(无记录)。 */
     const val HQ_PREVIEW = "hq_preview"
+    /** 动态(团队动态 feed,Muse/team-dynamics-plugin)。 */
+    const val DYNAMICS = "dynamics"
     const val PROVIDER_LIST = "providers"
     const val ADD_PROVIDER = "add_provider"
     const val PROVIDER_DETAIL = "provider/{instanceId}"
@@ -951,6 +953,7 @@ fun AppNavigation(
                         "files" -> navController.safeNavigate(Routes.SETTINGS)
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
+                        "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
                         else -> {}
                     }
                 },
@@ -973,6 +976,7 @@ fun AppNavigation(
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "preview" -> navController.safeNavigate(Routes.HQ_PREVIEW)
+                        "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
                         else -> {}
                     }
                 },
@@ -980,6 +984,17 @@ fun AppNavigation(
         }
         composable("destiny_v7_home") {
             com.openminis.app.mibot.v7.DestinyV7Home(v7Actions, chatRepository = chatRepository)
+        }
+        composable(Routes.DYNAMICS) {
+            val dynVm = com.hassn.dynamics.plugin.DynamicsPlugin.createViewModel()
+            LaunchedEffect(Unit) {
+                // 演示:先喂 sampleJson 两条事件,后续 agent 事件由宿主推。
+                com.hassn.dynamics.plugin.DynamicsPlugin.pushAllJson(dynVm, com.hassn.dynamics.plugin.DynamicsPlugin.sampleJson())
+            }
+            com.hassn.dynamics.plugin.DynamicsPlugin.Screen(dynVm) { activity ->
+                // Omega 无独立 goal 页:有 goalId 时回主框架(HQ_HOME)看任务流。
+                if (activity.goalId != null) navController.safeNavigate(Routes.HQ_HOME)
+            }
         }
         composable(
             route = "destiny_v7_screen/{id}",
