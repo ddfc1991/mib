@@ -982,7 +982,6 @@ fun AppNavigation(
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
-                        "preview" -> navController.safeNavigate(Routes.HQ_PREVIEW)
                         "voice" -> navController.safeNavigate(Routes.MIBOT_VOICE)
                         else -> {}
                     }
@@ -1005,7 +1004,6 @@ fun AppNavigation(
                         "files" -> navController.safeNavigate(Routes.SETTINGS)
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
-                        "preview" -> navController.safeNavigate(Routes.HQ_PREVIEW)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
                         else -> {}
                     }

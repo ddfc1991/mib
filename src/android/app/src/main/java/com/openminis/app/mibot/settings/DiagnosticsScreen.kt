@@ -33,22 +33,22 @@ fun DiagnosticsScreen(
     onGateway: () -> Unit,
     onReportBug: () -> Unit,
 ) {
-    MibotScaffold(title = t("诊断", "Diagnostics"), onBack = onBack) {
-        MibotSectionHeader(t("设备", "Device"))
-        MibotCard(padding = PaddingValues(16.dp)) {
-            Text("Mibot ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", fontSize = com.openminis.app.mibot.design.MibotType.Body, color = MaterialTheme.colorScheme.onSurface)
-            Text("${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})", fontSize = com.openminis.app.mibot.design.MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    OmegaScaffold(title = t("诊断", "Diagnostics"), onBack = onBack) {
+        OmegaSectionHeader(t("设备", "Device"))
+        OmegaCard(padding = PaddingValues(16.dp)) {
+            Text("Mibot ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", fontSize = com.openminis.app.mibot.design.OmegaType.Body, color = MaterialTheme.colorScheme.onSurface)
+            Text("${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})", fontSize = com.openminis.app.mibot.design.OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        MibotSectionHeader(t("测试与记录", "Tests & records"))
-        MibotCard {
-            MibotRow(t("AI 网关体检", "Gateway health check"), t("逐个测试服务商账号", "Test every provider account"), Icons.Outlined.Hub, MibotTokens.Slate, onClick = onGateway, showDivider = true)
-            MibotRow(t("日志", "Logs"), t("应用与代理日志", "App and agent logs"), Icons.Outlined.Description, MibotTokens.Steel, onClick = onLogs, showDivider = true)
-            MibotRow(t("Token 用量", "Token usage"), null, Icons.Outlined.BarChart, MibotTokens.Green, onClick = onUsage, showDivider = true)
-            MibotRow(t("存储占用", "Storage usage"), null, Icons.Outlined.Storage, MibotTokens.Amber, onClick = onStorage)
+        OmegaSectionHeader(t("测试与记录", "Tests & records"))
+        OmegaCard {
+            OmegaRow(t("AI 网关体检", "Gateway health check"), t("逐个测试服务商账号", "Test every provider account"), Icons.Outlined.Hub, OmegaTokens.Slate, onClick = onGateway, showDivider = true)
+            OmegaRow(t("日志", "Logs"), t("应用与代理日志", "App and agent logs"), Icons.Outlined.Description, OmegaTokens.Steel, onClick = onLogs, showDivider = true)
+            OmegaRow(t("Token 用量", "Token usage"), null, Icons.Outlined.BarChart, OmegaTokens.Green, onClick = onUsage, showDivider = true)
+            OmegaRow(t("存储占用", "Storage usage"), null, Icons.Outlined.Storage, OmegaTokens.Amber, onClick = onStorage)
         }
-        MibotSectionHeader(t("上报", "Report"))
-        MibotCard {
-            MibotRow(t("反馈问题", "Report a problem"), t("在 GitHub 打开已填好信息的问题单", "Opens a pre-filled GitHub issue"), Icons.Outlined.BugReport, MibotTokens.Red, onClick = onReportBug)
+        OmegaSectionHeader(t("上报", "Report"))
+        OmegaCard {
+            OmegaRow(t("反馈问题", "Report a problem"), t("在 GitHub 打开已填好信息的问题单", "Opens a pre-filled GitHub issue"), Icons.Outlined.BugReport, MibotTokens.Red, onClick = onReportBug)
         }
     }
 }

@@ -83,7 +83,7 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
     fun importUri(uri: Uri) {
         importing = true
         scope.launch {
-            val r = withContext(Dispatchers.IO) { MibotPhotoImport.import(ctx, uri) }
+            val r = withContext(Dispatchers.IO) { OmegaPhotoImport.import(ctx, uri) }
             importing = false
             if (r.path != null) {
                 photoError = null
@@ -101,15 +101,15 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
             .onFailure { docPicker.launch(arrayOf("image/*")) }
     }
 
-    MibotScaffold(title = t("背景与主题", "Background & theme"), onBack = onBack) {
-        MibotSectionHeader(t("主题", "Theme"))
-        MibotCard {
+    OmegaScaffold(title = t("背景与主题", "Background & theme"), onBack = onBack) {
+        OmegaSectionHeader(t("主题", "Theme"))
+        OmegaCard {
             listOf(
                 0 to (t("跟随系统", "Follow system") to t("跟随系统浅色 / 深色", "Follows the system light / dark setting")),
                 1 to (t("浅色 · 暖瓷", "Light · porcelain") to t("暖瓷白底，低对比天空，朱砂强调色", "Warm porcelain, low-contrast sky, cinnabar accent")),
                 2 to (t("深色 · 石墨", "Dark · graphite") to t("冷石墨底，层叠玻璃，微光星点", "Cool graphite, layered glass, faint stars")),
             ).forEachIndexed { i, (mode, txt) ->
-                MibotRow(
+                OmegaRow(
                     title = txt.first, subtitle = txt.second, chevron = false, showDivider = i < 2,
                     onClick = {
                         themeMode = mode
@@ -120,16 +120,16 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
             }
         }
 
-        MibotSectionHeader(t("背景", "Background"))
-        MibotCard {
-            MibotRow(
+        OmegaSectionHeader(t("背景", "Background"))
+        OmegaCard {
+            OmegaRow(
                 t("氛围天空", "Atmospheric sky"),
                 t("随时段变化的柔和天色与极淡薄雾；天气只做克制的叠加（细雨、微雪、星点、阴天降饱和）", "Soft time-of-day sky with a faint haze; weather is a restrained overlay (thin rain, tiny snow, faint stars, overcast desaturation)"),
                 chevron = false, showDivider = true,
                 onClick = { GlassPrefs.update(ctx) { it.copy(mode = BackdropMode.AMBIENT) } },
                 trailing = { if (settings.mode == BackdropMode.AMBIENT) StatusChip("✓", ChipKind.ACCENT) },
             )
-            MibotRow(
+            OmegaRow(
                 t("照片", "Photo"),
                 if (settings.photoPath != null) t("已选择 · 点此更换", "Chosen · tap to change") else t("从相册选择", "Pick from gallery"),
                 chevron = false, showDivider = true,
@@ -139,21 +139,21 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
                     else if (settings.mode == BackdropMode.PHOTO) StatusChip("✓", ChipKind.ACCENT)
                 },
             )
-            MibotRow(
+            OmegaRow(
                 t("纯色", "Solid colour"), null, chevron = false,
                 onClick = { GlassPrefs.update(ctx) { it.copy(mode = BackdropMode.PLAIN) } },
                 trailing = { if (settings.mode == BackdropMode.PLAIN) StatusChip("✓", ChipKind.ACCENT) },
             )
         }
         if (settings.mode == BackdropMode.AMBIENT || (settings.mode == BackdropMode.PHOTO && settings.fogOverPhoto)) {
-            MibotSectionHeader(t("动态背景", "Background motion"))
-            MibotCard {
+            OmegaSectionHeader(t("动态背景", "Background motion"))
+            OmegaCard {
                 listOf(
                     com.openminis.app.ui.glass.BackdropMotion.FULL to (t("开", "On") to t("薄雾缓慢流动，最高 30 帧；后台、熄屏、省电或关闭系统动画时自动暂停", "Haze drifts slowly, ≤30 fps; pauses in background, screen off, battery saver or with animations off")),
                     com.openminis.app.ui.glass.BackdropMotion.REDUCED to (t("降低动态", "Reduced") to t("更慢更省电（约 8 帧）", "Slower and lighter (about 8 fps)")),
                     com.openminis.app.ui.glass.BackdropMotion.OFF to (t("关", "Off") to t("静态天色，不播放动画", "Static sky, no animation")),
                 ).forEachIndexed { i, (m, txt) ->
-                    MibotRow(
+                    OmegaRow(
                         title = txt.first, subtitle = txt.second, chevron = false, showDivider = i < 2,
                         onClick = { GlassPrefs.update(ctx) { it.copy(motion = m) } },
                         trailing = { if (settings.motion == m) StatusChip("✓", ChipKind.ACCENT) },
@@ -162,51 +162,51 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
             }
         }
         photoError?.let {
-            Text(t("无法加载图片：", "Couldn't load the image: ") + it, color = MaterialTheme.colorScheme.error, fontSize = com.openminis.app.mibot.design.MibotType.Secondary,
+            Text(t("无法加载图片：", "Couldn't load the image: ") + it, color = MaterialTheme.colorScheme.error, fontSize = com.openminis.app.mibot.design.OmegaType.Secondary,
                 modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 8.dp))
         }
         if (settings.mode == BackdropMode.PHOTO) {
-            MibotSectionHeader(t("照片遮罩", "Photo veil"))
-            MibotCard(padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+            OmegaSectionHeader(t("照片遮罩", "Photo veil"))
+            OmegaCard(padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
                 Slider(value = settings.dim, onValueChange = { v -> GlassPrefs.update(ctx) { it.copy(dim = v) } }, valueRange = 0.15f..0.9f)
-                Text(t("越高文字越清楚", "Higher = more legible text"), fontSize = com.openminis.app.mibot.design.MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t("越高文字越清楚", "Higher = more legible text"), fontSize = com.openminis.app.mibot.design.OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            MibotCard(Modifier.padding(top = 8.dp)) {
-                MibotRow(
+            OmegaCard(Modifier.padding(top = 8.dp)) {
+                OmegaRow(
                     t("照片上叠加薄雾", "Haze over the photo"),
                     t("在照片上缓慢飘过一层极淡的薄雾", "A very faint drifting haze over your photo"),
                     chevron = false,
                     trailing = { Switch(checked = settings.fogOverPhoto, onCheckedChange = { on -> GlassPrefs.update(ctx) { it.copy(fogOverPhoto = on) } }) },
                 )
             }
-            Row(Modifier.padding(16.dp)) { MibotButton(t("更换照片", "Change photo"), tonal = true, onClick = { pick() }) }
+            Row(Modifier.padding(16.dp)) { OmegaButton(t("更换照片", "Change photo"), tonal = true, onClick = { pick() }) }
         }
         if (settings.mode == BackdropMode.PLAIN) {
-            MibotSectionHeader(t("颜色", "Colour"))
+            OmegaSectionHeader(t("颜色", "Colour"))
             val swatches = listOf(0, Color(0xFFF3F0EA).toArgb(), Color(0xFFEDEAE4).toArgb(), Color(0xFFE6E9EC).toArgb(),
                 Color(0xFF0E1014).toArgb(), Color(0xFF16181D).toArgb(), Color(0xFF1C1A19).toArgb())
             Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 swatches.forEach { argb ->
-                    val c = if (argb == 0) MibotTokens.accent().copy(alpha = 0.25f) else Color(argb)
+                    val c = if (argb == 0) OmegaTokens.accent().copy(alpha = 0.25f) else Color(argb)
                     Box(
                         Modifier.size(32.dp).clip(CircleShape).background(c)
-                            .border(if (settings.solidColor == argb) 3.dp else 1.dp, if (settings.solidColor == argb) MibotTokens.accent() else MibotTokens.hairline(), CircleShape)
+                            .border(if (settings.solidColor == argb) 3.dp else 1.dp, if (settings.solidColor == argb) OmegaTokens.accent() else OmegaTokens.hairline(), CircleShape)
                             .clickable { GlassPrefs.update(ctx) { it.copy(solidColor = argb) } },
                     )
                 }
             }
-            MibotFootnote(t("第一个 = 跟随主题的默认底色。", "The first one follows the theme."))
+            OmegaFootnote(t("第一个 = 跟随主题的默认底色。", "The first one follows the theme."))
         }
 
-        MibotSectionHeader(t("界面", "Interface"))
-        MibotCard {
-            MibotRow(
-                t("Mibot 界面", "Mibot interface"),
+        OmegaSectionHeader(t("界面", "Interface"))
+        OmegaCard {
+            OmegaRow(
+                t("Mibot 界面", "Omega interface"),
                 t("统一设计、共享背景、底部标签栏。关闭则恢复原版布局", "Unified design, shared backdrop, bottom tabs. Off restores the stock layout"),
                 chevron = false, showDivider = true,
                 trailing = { Switch(checked = settings.enabled, onCheckedChange = { on -> GlassPrefs.update(ctx) { it.copy(enabled = on) } }) },
             )
-            MibotRow(t("字体、语言与显示", "Fonts, language & display"), null, onClick = onMoreAppearance)
+            OmegaRow(t("字体、语言与显示", "Fonts, language & display"), null, onClick = onMoreAppearance)
         }
         Box(Modifier.height(16.dp))
     }
@@ -220,7 +220,7 @@ fun BackgroundThemeScreen(onBack: () -> Unit, onMoreAppearance: () -> Unit) {
  * handles HEIC/HEIF/AVIF/WebP and applies orientation itself; older devices
  * use BitmapFactory with inSampleSize. Failures return a readable reason.
  */
-object MibotPhotoImport {
+object OmegaPhotoImport {
     class Result(val path: String?, val error: String?)
 
     fun import(ctx: Context, uri: Uri): Result {

@@ -211,7 +211,7 @@ private fun connectClient(c: Context, popup: Boolean): WebViewClient = object : 
  * 0×0 layer any more, which starved the page of frames):
  *  - WORKING: a half-height sheet with the live page, the 5-step checklist,
  *    the current step and its countdown, and 「我接手」「我已复制 Key」「取消」.
- *    Touches on the page are blocked while Mibot acts. Collapsible to a small
+ *    Touches on the page are blocked while Omega acts. Collapsible to a small
  *    chip that keeps a scaled, still-drawn live preview of the page.
  *  - VERIFY / ASSIST: the 90% sheet when a human is needed (or after 我接手),
  *    with a paste field for the key in KEY runs.
@@ -257,12 +257,12 @@ fun ConnectWebLayer() {
         if (full) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {})
         val shell = when {
             chip -> Modifier.align(Alignment.BottomEnd).windowInsetsPadding(WindowInsets.navigationBars).padding(end = 12.dp, bottom = 84.dp).width(208.dp)
-                .frosted(RoundedCornerShape(16.dp), FrostLevel.Sheet, border = false, elevation = 6.dp).border(1.dp, MibotTokens.accent().copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .frosted(RoundedCornerShape(16.dp), FrostLevel.Sheet, border = false, elevation = 6.dp).border(1.dp, OmegaTokens.accent().copy(alpha = 0.5f), RoundedCornerShape(16.dp))
             full -> Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.9f)
                 .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 1f))
             else -> Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.5f)
                 .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 1f))
-                .border(1.dp, MibotTokens.hairline(), RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+                .border(1.dp, OmegaTokens.hairline(), RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
         }
         Column(shell) {
             if (chip) {
@@ -270,11 +270,11 @@ fun ConnectWebLayer() {
                     BrandLogo(s?.logo, s?.name ?: "", s?.color, size = 20.dp)
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Mibot 正在操作 · ${s?.name.orEmpty()}", fontSize = MibotType.Caption, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(if (st.stepLabel.isBlank()) "…" else "${st.stepLabel} · " + if (left > 0) "${left}s" else "等待中", fontSize = MibotType.Caption,
+                        Text("Omega 正在操作 · ${s?.name.orEmpty()}", fontSize = MibotType.Caption, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(if (st.stepLabel.isBlank()) "…" else "${st.stepLabel} · " + if (left > 0) "${left}s" else "等待中", fontSize = OmegaType.Caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                    Text("展开", fontSize = MibotType.Caption, color = MibotTokens.accent())
+                    Text("展开", fontSize = OmegaType.Caption, color = OmegaTokens.accent())
                 }
             } else {
                 Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 8.dp)) {
@@ -282,27 +282,27 @@ fun ConnectWebLayer() {
                         BrandLogo(s?.logo, s?.name ?: "", s?.color, size = 26.dp)
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(if (full) st.title else "Mibot 正在操作 · ${s?.name.orEmpty()}", fontSize = MibotType.TitleSmall, fontWeight = MibotType.Semi,
+                            Text(if (full) st.title else "Omega 正在操作 · ${s?.name.orEmpty()}", fontSize = MibotType.TitleSmall, fontWeight = MibotType.Semi,
                                 color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             val shown = st.url.ifBlank { st.loadUrl }
                             Text(Uri.parse(shown).host.orEmpty() + Uri.parse(shown).path.orEmpty().take(40), fontSize = MibotType.Caption,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         if (full) StatusChip(if (st.mode == AutoKey.Mode.LOGIN) "登录" else if (st.tookOver) "你在操作" else "需要你", if (st.highlight) ChipKind.WARN else ChipKind.ACCENT)
-                        else Text("收起", fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { AutoKey.userCollapse(true) }.padding(6.dp))
+                        else Text("收起", fontSize = OmegaType.Secondary, color = OmegaTokens.accent(), modifier = Modifier.clickable { AutoKey.userCollapse(true) }.padding(6.dp))
                     }
                     if (isKey) StepChecklist(st.stepIndex, done = false)
-                    if (!full && stepLine.isNotBlank()) Text(stepLine, fontSize = MibotType.Secondary, fontWeight = MibotType.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 4.dp))
-                    if (!full && st.detail.isNotBlank()) Text(st.detail, fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (!full && stepLine.isNotBlank()) Text(stepLine, fontSize = OmegaType.Secondary, fontWeight = OmegaType.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 4.dp))
+                    if (!full && st.detail.isNotBlank()) Text(st.detail, fontSize = OmegaType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (full && st.hint.isNotBlank()) {
-                        Text(st.hint, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine,
-                            color = if (st.highlight) MibotTokens.warnColor() else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 6.dp).then(if (st.highlight) Modifier.clip(RoundedCornerShape(8.dp)).background(MibotTokens.warnColor().copy(alpha = 0.12f))
-                                .border(1.dp, MibotTokens.warnColor().copy(alpha = 0.45f), RoundedCornerShape(8.dp)).padding(8.dp) else Modifier))
+                        Text(st.hint, fontSize = OmegaType.Secondary, lineHeight = OmegaType.SecondaryLine,
+                            color = if (st.highlight) OmegaTokens.warnColor() else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp).then(if (st.highlight) Modifier.clip(RoundedCornerShape(8.dp)).background(OmegaTokens.warnColor().copy(alpha = 0.12f))
+                                .border(1.dp, OmegaTokens.warnColor().copy(alpha = 0.45f), RoundedCornerShape(8.dp)).padding(8.dp) else Modifier))
                     }
                 }
-                if (st.progress in 1..99) LinearProgressIndicator(progress = { st.progress / 100f }, modifier = Modifier.fillMaxWidth().height(2.dp), color = MibotTokens.accent())
-                else MibotDivider(inset = 0.dp)
+                if (st.progress in 1..99) LinearProgressIndicator(progress = { st.progress / 100f }, modifier = Modifier.fillMaxWidth().height(2.dp), color = OmegaTokens.accent())
+                else OmegaDivider(inset = 0.dp)
             }
             // The page box stays at the same place in the tree in every mode, so the WebView is never rebuilt by a mode switch.
             Box(if (chip) Modifier.fillMaxWidth().scaledLive(fullW, fullH, maxH = 120.dp) else Modifier.weight(1f).fillMaxWidth()) {
@@ -319,23 +319,23 @@ fun ConnectWebLayer() {
                     key(pw) {
                         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface.copy(alpha = 1f))) {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text("登录窗口", fontSize = MibotType.Secondary, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                                Text("关闭", fontSize = MibotType.Secondary, color = MibotTokens.accent(), modifier = Modifier.clickable { AutoKey.closePopup() }.padding(6.dp))
+                                Text("登录窗口", fontSize = OmegaType.Secondary, fontWeight = OmegaType.Semi, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                                Text("关闭", fontSize = OmegaType.Secondary, color = OmegaTokens.accent(), modifier = Modifier.clickable { AutoKey.closePopup() }.padding(6.dp))
                             }
                             AndroidView(factory = { (pw.parent as? android.view.ViewGroup)?.removeView(pw); pw }, modifier = Modifier.weight(1f).fillMaxWidth(),
                                 onRelease = { w -> runCatching { w.stopLoading() }; w.destroy() })
                         }
                     }
                 }
-                // While Mibot acts the page is view-only (a stray tap would fight the engine); the chip's preview expands on tap.
+                // While Omega acts the page is view-only (a stray tap would fight the engine); the chip's preview expands on tap.
                 if (!full) Box(Modifier.matchParentSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { if (chip) AutoKey.userCollapse(false) })
                 if (full && st.error != null) {
                     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface.copy(alpha = 1f)).padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("页面没有打开", fontSize = MibotType.Title, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface)
-                        Text(st.error ?: "", fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp, bottom = 16.dp))
+                        Text("页面没有打开", fontSize = OmegaType.Title, fontWeight = OmegaType.Semi, color = MaterialTheme.colorScheme.onSurface)
+                        Text(st.error ?: "", fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp, bottom = 16.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            MibotButton("重试", { AutoKey.onPageError(null); AutoKey.web?.reload() })
-                            MibotButton("用浏览器打开", { openInBrowser(ctx, st.url.ifBlank { st.loadUrl }) }, tonal = true)
+                            OmegaButton("重试", { AutoKey.onPageError(null); AutoKey.web?.reload() })
+                            OmegaButton("用浏览器打开", { openInBrowser(ctx, st.url.ifBlank { st.loadUrl }) }, tonal = true)
                         }
                     }
                 }
@@ -345,24 +345,24 @@ fun ConnectWebLayer() {
                     if (isKey && st.pasteOpen) {
                         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             GlassField(paste, { paste = it }, "粘贴 Key", modifier = Modifier.weight(1f), placeholder = "把复制的 Key 粘贴到这里", secret = true)
-                            MibotButton("保存", { AutoKey.userPaste(paste) }, enabled = paste.isNotBlank())
+                            OmegaButton("保存", { AutoKey.userPaste(paste) }, enabled = paste.isNotBlank())
                         }
-                        st.pasteMsg?.let { Text(it, fontSize = MibotType.Caption, color = MibotTokens.warnColor()) }
+                        st.pasteMsg?.let { Text(it, fontSize = OmegaType.Caption, color = OmegaTokens.warnColor()) }
                     }
                     if (isKey) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (st.tookOver) MibotButton("继续自动", { AutoKey.userResume() }, tonal = true, modifier = Modifier.weight(1f))
-                        else if (!st.handedOff) MibotButton("我接手", { AutoKey.userTakeOver() }, tonal = true, modifier = Modifier.weight(1f))
-                        MibotButton("我已复制 Key", { AutoKey.userCopiedKey(ctx) }, tonal = !full, modifier = Modifier.weight(1f))
+                        if (st.tookOver) OmegaButton("继续自动", { AutoKey.userResume() }, tonal = true, modifier = Modifier.weight(1f))
+                        else if (!st.handedOff) OmegaButton("我接手", { AutoKey.userTakeOver() }, tonal = true, modifier = Modifier.weight(1f))
+                        OmegaButton("我已复制 Key", { AutoKey.userCopiedKey(ctx) }, tonal = !full, modifier = Modifier.weight(1f))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MibotButton("取消", { AutoKey.userCancel() }, tonal = true, modifier = Modifier.weight(1f))
+                        OmegaButton("取消", { AutoKey.userCancel() }, tonal = true, modifier = Modifier.weight(1f))
                         if (full) {
                             if (st.handedOff) {
-                                MibotButton("稍后再说", { AutoKey.userLater() }, tonal = true, modifier = Modifier.weight(1f))
-                                MibotButton("再次打开浏览器", { AutoKey.userHandoff(ctx) }, tonal = true, modifier = Modifier.weight(1f))
-                            } else if (st.handoff) MibotButton("用浏览器完成", { AutoKey.userHandoff(ctx) }, modifier = Modifier.weight(1f))
-                            else if (st.canSaveLogin) MibotButton("我已登录，保存", { AutoKey.userSaveLogin() }, modifier = Modifier.weight(1f))
-                            else MibotButton("用浏览器打开", { openInBrowser(ctx, st.url.ifBlank { st.loadUrl }) }, tonal = true, modifier = Modifier.weight(1f))
+                                OmegaButton("稍后再说", { AutoKey.userLater() }, tonal = true, modifier = Modifier.weight(1f))
+                                OmegaButton("再次打开浏览器", { AutoKey.userHandoff(ctx) }, tonal = true, modifier = Modifier.weight(1f))
+                            } else if (st.handoff) OmegaButton("用浏览器完成", { AutoKey.userHandoff(ctx) }, modifier = Modifier.weight(1f))
+                            else if (st.canSaveLogin) OmegaButton("我已登录，保存", { AutoKey.userSaveLogin() }, modifier = Modifier.weight(1f))
+                            else OmegaButton("用浏览器打开", { openInBrowser(ctx, st.url.ifBlank { st.loadUrl }) }, tonal = true, modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -378,9 +378,9 @@ private fun StepChecklist(current: Int, done: Boolean) {
         AkStep.CHECKLIST.forEachIndexed { i, label ->
             val past = done || i < current
             val now = !done && i == current
-            Text((if (past) "✓ " else if (now) "● " else "○ ") + label, fontSize = MibotType.Caption, maxLines = 1, overflow = TextOverflow.Clip,
-                fontWeight = if (now) MibotType.Semi else null,
-                color = when { now -> MibotTokens.accent(); past -> MaterialTheme.colorScheme.onSurface; else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) },
+            Text((if (past) "✓ " else if (now) "● " else "○ ") + label, fontSize = OmegaType.Caption, maxLines = 1, overflow = TextOverflow.Clip,
+                fontWeight = if (now) OmegaType.Semi else null,
+                color = when { now -> OmegaTokens.accent(); past -> MaterialTheme.colorScheme.onSurface; else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) },
                 modifier = Modifier.weight(1f))
         }
     }
@@ -401,7 +401,7 @@ private fun Modifier.scaledLive(fullW: Int, fullH: Int, maxH: androidx.compose.u
 
 /**
  * [fork/mibot-v5b2] 连接方式 sheet for one service: app target vs web target,
- * honest about what each can give Mibot.
+ * honest about what each can give Omega.
  */
 @Composable
 fun ConnectChoiceSheet(s: VaultService, onDismiss: () -> Unit) {
@@ -422,35 +422,35 @@ fun ConnectChoiceSheet(s: VaultService, onDismiss: () -> Unit) {
                 BrandLogo(s.logo, s.name, s.color, size = 36.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("连接 ${s.name}", fontSize = MibotType.Title, fontWeight = MibotType.Semi, color = MaterialTheme.colorScheme.onSurface)
-                    Text(if (s.needsKey) "需要 API Key 才能当模型用" else "网页 / App 登录", fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("连接 ${s.name}", fontSize = OmegaType.Title, fontWeight = OmegaType.Semi, color = MaterialTheme.colorScheme.onSurface)
+                    Text(if (s.needsKey) "需要 API Key 才能当模型用" else "网页 / App 登录", fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(Modifier.height(12.dp))
             @Composable
             fun Option(title: String, sub: String, primary: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
                 Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(12.dp))
-                    .background(if (primary) MibotTokens.selected() else MibotTokens.tile())
-                    .border(1.dp, if (primary) MibotTokens.accent().copy(alpha = 0.4f) else MibotTokens.hairline(), RoundedCornerShape(12.dp))
+                    .background(if (primary) OmegaTokens.selected() else OmegaTokens.tile())
+                    .border(1.dp, if (primary) OmegaTokens.accent().copy(alpha = 0.4f) else OmegaTokens.hairline(), RoundedCornerShape(12.dp))
                     .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier).padding(12.dp)) {
-                    Text(title, fontSize = MibotType.Body, fontWeight = MibotType.Semi, color = if (primary) MibotTokens.accent() else MaterialTheme.colorScheme.onSurface)
-                    Text(sub, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(title, fontSize = OmegaType.Body, fontWeight = OmegaType.Semi, color = if (primary) OmegaTokens.accent() else MaterialTheme.colorScheme.onSurface)
+                    Text(sub, fontSize = OmegaType.Secondary, lineHeight = OmegaType.SecondaryLine, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             val appName = s.appName ?: s.name
             if (s.auth == "oauth_openrouter") {
-                Option("授权登录（OAuth）", "在浏览器里点「授权」，OpenRouter 直接把 Key 交给 Mibot · openrouter.ai", true) { VaultConnect.enqueue(ctx, listOf(s to null), VaultConnect.Mode.AUTO); onDismiss() }
+                Option("授权登录（OAuth）", "在浏览器里点「授权」，OpenRouter 直接把 Key 交给 Omega · openrouter.ai", true) { VaultConnect.enqueue(ctx, listOf(s to null), VaultConnect.Mode.AUTO); onDismiss() }
             } else if (s.needsKey && recipe != null) {
-                Option("自动获取 API Key", "打开 $webHost 并逐步显示进度（可收起成小窗），登录后自动新建「Mibot」Key 并保存、探测；验证码 / 短信 / 扫码时请你来；随时可「我接手」或粘贴 Key", true) {
+                Option("自动获取 API Key", "打开 $webHost 并逐步显示进度（可收起成小窗），登录后自动新建「Omega」Key 并保存、探测；验证码 / 短信 / 扫码时请你来；随时可「我接手」或粘贴 Key", true) {
                     VaultConnect.enqueue(ctx, listOf(s to null), VaultConnect.Mode.AUTO); onDismiss()
                 }
             }
             if (s.hasApp) {
                 if (installed != null) {
-                    Option("打开 $appName App 登录", if (s.needsKey) "在 App 里登录不会把 API Key 交给 Mibot（读不到其他 App 的凭据），要当模型用还需上面的网页方式" else "跳到 $appName 登录；Mibot 读不到 App 里的凭据，只记录「已在 App 登录」",
+                    Option("打开 $appName App 登录", if (s.needsKey) "在 App 里登录不会把 API Key 交给 Omega（读不到其他 App 的凭据），要当模型用还需上面的网页方式" else "跳到 $appName 登录；Omega 读不到 App 里的凭据，只记录「已在 App 登录」",
                         primary = !s.needsKey) { VaultConnect.openApp(ctx, s, installed); }
                 } else {
-                    Option("去应用商店安装 $appName", "未安装 · 装好后可在 App 里登录（Mibot 读不到 App 内凭据）", false) { LoginTargets.openStore(ctx, s); onDismiss() }
+                    Option("去应用商店安装 $appName", "未安装 · 装好后可在 App 里登录（Omega 读不到 App 内凭据）", false) { LoginTargets.openStore(ctx, s); onDismiss() }
                 }
             }
             if (!s.needsKey || recipe == null) {
@@ -458,7 +458,7 @@ fun ConnectChoiceSheet(s: VaultService, onDismiss: () -> Unit) {
                     VaultConnect.enqueue(ctx, listOf(s to null), VaultConnect.Mode.WEB); onDismiss()
                 }
             }
-            Text("取消", fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp).clickable(onClick = onDismiss).padding(8.dp))
+            Text("取消", fontSize = OmegaType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp).clickable(onClick = onDismiss).padding(8.dp))
         }
     }
 }

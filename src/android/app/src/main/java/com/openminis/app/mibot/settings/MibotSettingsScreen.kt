@@ -108,6 +108,8 @@ class MibotSettingsActions(
  */
 @Composable
 fun MibotSettingsScreen(a: MibotSettingsActions) {
+    // [destiny/omega-skin] skin picker
+    val showSkinPicker = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val ctx = LocalContext.current
     val repo = remember { (ctx.applicationContext as MinisApp).providerRepository }
     val config by repo.config.collectAsState()
@@ -129,119 +131,121 @@ fun MibotSettingsScreen(a: MibotSettingsActions) {
     // [fork/mibot-v5b2] The list viewport stops at the top of the floating tab bar, so no row
     // (e.g. AI 邮箱 on the first screen) ever sits under the bar or in the gesture strip below it.
     LazyColumn(Modifier.fillMaxSize().padding(bottom = bottom), contentPadding = PaddingValues(bottom = 16.dp)) {
-        item { MibotPageTitle(t("设置", "Settings")) }
+        item { OmegaPageTitle(t("设置", "Settings")) }
         item {
             Spacer(Modifier.height(4.dp))
-            MibotCard {
-                MibotRow(
+            OmegaCard {
+                OmegaRow(
                     title = t("模型", "Model"),
                     subtitle = modelLine,
                     icon = Icons.Outlined.Layers,
-                    color = MibotTokens.Brick,
+                    color = OmegaTokens.Brick,
                     onClick = if (entry == null && config.instances.isEmpty()) a.providers else a.gateway,
                 )
             }
         }
         item {
-            MibotSectionHeader(t("应用", "Apps"))
-            MibotGrid(
+            OmegaSectionHeader(t("应用", "Apps"))
+            OmegaGrid(
                 listOf(
-                    MibotGridItem(t("账号台账", "Vault"), Icons.Outlined.Key, MibotTokens.Brick, a.vault),
-                    MibotGridItem(t("AI 网关", "Gateway"), Icons.Outlined.Hub, MibotTokens.Slate, a.gateway),
-                    MibotGridItem(t("沙箱", "Sandbox"), Icons.Outlined.ViewInAr, MibotTokens.Teal, a.sandbox),
-                    MibotGridItem(t("终端", "Terminal"), Icons.Outlined.Terminal, MibotTokens.Navy, a.terminal),
-                    MibotGridItem(t("文件", "Files"), Icons.Outlined.Folder, MibotTokens.Amber, a.files),
-                    MibotGridItem(t("技能", "Skills"), Icons.Outlined.AutoAwesome, MibotTokens.Purple, a.skills),
-                    MibotGridItem(t("记忆", "Memory"), Icons.Outlined.Psychology, MibotTokens.Rose, a.memory),
-                    MibotGridItem("MCP", Icons.Outlined.Extension, MibotTokens.Green, a.mcp),
-                    MibotGridItem(t("定时任务", "Scheduled"), Icons.Outlined.Schedule, MibotTokens.Sky, a.scheduled),
-                    MibotGridItem("Bots", Icons.Outlined.SmartToy, MibotTokens.Taupe, a.bots),
-                    MibotGridItem(t("人格", "Soul"), Icons.Outlined.Face, MibotTokens.Red, a.soul),
-                    MibotGridItem(t("后台操控", "BG control"), Icons.Outlined.PhonelinkSetup, MibotTokens.Brick, a.virtualDisplay),
-                    MibotGridItem(t("插件市场", "Plugins"), Icons.Outlined.Storefront, MibotTokens.Amber, a.plugins),
-                    MibotGridItem(t("诊断", "Diagnose"), Icons.Outlined.MonitorHeart, MibotTokens.Steel, a.diagnostics),
+                    OmegaGridItem(t("账号台账", "Vault"), Icons.Outlined.Key, OmegaTokens.Brick, a.vault),
+                    OmegaGridItem(t("AI 网关", "Gateway"), Icons.Outlined.Hub, OmegaTokens.Slate, a.gateway),
+                    OmegaGridItem(t("沙箱", "Sandbox"), Icons.Outlined.ViewInAr, OmegaTokens.Teal, a.sandbox),
+                    OmegaGridItem(t("终端", "Terminal"), Icons.Outlined.Terminal, OmegaTokens.Navy, a.terminal),
+                    OmegaGridItem(t("文件", "Files"), Icons.Outlined.Folder, OmegaTokens.Amber, a.files),
+                    OmegaGridItem(t("技能", "Skills"), Icons.Outlined.AutoAwesome, OmegaTokens.Purple, a.skills),
+                    OmegaGridItem(t("记忆", "Memory"), Icons.Outlined.Psychology, OmegaTokens.Rose, a.memory),
+                    OmegaGridItem("MCP", Icons.Outlined.Extension, OmegaTokens.Green, a.mcp),
+                    OmegaGridItem(t("定时任务", "Scheduled"), Icons.Outlined.Schedule, OmegaTokens.Sky, a.scheduled),
+                    OmegaGridItem("Bots", Icons.Outlined.SmartToy, OmegaTokens.Taupe, a.bots),
+                    OmegaGridItem(t("人格", "Soul"), Icons.Outlined.Face, OmegaTokens.Red, a.soul),
+                    OmegaGridItem(t("后台操控", "BG control"), Icons.Outlined.PhonelinkSetup, OmegaTokens.Brick, a.virtualDisplay),
+                    OmegaGridItem(t("插件市场", "Plugins"), Icons.Outlined.Storefront, OmegaTokens.Amber, a.plugins),
+                    OmegaGridItem(t("诊断", "Diagnose"), Icons.Outlined.MonitorHeart, OmegaTokens.Steel, a.diagnostics),
+                    OmegaGridItem("皮肤", Icons.Outlined.Wallpaper, OmegaTokens.Teal) { showSkinPicker.value = true },
                 ) + ModuleRegistry.all().filter { it.showInGrid }.map { m ->
                     // [fork/mibot-modules] 只有显式 showInGrid=true 的模块才出现在应用网格；
                     // 其余（如 Mika 能力）只作能力提供者经 CapabilityBus 注入宿主功能，不单独露头.
-                    MibotGridItem(m.name, m.icon, m.color) { a.module(m.id) }
+                    OmegaGridItem(m.name, m.icon, m.color) { a.module(m.id) }
                 },
             )
         }
         item {
-            MibotSectionHeader(t("账号与服务", "Accounts & services"))
-            MibotCard {
-                MibotRow(t("账号台账", "Account Vault"),
+            OmegaSectionHeader(t("账号与服务", "Accounts & services"))
+            OmegaCard {
+                OmegaRow(t("账号台账", "Account Vault"),
                     t("AI 服务、登录与密钥 · ${accounts.size} 个账号", "AI services, logins & keys · ${accounts.size} accounts"),
-                    Icons.Outlined.Key, MibotTokens.Brick, onClick = a.vault, showDivider = true)
-                MibotRow(t("服务商", "Providers"), t("${config.instances.size} 个 · API Key、一键登录、免费可用", "${config.instances.size} · API keys, 1-tap login, free tiers"),
-                    Icons.Outlined.VpnKey, MibotTokens.Sky, onClick = a.providers, showDivider = true)
-                MibotRow(t("AI 网关", "AI gateway"), t("账号池、故障切换、冷却与健康检查", "Account pools, failover, cooldown, health checks"),
-                    Icons.Outlined.Hub, MibotTokens.Slate, onClick = a.gateway, showDivider = true)
-                MibotRow(t("模型组", "Model groups"), t("模型别名与回退/负载均衡", "Model aliases, fallback / load-balance"),
-                    Icons.Outlined.AccountTree, MibotTokens.Green, onClick = a.modelGroups, showDivider = true)
-                MibotRow(t("邮箱台账", "Mailboxes"), t("临时邮箱（仅收信）与 AI 邮箱 · 探针、保活、验证码", "Temp (receive-only) & AI mailboxes · probe, keep-alive, codes"),
-                    Icons.Outlined.Email, MibotTokens.Sky, onClick = a.mail, showDivider = true)
-                MibotRow(t("AI 邮箱", "AI mailbox"), t("能发信的邮箱 · 自动化等级、撤销窗口、发信记录", "Mailboxes that can send · autonomy, undo window, log"),
-                    Icons.Outlined.AlternateEmail, MibotTokens.Teal, onClick = a.aiMail)
+                    Icons.Outlined.Key, OmegaTokens.Brick, onClick = a.vault, showDivider = true)
+                OmegaRow(t("服务商", "Providers"), t("${config.instances.size} 个 · API Key、一键登录、免费可用", "${config.instances.size} · API keys, 1-tap login, free tiers"),
+                    Icons.Outlined.VpnKey, OmegaTokens.Sky, onClick = a.providers, showDivider = true)
+                OmegaRow(t("AI 网关", "AI gateway"), t("账号池、故障切换、冷却与健康检查", "Account pools, failover, cooldown, health checks"),
+                    Icons.Outlined.Hub, OmegaTokens.Slate, onClick = a.gateway, showDivider = true)
+                OmegaRow(t("模型组", "Model groups"), t("模型别名与回退/负载均衡", "Model aliases, fallback / load-balance"),
+                    Icons.Outlined.AccountTree, OmegaTokens.Green, onClick = a.modelGroups, showDivider = true)
+                OmegaRow(t("邮箱台账", "Mailboxes"), t("临时邮箱（仅收信）与 AI 邮箱 · 探针、保活、验证码", "Temp (receive-only) & AI mailboxes · probe, keep-alive, codes"),
+                    Icons.Outlined.Email, OmegaTokens.Sky, onClick = a.mail, showDivider = true)
+                OmegaRow(t("AI 邮箱", "AI mailbox"), t("能发信的邮箱 · 自动化等级、撤销窗口、发信记录", "Mailboxes that can send · autonomy, undo window, log"),
+                    Icons.Outlined.AlternateEmail, OmegaTokens.Teal, onClick = a.aiMail)
             }
         }
         item {
-            MibotSectionHeader(t("外观与背景", "Appearance & background"))
-            MibotCard {
-                MibotRow(t("背景与主题", "Background & theme"), t("云天 / 夜空、浅色深色、照片或纯色", "Cloud sky / night, light-dark, photo or solid"),
-                    Icons.Outlined.Wallpaper, MibotTokens.Teal, onClick = a.backdrop, showDivider = true)
-                MibotRow(t("字体、语言与显示", "Fonts, language & display"), null,
-                    Icons.Outlined.TextFields, MibotTokens.Purple, onClick = a.appearance)
+            OmegaSectionHeader(t("外观与背景", "Appearance & background"))
+            OmegaCard {
+                OmegaRow(t("背景与主题", "Background & theme"), t("云天 / 夜空、浅色深色、照片或纯色", "Cloud sky / night, light-dark, photo or solid"),
+                    Icons.Outlined.Wallpaper, OmegaTokens.Teal, onClick = a.backdrop, showDivider = true)
+                OmegaRow(t("字体、语言与显示", "Fonts, language & display"), null,
+                    Icons.Outlined.TextFields, OmegaTokens.Purple, onClick = a.appearance)
             }
         }
         item {
-            MibotSectionHeader("Bots")
-            MibotCard {
-                MibotRow(t("Bots 与子代理", "Bots & sub-agents"), t("保存的 Bot 可被主 AI 当作子代理调用", "Saved Bots can be called by the main AI as sub-agents"),
-                    Icons.Outlined.SmartToy, MibotTokens.Taupe, onClick = a.bots, showDivider = true)
-                MibotRow(t("人格", "Soul"), t("主 AI 的性格与说话方式", "Main AI personality and voice"), Icons.Outlined.Face, MibotTokens.Red, onClick = a.soul, showDivider = true)
-                MibotRow(t("技能", "Skills"), null, Icons.Outlined.AutoAwesome, MibotTokens.Purple, onClick = a.skills, showDivider = true)
-                MibotRow(t("记忆", "Memory"), null, Icons.Outlined.Psychology, MibotTokens.Rose, onClick = a.memory, showDivider = true)
-                MibotRow("MCP", null, Icons.Outlined.Extension, MibotTokens.Green, onClick = a.mcp, showDivider = true)
-                MibotRow(t("工具开关", "Tool switches"), t("浏览器、提问卡片等", "Browser, ask cards and more"), Icons.Outlined.Build, MibotTokens.Steel, onClick = a.tools)
+            OmegaSectionHeader("Bots")
+            OmegaCard {
+                OmegaRow(t("Bots 与子代理", "Bots & sub-agents"), t("保存的 Bot 可被主 AI 当作子代理调用", "Saved Bots can be called by the main AI as sub-agents"),
+                    Icons.Outlined.SmartToy, OmegaTokens.Taupe, onClick = a.bots, showDivider = true)
+                OmegaRow(t("人格", "Soul"), t("主 AI 的性格与说话方式", "Main AI personality and voice"), Icons.Outlined.Face, OmegaTokens.Red, onClick = a.soul, showDivider = true)
+                OmegaRow(t("技能", "Skills"), null, Icons.Outlined.AutoAwesome, OmegaTokens.Purple, onClick = a.skills, showDivider = true)
+                OmegaRow(t("记忆", "Memory"), null, Icons.Outlined.Psychology, OmegaTokens.Rose, onClick = a.memory, showDivider = true)
+                OmegaRow("MCP", null, Icons.Outlined.Extension, OmegaTokens.Green, onClick = a.mcp, showDivider = true)
+                OmegaRow(t("工具开关", "Tool switches"), t("浏览器、提问卡片等", "Browser, ask cards and more"), Icons.Outlined.Build, OmegaTokens.Steel, onClick = a.tools)
             }
         }
         item {
-            MibotSectionHeader(t("运行时 / 沙箱", "Runtime / sandbox"))
-            MibotCard {
-                MibotRow(t("后台操控 / 虚拟屏", "Background control"), t("在隐藏虚拟屏操作 App，不占你的屏幕 · 无线调试 / Shizuku", "Operate apps on a hidden display · Wireless Debugging / Shizuku"),
-                    Icons.Outlined.PhonelinkSetup, MibotTokens.Brick, onClick = a.virtualDisplay, showDivider = true)
-                MibotRow(t("沙箱 / 运行环境", "Sandbox / runtime"), t("Alpine Linux · 终端、文件、DNS、重置", "Alpine Linux · terminal, files, DNS, reset"),
-                    Icons.Outlined.ViewInAr, MibotTokens.Teal, onClick = a.sandbox, showDivider = true)
-                MibotRow(t("网络路由", "Network routing"), null, Icons.Outlined.Lan, MibotTokens.Sky, onClick = a.network, showDivider = true)
-                MibotRow("Tailscale", null, Icons.Outlined.Lan, MibotTokens.Navy, onClick = a.tailscale, showDivider = true)
-                MibotRow(t("服务器", "Servers"), t("经 Tailscale 管理你的机器 · 只存清单，巡检交给 Agent", "Your machines over Tailscale · list only, Agent does the checks"),
-                    Icons.Outlined.MonitorHeart, MibotTokens.Teal, onClick = a.servers, showDivider = true)
-                MibotRow(t("语音", "Voice"), t("按住说 · 停 2 秒就发 · 免提连说 · 朗读", "Press and hold · auto-send · hands-free · read aloud"),
-                    Icons.Outlined.Mic, MibotTokens.Brick, onClick = a.voice, showDivider = true)
-                MibotRow(t("全部页面", "All 56 screens"), t("56 屏设计规格，全部原生页面，可逐行交给 Agent", "All 56 spec screens as native pages, every row actionable"),
-                    Icons.Outlined.ViewInAr, MibotTokens.Teal, onClick = a.allScreens, showDivider = true)
-                MibotRow(t("代理", "Proxies"), null, Icons.Outlined.Security, MibotTokens.Slate, onClick = a.proxies, showDivider = true)
-                MibotRow(t("权限", "Permissions"), null, Icons.Outlined.Lock, MibotTokens.Amber, onClick = a.permissions, showDivider = true)
-                MibotRow(t("权限与自动化", "Permissions & automation"), t("已授予什么、实际用来做什么 · 自动化等级", "What is granted and what it is used for · automation level"),
-                    Icons.Outlined.AdminPanelSettings, MibotTokens.Brick, onClick = a.capabilities, showDivider = true)
-                MibotRow(t("后台运行", "Background running"), t("电池优化与自启动", "Battery optimisation & autostart"), Icons.Outlined.BatteryChargingFull, MibotTokens.Green, onClick = a.background, showDivider = true)
-                MibotRow(t("存储与备份", "Storage & backup"), null, Icons.Outlined.Storage, MibotTokens.Steel, onClick = a.backup)
+            OmegaSectionHeader(t("运行时 / 沙箱", "Runtime / sandbox"))
+            OmegaCard {
+                OmegaRow(t("后台操控 / 虚拟屏", "Background control"), t("在隐藏虚拟屏操作 App，不占你的屏幕 · 无线调试 / Shizuku", "Operate apps on a hidden display · Wireless Debugging / Shizuku"),
+                    Icons.Outlined.PhonelinkSetup, OmegaTokens.Brick, onClick = a.virtualDisplay, showDivider = true)
+                OmegaRow(t("沙箱 / 运行环境", "Sandbox / runtime"), t("Alpine Linux · 终端、文件、DNS、重置", "Alpine Linux · terminal, files, DNS, reset"),
+                    Icons.Outlined.ViewInAr, OmegaTokens.Teal, onClick = a.sandbox, showDivider = true)
+                OmegaRow(t("网络路由", "Network routing"), null, Icons.Outlined.Lan, OmegaTokens.Sky, onClick = a.network, showDivider = true)
+                OmegaRow("Tailscale", null, Icons.Outlined.Lan, OmegaTokens.Navy, onClick = a.tailscale, showDivider = true)
+                OmegaRow(t("服务器", "Servers"), t("经 Tailscale 管理你的机器 · 只存清单，巡检交给 Agent", "Your machines over Tailscale · list only, Agent does the checks"),
+                    Icons.Outlined.MonitorHeart, OmegaTokens.Teal, onClick = a.servers, showDivider = true)
+                OmegaRow(t("语音", "Voice"), t("按住说 · 停 2 秒就发 · 免提连说 · 朗读", "Press and hold · auto-send · hands-free · read aloud"),
+                    Icons.Outlined.Mic, OmegaTokens.Brick, onClick = a.voice, showDivider = true)
+                OmegaRow(t("全部页面", "All 56 screens"), t("56 屏设计规格，全部原生页面，可逐行交给 Agent", "All 56 spec screens as native pages, every row actionable"),
+                    Icons.Outlined.ViewInAr, OmegaTokens.Teal, onClick = a.allScreens, showDivider = true)
+                OmegaRow(t("代理", "Proxies"), null, Icons.Outlined.Security, OmegaTokens.Slate, onClick = a.proxies, showDivider = true)
+                OmegaRow(t("权限", "Permissions"), null, Icons.Outlined.Lock, OmegaTokens.Amber, onClick = a.permissions, showDivider = true)
+                OmegaRow(t("权限与自动化", "Permissions & automation"), t("已授予什么、实际用来做什么 · 自动化等级", "What is granted and what it is used for · automation level"),
+                    Icons.Outlined.AdminPanelSettings, OmegaTokens.Brick, onClick = a.capabilities, showDivider = true)
+                OmegaRow(t("后台运行", "Background running"), t("电池优化与自启动", "Battery optimisation & autostart"), Icons.Outlined.BatteryChargingFull, OmegaTokens.Green, onClick = a.background, showDivider = true)
+                OmegaRow(t("存储与备份", "Storage & backup"), null, Icons.Outlined.Storage, OmegaTokens.Steel, onClick = a.backup)
             }
         }
         item {
-            MibotSectionHeader(t("诊断与反馈", "Diagnostics & feedback"))
-            MibotCard {
-                MibotRow(t("诊断", "Diagnostics"), t("日志、测试与上报", "Logs, tests and reports"), Icons.Outlined.MonitorHeart, MibotTokens.Rose, onClick = a.diagnostics, showDivider = true)
-                MibotRow(t("反馈问题", "Report a problem"), t("打开已填好设备信息的问题单", "Opens an issue pre-filled with device info"), Icons.Outlined.BugReport, MibotTokens.Red, onClick = a.reportBug)
+            OmegaSectionHeader(t("诊断与反馈", "Diagnostics & feedback"))
+            OmegaCard {
+                OmegaRow(t("诊断", "Diagnostics"), t("日志、测试与上报", "Logs, tests and reports"), Icons.Outlined.MonitorHeart, OmegaTokens.Rose, onClick = a.diagnostics, showDivider = true)
+                OmegaRow(t("反馈问题", "Report a problem"), t("打开已填好设备信息的问题单", "Opens an issue pre-filled with device info"), Icons.Outlined.BugReport, OmegaTokens.Red, onClick = a.reportBug)
             }
         }
         item {
-            MibotSectionHeader(t("关于", "About"))
-            MibotCard {
-                MibotRow(t("关于 Mibot", "About Mibot"), t("版本、更新与开源许可（GPL-3.0）", "Version, updates and licenses (GPL-3.0)"), Icons.Outlined.Info, MibotTokens.Steel, onClick = a.about)
+            OmegaSectionHeader(t("关于", "About"))
+            OmegaCard {
+                OmegaRow(t("关于 Omega", "About Omega"), t("版本、更新与开源许可（GPL-3.0）", "Version, updates and licenses (GPL-3.0)"), Icons.Outlined.Info, MibotTokens.Steel, onClick = a.about)
             }
         }
         item { Box(Modifier.height(8.dp)) }
     }
+    SkinPickerDialog(show = showSkinPicker.value, onDismiss = { showSkinPicker.value = false })
 }

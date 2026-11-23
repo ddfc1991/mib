@@ -153,6 +153,51 @@ private val MinisShapes = Shapes(
     extraLarge = RoundedCornerShape(14.dp),   // Dialog, BottomSheet
 )
 
+/** [destiny/omega-skin] Material scheme derived from the user's skin. */
+fun skinColorScheme(skin: Skin) = (if (skin.isDark) darkColorScheme() else lightColorScheme()).copy(
+    primary = skin.accent,
+    onPrimary = skin.onAccent,
+    primaryContainer = skin.accent.copy(alpha = 0.18f),
+    onPrimaryContainer = skin.text,
+    secondary = skin.text2,
+    onSecondary = skin.bg,
+    tertiary = skin.accent,
+    onTertiary = skin.onAccent,
+    background = skin.bg,
+    onBackground = skin.text,
+    surface = skin.surface,
+    onSurface = skin.text,
+    surfaceVariant = skin.surface,
+    onSurfaceVariant = skin.text2,
+    outline = skin.text2.copy(alpha = 0.35f),
+    outlineVariant = skin.text2.copy(alpha = 0.18f),
+    inverseSurface = skin.text,
+    inverseOnSurface = skin.bg,
+)
+
+/** [destiny/omega-skin] Chat palette derived from the user's skin. */
+fun skinChatPalette(skin: Skin): ChatPalette {
+    val base = if (skin.isDark) DarkChatPalette else LightChatPalette
+    return base.copy(
+        isDark = skin.isDark,
+        background = skin.bg,
+        secondaryBg = skin.surface,
+        inputBg = skin.surface,
+        inputIconBg = skin.surface,
+        primaryText = skin.text,
+        secondaryText = skin.text2,
+        tertiaryText = skin.text2.copy(alpha = 0.6f),
+        userBubble = skin.accent,
+        toolBg = skin.surface,
+        toolCapsuleBg = skin.surface,
+        sendButton = skin.accent,
+        link = skin.accent,
+        thinking = skin.accent,
+        sheetHeaderBg = skin.surface,
+        fabAccent = skin.accent,
+    )
+}
+
 @Composable
 fun MinisTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -160,18 +205,19 @@ fun MinisTheme(
     // [fork/mibot-v2] Mibot design system: translucent surfaces over the
     // shared sky backdrop, brick-red accent. False = the stock palette.
     mibot: Boolean = false,
+    // [destiny/omega-skin] The selected skin drives EVERY page (Hermes frame,
+    // Mibot component pages, chat) so the whole app reads as one product.
+    skin: Skin = SkinStore.current.value,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
-        mibot && darkTheme -> MibotDarkColorScheme
-        mibot -> MibotLightColorScheme
+        mibot -> skinColorScheme(skin)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
     val typography = if (mibot) mibotTypography(fontScale) else scaledTypography(fontScale)
     val chatPalette = when {
-        mibot && darkTheme -> MibotDarkChatPalette
-        mibot -> MibotLightChatPalette
+        mibot -> skinChatPalette(skin)
         darkTheme -> DarkChatPalette
         else -> LightChatPalette
     }
@@ -213,8 +259,11 @@ val LocalMibotDark = androidx.compose.runtime.staticCompositionLocalOf { false }
 // still clears WCAG AA. Semantic colours stay muted — a status is a dot plus
 // a sentence, never a coloured badge.
 object MibotPalette {
-    val AccentLight = Color(0xFF9C6B45)
-    val AccentDark = Color(0xFFC8926A)
+    // [destiny/omega-hermes-unify] Hermes HQ accent everywhere: iOS blue.
+    // Was Mibot's cinnabar/tan, which read as a different app next to the
+    // Hermes-black main frame.
+    val AccentLight = Color(0xFF007AFF)
+    val AccentDark = Color(0xFF0A84FF)
     val InkLight = Color(0xFF1B1D22)
     val InkMutedLight = Color(0xFF5C606A)
     val InkDark = Color(0xFFF2F0EB)

@@ -166,6 +166,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // [destiny/omega-skin] load the persisted skin before the first frame
+        com.openminis.app.ui.theme.SkinStore.init(this)
 
         // [fork/glass-ui] CI screenshot runs pass --ez glass_demo true to fill
         // the sidebar with sample rows. Debug builds only.
@@ -625,7 +627,9 @@ class MainActivity : ComponentActivity() {
 
             val mibotOn = androidx.compose.runtime.remember { com.openminis.app.ui.glass.GlassPrefs.flow(this) }
                 .collectAsState().value.enabled
-            MinisTheme(darkTheme = darkTheme, fontScale = fontScale, mibot = mibotOn) {
+            // [destiny/omega-skin] user-selected skin drives the whole app
+            val omegaSkin by com.openminis.app.ui.theme.SkinStore.current.collectAsState()
+            MinisTheme(darkTheme = darkTheme, fontScale = fontScale, mibot = mibotOn, skin = omegaSkin) {
               // [fork/frost] Publishes the shared backdrop every frosted surface blurs.
               com.openminis.app.ui.glass.FrostHost(enabled = mibotOn) {
                 com.openminis.app.mibot.vault.VaultConfirmHost()

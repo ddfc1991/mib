@@ -108,7 +108,7 @@ private fun Context.openFirst(intents: List<Intent>) {
 @Composable
 fun VdScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
-    val phone = remember { MibotPhone.get(ctx) }
+    val phone = remember { OmegaPhone.get(ctx) }
     val scope = rememberCoroutineScope()
     val status by phone.builtin.engine.status.collectAsState()
     val discovery by phone.builtin.engine.pairingDiscovery.collectAsState()
@@ -157,10 +157,10 @@ fun VdScreen(onBack: () -> Unit) {
         }
     }
 
-    MibotScaffold(title = t("后台操控 / 虚拟屏", "Background control"), onBack = onBack) {
+    OmegaScaffold(title = t("后台操控 / 虚拟屏", "Background control"), onBack = onBack) {
         // ---------------------------------------------------------- live
-        MibotSectionHeader(t("虚拟屏", "Hidden display"))
-        MibotCard(padding = androidx.compose.foundation.layout.PaddingValues(MibotSpace.M)) {
+        OmegaSectionHeader(t("虚拟屏", "Hidden display"))
+        OmegaCard(padding = androidx.compose.foundation.layout.PaddingValues(OmegaSpace.M)) {
             Row(verticalAlignment = Alignment.Top) {
                 Box(
                     Modifier
@@ -168,7 +168,7 @@ fun VdScreen(onBack: () -> Unit) {
                         .aspectRatio(if (vd.width > 0 && vd.height > 0) vd.width.toFloat() / vd.height else 9f / 19.5f)
                         .clip(RoundedCorner)
                         .background(Color.Black.copy(alpha = 0.82f))
-                        .border(1.dp, MibotTokens.hairline(), RoundedCorner),
+                        .border(1.dp, OmegaTokens.hairline(), RoundedCorner),
                     contentAlignment = Alignment.Center,
                 ) {
                     val f = frame
@@ -177,11 +177,11 @@ fun VdScreen(onBack: () -> Unit) {
                     } else {
                         Text(
                             if (vd.mode == VdController.Mode.A11Y) t("主屏模式", "Main screen") else t("未运行", "Idle"),
-                            color = Color.White.copy(alpha = 0.7f), fontSize = MibotType.Caption,
+                            color = Color.White.copy(alpha = 0.7f), fontSize = OmegaType.Caption,
                         )
                     }
                 }
-                Spacer(Modifier.width(MibotSpace.M))
+                Spacer(Modifier.width(OmegaSpace.M))
                 Column(Modifier.weight(0.38f)) {
                     val (label, kind) = when (vd.mode) {
                         VdController.Mode.HELPER -> t("运行中 · 屏 #${vd.displayId}", "Running · display #${vd.displayId}") to ChipKind.OK
@@ -189,28 +189,28 @@ fun VdScreen(onBack: () -> Unit) {
                         VdController.Mode.NONE -> t("空闲", "Idle") to ChipKind.NEUTRAL
                     }
                     StatusChip(label, kind)
-                    Spacer(Modifier.height(MibotSpace.XS))
+                    Spacer(Modifier.height(OmegaSpace.XS))
                     Text(
                         if (vd.mode == VdController.Mode.NONE) t("Agent 在隐藏的虚拟屏里打开和操作 App，你的屏幕不受影响。", "The agent opens and operates apps on a hidden display; your screen is untouched.")
                         else "${vd.width}×${vd.height}" + (vd.app?.let { " · $it" } ?: ""),
-                        fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine,
+                        fontSize = OmegaType.Secondary, lineHeight = OmegaType.SecondaryLine,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(MibotSpace.S))
+                    Spacer(Modifier.height(OmegaSpace.S))
                     var pkg by remember { mutableStateOf("com.android.settings") }
                     if (vd.mode != VdController.Mode.NONE) {
                         SmallField(pkg, { pkg = it }, t("包名", "Package"))
-                        Spacer(Modifier.height(MibotSpace.S))
-                        Row(horizontalArrangement = Arrangement.spacedBy(MibotSpace.S)) {
-                            MibotButton(t("打开", "Open"), { scope.launch { VdController.launch(ctx, pkg.trim()) } }, tonal = true)
-                            MibotButton(t("新建额外屏", "New display"), {
+                        Spacer(Modifier.height(OmegaSpace.S))
+                        Row(horizontalArrangement = Arrangement.spacedBy(OmegaSpace.S)) {
+                            OmegaButton(t("打开", "Open"), { scope.launch { VdController.launch(ctx, pkg.trim()) } }, tonal = true)
+                            OmegaButton(t("新建额外屏", "New display"), {
                                 scope.launch { VdController.createExtra(ctx).onFailure { VdController.log(it.message ?: "failed") } }
                             }, tonal = true)
-                            MibotButton(t("停止", "Stop"), { VdController.close(ctx) })
+                            OmegaButton(t("停止", "Stop"), { VdController.close(ctx) })
                         }
                         // [fork/mibot-destiny] Multi-display list: switch between / close individual displays.
                         if (VdController.displayCount > 1) {
-                            Spacer(Modifier.height(MibotSpace.S))
+                            Spacer(Modifier.height(OmegaSpace.S))
                             VdController.displayIds.forEach { id ->
                                 val active = id == VdController.activeDisplay
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -219,15 +219,15 @@ fun VdScreen(onBack: () -> Unit) {
                                         if (active) ChipKind.OK else ChipKind.NEUTRAL,
                                     )
                                     Spacer(Modifier.weight(1f))
-                                    if (!active) MibotButton(t("切换", "Switch"), { VdController.switchTo(id) }, tonal = true, compact = true)
-                                    Spacer(Modifier.width(MibotSpace.XS))
-                                    MibotButton(t("关", "Close"), { VdController.closeDisplay(ctx, id) }, tonal = true, compact = true)
+                                    if (!active) OmegaButton(t("切换", "Switch"), { VdController.switchTo(id) }, tonal = true, compact = true)
+                                    Spacer(Modifier.width(OmegaSpace.XS))
+                                    OmegaButton(t("关", "Close"), { VdController.closeDisplay(ctx, id) }, tonal = true, compact = true)
                                 }
-                                Spacer(Modifier.height(MibotSpace.XS))
+                                Spacer(Modifier.height(OmegaSpace.XS))
                             }
                         }
                     } else {
-                        MibotButton(t("新建虚拟屏", "Create display"), {
+                        OmegaButton(t("新建虚拟屏", "Create display"), {
                             scope.launch { VdController.create(ctx).onFailure { VdController.log(it.message ?: "failed") } }
                         })
                     }
@@ -237,13 +237,13 @@ fun VdScreen(onBack: () -> Unit) {
 
         // ---------------------------------------------------------- operating pace
         // [fork/mibot-destiny] 丝滑引擎节奏:FAST 默认(反应快),STANDARD/HUMAN 像人(防风控)。
-        MibotSectionHeader(t("操作节奏", "Operating pace"))
-        MibotCard {
+        OmegaSectionHeader(t("操作节奏", "Operating pace"))
+        OmegaCard {
             var pace by remember { mutableStateOf(VdController.currentOperatingPace()) }
-            Row(horizontalArrangement = Arrangement.spacedBy(MibotSpace.S)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(OmegaSpace.S)) {
                 OperatingPace.entries.forEach { p ->
                     val sel = p == pace
-                    MibotButton(
+                    OmegaButton(
                         when (p) {
                             OperatingPace.FAST -> t("快", "Fast")
                             OperatingPace.STANDARD -> t("标准", "Standard")
@@ -254,13 +254,13 @@ fun VdScreen(onBack: () -> Unit) {
                     )
                 }
             }
-            Spacer(Modifier.height(MibotSpace.XS))
+            Spacer(Modifier.height(OmegaSpace.XS))
             Text(
                 t("FAST 步间不停(反应快) · STANDARD 像人稍停 · HUMAN 所有 App 放慢(防风控)", "FAST no pause · STANDARD human-like · HUMAN slow everywhere"),
-                fontSize = MibotType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = OmegaType.Caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        com.openminis.app.mibot.design.MibotSpacer(6.dp)
+        com.openminis.app.mibot.design.OmegaSpacer(6.dp)
 
         // ---------------------------------------------------------- status
         // [fork/mibot-v4] Every row states clearly whether it is on; the
@@ -268,10 +268,10 @@ fun VdScreen(onBack: () -> Unit) {
         // system settings updates them at once.
         val helperOn = helper != null
         val granted = listOf(helperOn, a11yOn, overlayOn, notifOn, batteryOn).count { it }
-        MibotSectionHeader(t("权限状态", "Permissions"))
+        OmegaSectionHeader(t("权限状态", "Permissions"))
         PermissionSummary(granted, 5)
-        com.openminis.app.mibot.design.MibotSpacer(6.dp)
-        MibotCard {
+        com.openminis.app.mibot.design.OmegaSpacer(6.dp)
+        OmegaCard {
             val helperText = when {
                 !phone.supported -> t("不可用", "Unavailable")
                 helperOn -> t("已连接 · ${if (phone.hub.source == "shizuku") "Shizuku" else "无线调试"}", "Connected · ${phone.hub.source}")
@@ -364,23 +364,23 @@ fun VdScreen(onBack: () -> Unit) {
 
         // ---------------------------------------------------------- pairing wizard
         if (phone.supported && helper == null) {
-            MibotSectionHeader(t("无线调试配对（一次即可）", "Pair Wireless Debugging (once)"))
-            MibotCard {
-                MibotRow(t("1. 打开开发者选项", "1. Turn on Developer options"),
+            OmegaSectionHeader(t("无线调试配对（一次即可）", "Pair Wireless Debugging (once)"))
+            OmegaCard {
+                OmegaRow(t("1. 打开开发者选项", "1. Turn on Developer options"),
                     t("设置 › 关于手机 › 连点「版本号」7 次", "Settings › About phone › tap Build number 7 times"),
-                    Icons.Outlined.Layers, MibotTokens.Steel, showDivider = true,
+                    Icons.Outlined.Layers, OmegaTokens.Steel, showDivider = true,
                     onClick = { ctx.openFirst(listOf(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))) },
                     trailing = { StatusChip(if (devOn) t("已开", "On") else t("去开启", "Open"), if (devOn) ChipKind.OK else ChipKind.NEUTRAL) })
-                MibotRow(t("2. 连接 Wi-Fi 并打开「无线调试」", "2. Join Wi-Fi, turn on Wireless debugging"),
+                OmegaRow(t("2. 连接 Wi-Fi 并打开「无线调试」", "2. Join Wi-Fi, turn on Wireless debugging"),
                     t("任意 Wi-Fi 即可，不需要能上网", "Any Wi-Fi works; internet not needed"),
-                    Icons.Outlined.Wifi, MibotTokens.Sky, showDivider = true,
+                    Icons.Outlined.Wifi, OmegaTokens.Sky, showDivider = true,
                     onClick = { ctx.openFirst(DeveloperSettings.wirelessDebuggingPage()) },
                     trailing = { StatusChip(if (wdOn) t("已开", "On") else t("去开启", "Open"), if (wdOn) ChipKind.OK else ChipKind.NEUTRAL) })
-                MibotRow(t("3. 点「使用配对码配对设备」", "3. Tap “Pair device with pairing code”"),
+                OmegaRow(t("3. 点「使用配对码配对设备」", "3. Tap “Pair device with pairing code”"),
                     when (discovery) {
                         is PairingDiscovery.Found -> t("已找到配对窗口，请在弹出的通知里填 6 位码", "Pairing dialog found — type the 6-digit code into the notification")
                         PairingDiscovery.Searching -> t("正在找配对窗口… 码填到通知里，不用切回来", "Looking for the pairing dialog… type the code into the notification")
-                        else -> t("点这里开始，Mibot 会弹出带输入框的通知", "Tap to start; Mibot posts a notification with a code field")
+                        else -> t("点这里开始，Omega 会弹出带输入框的通知", "Tap to start; Omega posts a notification with a code field")
                     },
                     Icons.Outlined.Cable, MibotTokens.Brick,
                     onClick = {
@@ -391,34 +391,34 @@ fun VdScreen(onBack: () -> Unit) {
             }
             var code by remember { mutableStateOf("") }
             var port by remember { mutableStateOf("") }
-            MibotCard(Modifier.padding(top = MibotSpace.S), padding = androidx.compose.foundation.layout.PaddingValues(MibotSpace.M)) {
+            OmegaCard(Modifier.padding(top = OmegaSpace.S), padding = androidx.compose.foundation.layout.PaddingValues(OmegaSpace.M)) {
                 Text(t("通知被屏蔽时：分屏打开设置，在这里填码", "If notifications are blocked: split-screen Settings and type it here"),
-                    fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(MibotSpace.S))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MibotSpace.S)) {
+                    fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(OmegaSpace.S))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(OmegaSpace.S)) {
                     Box(Modifier.weight(1f)) { SmallField(code, { code = it.take(8) }, t("6 位配对码", "6-digit code"), number = true) }
                     Box(Modifier.width(88.dp)) { SmallField(port, { port = it.take(5) }, t("端口", "Port"), number = true) }
-                    MibotButton(t("配对", "Pair"), { phone.pairing.submit(code, PairingCode.port(port)) }, enabled = code.length >= 6)
+                    OmegaButton(t("配对", "Pair"), { phone.pairing.submit(code, PairingCode.port(port)) }, enabled = code.length >= 6)
                 }
-                Spacer(Modifier.height(MibotSpace.S))
-                Row(horizontalArrangement = Arrangement.spacedBy(MibotSpace.S)) {
-                    MibotButton(t("重新连接", "Reconnect"), { scope.launch { phone.builtin.engine.retry() } }, tonal = true)
-                    MibotButton(t("用电脑启动", "Start from PC"), {
+                Spacer(Modifier.height(OmegaSpace.S))
+                Row(horizontalArrangement = Arrangement.spacedBy(OmegaSpace.S)) {
+                    OmegaButton(t("重新连接", "Reconnect"), { scope.launch { phone.builtin.engine.retry() } }, tonal = true)
+                    OmegaButton(t("用电脑启动", "Start from PC"), {
                         val cmd = phone.writeUsbScript()
                         VdController.log(cmd?.let { tc(ctx, "电脑上运行：$it", "Run on a PC: $it") } ?: "cannot write script")
                     }, tonal = true)
                 }
             }
         } else if (helper != null) {
-            MibotSectionHeader(t("提升权限（经助手，逐项确认）", "Raise permissions (via helper, each confirmed)"))
+            OmegaSectionHeader(t("提升权限（经助手，逐项确认）", "Raise permissions (via helper, each confirmed)"))
             val basicCount = listOf(notifOn, overlayOn, batteryOn).count { it }
             val secureOn = remember(tick) {
                 ctx.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == android.content.pm.PackageManager.PERMISSION_GRANTED
             }
-            MibotCard {
+            OmegaCard {
                 PermissionRow(
                     t("授予通知、悬浮窗、电池白名单", "Grant notifications, overlay, battery whitelist"),
-                    t("为 Mibot 自己执行 pm grant / appops / deviceidle", "Runs pm grant / appops / deviceidle for Mibot itself"),
+                    t("为 Omega 自己执行 pm grant / appops / deviceidle", "Runs pm grant / appops / deviceidle for Omega itself"),
                     Icons.Outlined.Notifications,
                     state = when (basicCount) { 3 -> PermState.GRANTED; 0 -> PermState.MISSING; else -> PermState.PARTIAL },
                     stateText = when (basicCount) { 3 -> t("已授予 3/3", "Granted 3/3"); 0 -> t("未授予 0/3", "Not granted 0/3"); else -> t("部分 $basicCount/3", "Partial $basicCount/3") },
@@ -427,7 +427,7 @@ fun VdScreen(onBack: () -> Unit) {
                     showDivider = true,
                 )
                 PermissionRow(
-                    t("开启 Mibot 无障碍服务", "Enable Mibot's accessibility service"),
+                    t("开启 Omega 无障碍服务", "Enable Omega's accessibility service"),
                     when {
                         a11yOn -> t("已在系统列表中，服务已绑定", "Listed and bound")
                         a11yListed -> t("已写入系统列表，等待系统绑定服务（可在无障碍设置里开关一次）", "Listed; waiting for the system to bind it (toggle it once in Accessibility settings)")
@@ -466,14 +466,14 @@ fun VdScreen(onBack: () -> Unit) {
 
         MibotFootnote(t(
             "安全：只操作 Mibot 自己建的虚拟屏，从不向主屏（屏 0）注入；你正在主屏用的 App 不会被拉走；付款、登录、密码、验证码类步骤会先问你；通知栏可随时停止。实现改编自 Mika（Apache-2.0）。",
-            "Safety: only Mibot's own hidden display is ever touched — never your screen (display 0); apps you are using aren't pulled away; payment, login, password and code steps ask first; stop any time from the notification. Adapted from Mika (Apache-2.0).",
+            "Safety: only Omega's own hidden display is ever touched — never your screen (display 0); apps you are using aren't pulled away; payment, login, password and code steps ask first; stop any time from the notification. Adapted from Mika (Apache-2.0).",
         ))
 
         // ---------------------------------------------------------- log
         MibotSectionHeader(t("日志", "Log"))
-        MibotCard(padding = androidx.compose.foundation.layout.PaddingValues(MibotSpace.M)) {
+        OmegaCard(padding = androidx.compose.foundation.layout.PaddingValues(OmegaSpace.M)) {
             if (log.isEmpty()) {
-                Text(t("还没有记录", "Nothing yet"), fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t("还没有记录", "Nothing yet"), fontSize = OmegaType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 log.takeLast(16).forEach {
                     Text(it, fontSize = 11.sp, lineHeight = 15.sp, fontFamily = FontFamily.Monospace,
@@ -493,16 +493,16 @@ private fun SmallField(value: String, onChange: (String) -> Unit, hint: String, 
     Box(
         Modifier
             .fillMaxWidth()
-            .clip(MibotRadius.RowShape)
+            .clip(OmegaRadius.RowShape)
             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
-            .border(1.dp, MibotTokens.hairline(), MibotRadius.RowShape)
-            .padding(horizontal = MibotSpace.M, vertical = 9.dp),
+            .border(1.dp, OmegaTokens.hairline(), OmegaRadius.RowShape)
+            .padding(horizontal = OmegaSpace.M, vertical = 9.dp),
     ) {
-        if (value.isEmpty()) Text(hint, fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), maxLines = 1)
+        if (value.isEmpty()) Text(hint, fontSize = OmegaType.Body, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), maxLines = 1)
         BasicTextField(
             value = value, onValueChange = onChange, singleLine = true,
-            textStyle = TextStyle(color = fg, fontSize = MibotType.Body),
-            cursorBrush = SolidColor(MibotTokens.accent()),
+            textStyle = TextStyle(color = fg, fontSize = OmegaType.Body),
+            cursorBrush = SolidColor(OmegaTokens.accent()),
             keyboardOptions = KeyboardOptions(keyboardType = if (number) KeyboardType.Number else KeyboardType.Ascii),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -511,9 +511,9 @@ private fun SmallField(value: String, onChange: (String) -> Unit, hint: String, 
 
 private enum class ElevateKind { BASIC, A11Y, SECURE }
 
-/** User-initiated privilege grants for Mibot itself, through the helper. Each one is confirmed with the exact commands. */
+/** User-initiated privilege grants for Omega itself, through the helper. Each one is confirmed with the exact commands. */
 private suspend fun elevate(ctx: Context, kind: ElevateKind) {
-    val sh = MibotPhone.get(ctx).hub.shell.value ?: return
+    val sh = OmegaPhone.get(ctx).hub.shell.value ?: return
     val pkg = ctx.packageName
     val cmds = when (kind) {
         ElevateKind.BASIC -> listOfNotNull(
@@ -555,21 +555,21 @@ fun VdMiniView(onOpen: () -> Unit) {
     if (vd.mode != VdController.Mode.HELPER) return
     val source by VdController.previewSource.collectAsState()
     val frame by source.collectAsState()
-    Box(Modifier.fillMaxSize().padding(top = 96.dp, end = MibotSpace.M), contentAlignment = Alignment.TopEnd) {
+    Box(Modifier.fillMaxSize().padding(top = 96.dp, end = OmegaSpace.M), contentAlignment = Alignment.TopEnd) {
         Box(
             Modifier
                 .width(72.dp)
                 .aspectRatio(vd.width.toFloat() / vd.height.coerceAtLeast(1))
                 .clip(RoundedCorner)
                 .background(Color.Black)
-                .border(1.5.dp, MibotTokens.accent(), RoundedCorner)
+                .border(1.5.dp, OmegaTokens.accent(), RoundedCorner)
                 .clickable(onClick = onOpen),
         ) {
             frame?.takeIf { !it.isRecycled }?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
             Box(
                 Modifier.align(Alignment.BottomCenter).padding(bottom = 3.dp)
-                    .clip(MibotRadius.Pill).background(MibotTokens.accent()).padding(horizontal = 6.dp, vertical = 1.dp),
-            ) { Text(t("后台", "BG"), color = Color.White, fontSize = MibotType.Caption) }
+                    .clip(OmegaRadius.Pill).background(OmegaTokens.accent()).padding(horizontal = 6.dp, vertical = 1.dp),
+            ) { Text(t("后台", "BG"), color = Color.White, fontSize = OmegaType.Caption) }
         }
     }
 }
@@ -584,22 +584,22 @@ private fun VdSelfCheckSection() {
     val scope = rememberCoroutineScope()
     val running by VdSelfCheck.running.collectAsState()
     val results by VdSelfCheck.results.collectAsState()
-    MibotSectionHeader(t("虚拟屏自检", "Virtual screen self-check"))
-    MibotCard(padding = androidx.compose.foundation.layout.PaddingValues(MibotSpace.M)) {
+    OmegaSectionHeader(t("虚拟屏自检", "Virtual screen self-check"))
+    OmegaCard(padding = androidx.compose.foundation.layout.PaddingValues(OmegaSpace.M)) {
         Text(
             t("新建一块测试虚拟屏，在上面打开「设置」，依次检查配对、助手、建屏（可信/普通）、取画面、shell 点按、无障碍点按和输入回读，结束后自动关闭。",
                 "Creates a test display, opens Settings on it and checks pairing, the helper, display creation (trusted/untrusted), frame grab, shell tap, accessibility tap and typing read-back; the display is closed afterwards."),
-            fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine,
+            fontSize = OmegaType.Secondary, lineHeight = OmegaType.SecondaryLine,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(MibotSpace.S))
-        Row(horizontalArrangement = Arrangement.spacedBy(MibotSpace.S)) {
-            MibotButton(
+        Spacer(Modifier.height(OmegaSpace.S))
+        Row(horizontalArrangement = Arrangement.spacedBy(OmegaSpace.S)) {
+            OmegaButton(
                 if (running) t("自检中…", "Checking…") else t("虚拟屏自检", "Run self-check"),
                 { scope.launch { VdSelfCheck.run(ctx) } },
                 enabled = !running,
             )
-            MibotButton(t("复制日志", "Copy log"), {
+            OmegaButton(t("复制日志", "Copy log"), {
                 val text = VdSelfCheck.reportText(ctx)
                 val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
                 runCatching { cm.setPrimaryClip(android.content.ClipData.newPlainText("Mibot self-check", text)) }
@@ -607,7 +607,7 @@ private fun VdSelfCheckSection() {
             }, tonal = true, enabled = results.isNotEmpty() && !running)
         }
         results.forEach { c ->
-            Spacer(Modifier.height(MibotSpace.S))
+            Spacer(Modifier.height(OmegaSpace.S))
             Row(verticalAlignment = Alignment.Top) {
                 val (label, kind) = when (c.status) {
                     VdSelfCheck.Status.PASS -> t("通过", "Pass") to ChipKind.OK
@@ -616,20 +616,20 @@ private fun VdSelfCheckSection() {
                     VdSelfCheck.Status.SKIP -> t("跳过", "Skipped") to ChipKind.NEUTRAL
                 }
                 Box(Modifier.width(64.dp)) { StatusChip(label, kind) }
-                Spacer(Modifier.width(MibotSpace.S))
+                Spacer(Modifier.width(OmegaSpace.S))
                 Column(Modifier.weight(1f)) {
-                    Text(c.title, fontSize = MibotType.Body, color = MaterialTheme.colorScheme.onSurface)
+                    Text(c.title, fontSize = OmegaType.Body, color = MaterialTheme.colorScheme.onSurface)
                     Text(c.detail, fontSize = 11.sp, lineHeight = 15.sp, fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     c.advice?.let {
-                        Text(it, fontSize = MibotType.Secondary, lineHeight = MibotType.SecondaryLine,
+                        Text(it, fontSize = OmegaType.Secondary, lineHeight = OmegaType.SecondaryLine,
                             color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
         }
         if (running && results.isEmpty()) {
-            Spacer(Modifier.height(MibotSpace.S))
+            Spacer(Modifier.height(OmegaSpace.S))
             Text(t("正在检查…", "Checking…"), fontSize = MibotType.Secondary, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

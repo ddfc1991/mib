@@ -83,7 +83,7 @@ object VdSelfCheck {
     /** Plain-text report for the copy-log button: device facts, every check, the recent control log. */
     fun reportText(context: Context): String {
         val sb = StringBuilder()
-        sb.append(tc(context, "Mibot 虚拟屏自检", "Mibot virtual screen self-check")).append('\n')
+        sb.append(tc(context, "Omega 虚拟屏自检", "Mibot virtual screen self-check")).append('\n')
         sb.append(header.ifEmpty { facts(context.applicationContext) }).append('\n')
         for (c in _results.value) {
             sb.append('[').append(c.status).append("] ").append(c.id).append(" · ").append(c.title).append(" — ").append(c.detail).append('\n')
@@ -101,7 +101,7 @@ object VdSelfCheck {
         val ts = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
         val m = app.resources.displayMetrics
         return "$ts · ${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (sdk ${Build.VERSION.SDK_INT}) · " +
-            "screen ${m.widthPixels}x${m.heightPixels}@${m.densityDpi} · Mibot ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+            "screen ${m.widthPixels}x${m.heightPixels}@${m.densityDpi} · Omega ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
     }
 
     private fun add(c: Check) {
@@ -110,8 +110,8 @@ object VdSelfCheck {
     }
 
     private class Run(val app: Context) {
-        val phone = MibotPhone.get(app)
-        var shell: IMibotShell? = null
+        val phone = OmegaPhone.get(app)
+        var shell: IOmegaShell? = null
         var display: AgentDisplay? = null
         var settings: String? = null
         var launched = false
@@ -123,8 +123,8 @@ object VdSelfCheck {
             "The system blocks shell input injection. Xiaomi/HyperOS: Developer options → turn on “USB debugging (Security settings)”; other ROMs may have a similar switch. Accessibility can act instead.",
         )
         val adviceA11y get() = t(
-            "请在系统无障碍设置里开启 Mibot 的无障碍服务（或在本页「开启 Mibot 无障碍服务」）。",
-            "Turn on Mibot's accessibility service in system Accessibility settings (or “Enable Mibot's accessibility service” on this page).",
+            "请在系统无障碍设置里开启 Omega 的无障碍服务（或在本页「开启 Omega 无障碍服务」）。",
+            "Turn on Omega's accessibility service in system Accessibility settings (or “Enable Omega's accessibility service” on this page).",
         )
         val adviceHelper get() = t(
             "先完成本页的无线调试配对，或授权 Shizuku，然后再自检。",
@@ -193,7 +193,7 @@ object VdSelfCheck {
                 if (ShizukuManager.isReady()) phone.launchViaShizuku()
                 sh = withTimeoutOrNull(HELPER_WAIT_MS) { phone.hub.shell.first { it != null } }
             }
-            val conn: IMibotShell = sh
+            val conn: IOmegaShell = sh
                 ?: return check("helper", Status.FAIL, "not running (${phone.builtin.engine.status.value.javaClass.simpleName})", adviceHelper)
             shell = conn
             return withContext(Dispatchers.IO) {
@@ -403,7 +403,7 @@ object VdSelfCheck {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@withContext check("a11yTap", Status.SKIP, "needs Android 11+")
             val d = display!!
             val target = tapTarget() ?: return@withContext check("a11yTap", Status.FAIL, "no windows of display #${d.displayId} in the accessibility tree",
-                t("无障碍读不到虚拟屏：在系统无障碍设置里关掉再打开 Mibot 的服务。", "Accessibility can't see the hidden display: turn Mibot's service off and on again in Accessibility settings."))
+                t("无障碍读不到虚拟屏：在系统无障碍设置里关掉再打开 Omega 的服务。", "Accessibility can't see the hidden display: turn Omega's service off and on again in Accessibility settings."))
             val (node, r) = target
             val name = label(node)
             var before = signature()
@@ -469,7 +469,7 @@ object VdSelfCheck {
             val sh = shell!!
             val d = display!!
             if (a11y() == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                return@withContext check("typing", Status.SKIP, "reading the field back needs Mibot's accessibility service", adviceA11y)
+                return@withContext check("typing", Status.SKIP, "reading the field back needs Omega's accessibility service", adviceA11y)
             }
             var field = editable()
             if (field == null) {
