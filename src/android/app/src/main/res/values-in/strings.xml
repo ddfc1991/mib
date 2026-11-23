@@ -1642,6 +1642,7 @@
     <string name="system_permissions_a11y_restricted_working">Mengizinkan…</string>
     <string name="system_permissions_a11y_restricted_failed">Gagal — gunakan langkah manual di bawah ini</string>
     <string name="a11y_service_label">Aksesibilitas Omega</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Memungkinkan Omega membaca struktur antarmuka di layar, melakukan ketukan dan gestur, serta menerima peristiwa sistem atas nama Agen yang memanggil android-a11y-cli.</string>
     <string name="a11y_service_summary">Backend otomasi lapisan antarmuka untuk Omega</string>
     <string name="back">Kembali</string>

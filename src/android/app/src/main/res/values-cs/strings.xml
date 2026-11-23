@@ -1772,6 +1772,7 @@
     <string name="system_permissions_a11y_restricted_working">Povolování…</string>
     <string name="system_permissions_a11y_restricted_failed">Nezdařilo se – použij ruční postup níže</string>
     <string name="a11y_service_label">Přístupnost Omega</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Umožňuje Omega číst strukturu UI na obrazovce, provádět klepnutí a gesta a přijímat systémové události pro agenty, kteří volají android-a11y-cli.</string>
     <string name="a11y_service_summary">Backend automatizace vrstvy UI pro Omega</string>
     <string name="back">Zpět</string>

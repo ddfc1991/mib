@@ -1637,6 +1637,7 @@
     <string name="system_permissions_a11y_restricted_working">Pinapayagan…</string>
     <string name="system_permissions_a11y_restricted_failed">Nabigo — gamitin ang mga manu-manong hakbang sa ibaba</string>
     <string name="a11y_service_label">Accessibility ng Omega</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Pinapayagan ang Omega na basahin ang istruktura ng UI sa screen, mag-tap at gumawa ng galaw, at tumanggap ng mga event ng system para sa mga Agent na tumatawag ng android-a11y-cli.</string>
     <string name="a11y_service_summary">Backend ng automation sa antas ng UI para sa Omega</string>
     <string name="back">Bumalik</string>

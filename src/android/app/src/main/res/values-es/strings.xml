@@ -1641,6 +1641,7 @@
     <string name="system_permissions_a11y_restricted_working">Permitiendo…</string>
     <string name="system_permissions_a11y_restricted_failed">Falló — usa los pasos manuales de abajo</string>
     <string name="a11y_service_label">Accesibilidad de Omega</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Permite que Omega lea la estructura de la interfaz en pantalla, realice toques y gestos, y reciba eventos del sistema en nombre de los Agent que invocan android-a11y-cli.</string>
     <string name="a11y_service_summary">Backend de automatización de la interfaz para Omega</string>
     <string name="back">Atrás</string>

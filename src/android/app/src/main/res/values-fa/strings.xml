@@ -1758,6 +1758,7 @@
     <string name="system_permissions_a11y_restricted_working">در حال اعمال…</string>
     <string name="system_permissions_a11y_restricted_failed">ناموفق بود — از مراحل دستی زیر استفاده کنید</string>
     <string name="a11y_service_label">دسترس‌پذیری Omega</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">به Omega اجازه می‌دهد ساختار رابط کاربری روی صفحه را بخواند، ضربه‌ها و اشاره‌ها را انجام دهد و رویدادهای سیستم را از طرف عامل‌هایی که android-a11y-cli را فراخوانی می‌کنند دریافت کند.</string>
     <string name="a11y_service_summary">پشتوانهٔ خودکارسازی لایهٔ رابط کاربری برای Omega</string>
     <string name="back">بازگشت</string>

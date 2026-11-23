@@ -1646,6 +1646,7 @@
     <string name="system_permissions_a11y_restricted_working">Разрешение…</string>
     <string name="system_permissions_a11y_restricted_failed">Не удалось — выполните шаги вручную ниже</string>
     <string name="a11y_service_label">Спец. возможности Omega</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Позволяет Omega читать структуру экранного UI, выполнять нажатия и жесты и получать системные события от имени Omega Agent, вызывающих android-a11y-cli.</string>
     <string name="a11y_service_summary">Бэкенд автоматизации UI-слоя для Omega</string>
     <string name="back">Назад</string>

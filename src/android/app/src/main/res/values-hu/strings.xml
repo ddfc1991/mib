@@ -1758,6 +1758,7 @@
     <string name="system_permissions_a11y_restricted_working">Engedélyezés…</string>
     <string name="system_permissions_a11y_restricted_failed">Sikertelen – használd az alábbi kézi lépéseket</string>
     <string name="a11y_service_label">Omega kisegítő lehetőség</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Lehetővé teszi, hogy a Omega olvassa a képernyő UI-szerkezetét, koppintásokat és kézmozdulatokat hajtson végre, és rendszereseményeket fogadjon az android-a11y-cli-t meghívó ügynökök nevében.</string>
     <string name="a11y_service_summary">A Omega UI-szintű automatizálási háttérszolgáltatása</string>
     <string name="back">Vissza</string>

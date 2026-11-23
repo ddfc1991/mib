@@ -1637,6 +1637,7 @@
     <string name="system_permissions_a11y_restricted_working">İzin veriliyor…</string>
     <string name="system_permissions_a11y_restricted_failed">Başarısız — aşağıdaki elle yapılan adımları kullanın</string>
     <string name="a11y_service_label">Omega Erişilebilirlik</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">android-a11y-cli çağıran Agent\'lar adına Omega\'in ekrandaki arayüz yapısını okumasını, dokunma ve hareketler yapmasını ve sistem olaylarını almasını sağlar.</string>
     <string name="a11y_service_summary">Omega için arayüz düzeyinde otomasyon arka ucu</string>
     <string name="back">Geri</string>

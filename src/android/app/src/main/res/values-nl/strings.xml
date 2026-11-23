@@ -1758,6 +1758,7 @@
     <string name="system_permissions_a11y_restricted_working">Toestaan…</string>
     <string name="system_permissions_a11y_restricted_failed">Mislukt — volg de handmatige stappen hieronder</string>
     <string name="a11y_service_label">Omega-toegankelijkheid</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Hiermee kan Omega de UI-structuur op het scherm lezen, tikken en gebaren uitvoeren en systeemgebeurtenissen ontvangen namens agents die android-a11y-cli aanroepen.</string>
     <string name="a11y_service_summary">Backend voor UI-automatisering van Omega</string>
     <string name="back">Terug</string>

@@ -1789,6 +1789,7 @@
     <string name="system_permissions_a11y_restricted_working">Dopuštam…</string>
     <string name="system_permissions_a11y_restricted_failed">Nije uspjelo — upotrijebite ručne korake u nastavku</string>
     <string name="a11y_service_label">Omega pristupačnost</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Omogućuje Omega čitanje strukture sučelja na zaslonu, izvođenje dodira i gesta te primanje sustavskih događaja u ime Agenata koji pozivaju android-a11y-cli.</string>
     <string name="a11y_service_summary">Pozadinski sustav za automatizaciju sučelja u Omega</string>
     <string name="back">Natrag</string>

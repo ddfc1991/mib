@@ -1638,6 +1638,7 @@
     <string name="system_permissions_a11y_restricted_working">กำลังอนุญาต…</string>
     <string name="system_permissions_a11y_restricted_failed">ไม่สำเร็จ — ใช้ขั้นตอนด้วยตนเองด้านล่าง</string>
     <string name="a11y_service_label">การช่วยเหลือพิเศษของ Omega</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">ให้ Omega อ่านโครงสร้างหน้าจอ แตะและทำท่าทาง รวมถึงรับเหตุการณ์ของระบบแทน Agent ที่เรียกใช้ android-a11y-cli</string>
     <string name="a11y_service_summary">แบ็กเอนด์ระบบอัตโนมัติระดับหน้าจอสำหรับ Omega</string>
     <string name="back">ย้อนกลับ</string>

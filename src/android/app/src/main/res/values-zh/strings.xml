@@ -1787,6 +1787,7 @@
     <string name="system_permissions_a11y_restricted_working">正在解除…</string>
     <string name="system_permissions_a11y_restricted_failed">解除失败 — 请按下方步骤手动操作</string>
     <string name="a11y_service_label">Omega 无障碍</string>
+    <string name="notice_listener_label">Omega 通知</string>
     <string name="a11y_service_description">让 Omega 代表调用 android-a11y-cli 的 Agent 读取屏幕 UI 结构、执行点击与手势，并接收系统事件。</string>
     <string name="a11y_service_summary">Omega 的 UI 层自动化后端</string>
     <string name="back">返回</string>

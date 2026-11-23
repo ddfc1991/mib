@@ -1957,6 +1957,7 @@
     <string name="system_permissions_a11y_restricted_working">Allowing…</string>
     <string name="system_permissions_a11y_restricted_failed">Failed — use the manual steps below</string>
     <string name="a11y_service_label">Omega Accessibility</string>
+    <string name="notice_listener_label">Omega Notices</string>
     <string name="a11y_service_description">Lets Omega read on-screen UI structure, perform taps and gestures, and receive system events on behalf of Agents invoking android-a11y-cli.</string>
     <string name="a11y_service_summary">UI-layer automation backend for Omega</string>
     <string name="back">Back</string>
