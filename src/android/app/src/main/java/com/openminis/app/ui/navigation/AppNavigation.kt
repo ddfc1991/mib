@@ -712,14 +712,14 @@ fun AppNavigation(
             arguments = listOf(navArgument("sessionId") { type = NavType.StringType }),
         ) { backStackEntry ->
             val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
-            ChatSplitScaffoldRoute(
-                initialSessionId = sessionId,
-                navController = navController,
+            ChatScreen(
+                sessionId = sessionId,
                 chatRepository = chatRepository,
                 providerRepository = providerRepository,
                 memoryRepository = memoryRepository,
                 skillRepository = skillRepository,
                 mcpRepository = mcpRepository,
+                onBack = { navController.popBackStack() },
             )
         }
 

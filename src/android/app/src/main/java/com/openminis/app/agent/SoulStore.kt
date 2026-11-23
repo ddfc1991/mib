@@ -75,7 +75,7 @@ data class SoulMetadata(
         const val DISPLAY_EMOJI = "✨"
 
         val DEFAULT = SoulMetadata(
-            name = "Mibot",
+            name = "Omega",
             // Default emoji is intentionally empty — UI uses the fixed
             // [displayEmoji] sparkle and [SoulMDParser.serialize] no longer
             // writes the `emoji:` line. The field is kept on the struct only
