@@ -195,10 +195,11 @@ val MibotDarkChatPalette = DarkChatPalette.copy(
 val HermesDarkChatPalette = DarkChatPalette.copy(
     background = Color(0xFF0A0A0A),
     secondaryBg = Color(0xFF1C1C1E),
-    inputBg = Color(0xFF1C1C1E),
+    // [openbots/glass] 输入胶囊:透明毛玻璃(约 90% 不透明,内容不渗透)+ 更亮的玻璃描边。
+    inputBg = Color(0xE61C1C1E),
     inputIconBg = Color(0xFF2C2C2E),
     inputIconBorder = Color(0xFF45454A),
-    inputBorder = Color(0xFF2C2C2E),
+    inputBorder = Color(0xFF45454A),
     primaryText = Color(0xFFFFFFFF),
     secondaryText = Color(0x998E8E93),
     tertiaryText = Color(0x4D8E8E93),
