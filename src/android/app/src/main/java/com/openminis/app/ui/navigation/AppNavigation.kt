@@ -712,6 +712,12 @@ fun AppNavigation(
             arguments = listOf(navArgument("sessionId") { type = NavType.StringType }),
         ) { backStackEntry ->
             val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+            // [destiny/omega-hermes-chat] Full-screen chat wears the Hermes
+            // HQ palette (OLED black + blue user bubble) while every other
+            // screen keeps the Mibot glass skin.
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.openminis.app.ui.theme.LocalChatPalette provides com.openminis.app.ui.theme.HermesDarkChatPalette,
+            ) {
             ChatScreen(
                 sessionId = sessionId,
                 chatRepository = chatRepository,
@@ -721,6 +727,7 @@ fun AppNavigation(
                 mcpRepository = mcpRepository,
                 onBack = { navController.popBackStack() },
             )
+            }
         }
 
         // [fork/glass-ui] Top-level tab pages + backdrop settings.

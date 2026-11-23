@@ -188,6 +188,47 @@ val MibotDarkChatPalette = DarkChatPalette.copy(
     fabAccent = Color(0xFFC8553D),
 )
 
+// [destiny/omega-hermes-chat] Hermes HQ chat page palette (OLED black +
+// iOS blue user bubble + neutral bot bubble), per hermes-hq-replica/规范.md
+// §1. Applied only to the full-screen chat page (Routes.CHAT) so the rest of
+// the app keeps its Mibot glass skin.
+val HermesDarkChatPalette = DarkChatPalette.copy(
+    background = Color(0xFF0A0A0A),
+    secondaryBg = Color(0xFF1C1C1E),
+    inputBg = Color(0xFF1C1C1E),
+    inputIconBg = Color(0xFF2C2C2E),
+    inputIconBorder = Color(0xFF45454A),
+    inputBorder = Color(0xFF2C2C2E),
+    primaryText = Color(0xFFFFFFFF),
+    secondaryText = Color(0x998E8E93),
+    tertiaryText = Color(0x4D8E8E93),
+    disabledText = Color(0x2EFFFFFF),
+    // User's own messages: iOS blue bubble (#3478F6), white text on top.
+    userBubble = Color(0xFF3478F6),
+    toolBg = Color(0xFF1E1E1E),
+    toolBorder = Color(0xFF2C2C2E),
+    toolCapsuleBg = Color(0xFF1C1C1E),
+    separator = Color(0x99545458),
+    sendButton = Color(0xFF0A84FF),
+    sendButtonDisabled = Color(0x4D0A84FF),
+    codeBlockBg = Color(0xFF1C1C1E),
+    codeBlockText = Color(0xFF30D158),
+    inlineCodeBg = Color(0xFF2C2C2E),
+    inlineCodeText = Color(0xFFFF9F0A),
+    link = Color(0xFF0A84FF),
+    blockquoteBar = Color(0x80FF9F0A),
+    thinking = Color(0xFF0A84FF),
+    warningBg = Color(0x14FF9F0A),
+    warningText = Color(0x73FFFFFF),
+    tableBorder = Color(0xFF38383A),
+    inputShadow = Color(0x80000000),
+    toastBg = Color(0x2E0A84FF),
+    thumbnailBorder = Color(0x20545458),
+    sheetHeaderBg = Color(0xFF1C1C1E),
+    sheetHeaderBorder = Color(0x33FFFFFF),
+    fabAccent = Color(0xFF0A84FF),
+)
+
 val LocalChatPalette = compositionLocalOf { LightChatPalette }
 
 // Short accessor: ChatColors.primaryText instead of LocalChatPalette.current.primaryText
