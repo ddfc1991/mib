@@ -103,35 +103,22 @@ fun GlassTabShell(
     showBackdrop: Boolean = !com.openminis.app.ui.theme.LocalMibotActive.current,
     content: @Composable BoxScope.() -> Unit,
 ) {
+  // [openbots/unify] 5-tab HQ 结构下旧的 4-tab 底栏已过时:壳只留主题/背景/Insets,
+  // 不再渲染 GlassTabBar。current/onSelect/scrollUnder 保留在签名里(调用点兼容),内部忽略。
   GlassStyleTheme {
     val haze = rememberHazeState()
     val style = LocalGlassStyle.current
     GlassSystemBars(lightIcons = style == GlassStyle.DUSK)
-    val inset = GlassTabBarHeight
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().hazeSource(haze)) {
             if (showBackdrop) GlassScreenBackdrop()
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (scrollUnder) Modifier
-                        else Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(bottom = inset),
-                    ),
-            ) {
+            Box(Modifier.fillMaxSize()) {
                 val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                CompositionLocalProvider(LocalGlassBottomInset provides if (scrollUnder) inset + navBottom else 0.dp) {
+                CompositionLocalProvider(LocalGlassBottomInset provides navBottom) {
                     content()
                 }
             }
         }
-        GlassTabBar(
-            current = current,
-            onSelect = onSelect,
-            style = style,
-            modifier = Modifier.align(Alignment.BottomCenter),
-            haze = haze,
-        )
     }
   }
 }
@@ -147,30 +134,9 @@ fun GlassChatTabFrame(
     onSelect: (GlassTab) -> Unit,
     content: @Composable () -> Unit,
 ) {
-    val imeVisible = WindowInsets.isImeVisible
-    val haze = rememberHazeState()
-    Box(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .hazeSource(haze)
-                .then(
-                    if (imeVisible) Modifier
-                    else Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(bottom = GlassTabBarHeight),
-                ),
-        ) { content() }
-        if (!imeVisible) {
-            GlassStyleTheme {
-                GlassTabBar(
-                    current = GlassTab.CHATS,
-                    onSelect = { if (it != GlassTab.CHATS) onSelect(it) },
-                    style = LocalGlassStyle.current,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    haze = haze,
-                )
-            }
-        }
-    }
+    // [openbots/unify] 旧 4-tab 浮动底栏已过时:聊天页全屏(与 HQ 聊天页一致),
+    // Insets 由聊天页自己处理;onSelect 保留在签名里(调用点兼容),内部忽略。
+    content()
 }
 
 /** Status/navigation bar icon colour while a glass page is showing; restored after. */
