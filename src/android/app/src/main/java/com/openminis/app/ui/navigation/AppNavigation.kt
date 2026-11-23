@@ -927,14 +927,10 @@ fun AppNavigation(
             val chatSession = remember { java.util.UUID.randomUUID().toString() }
             com.mibot.ui.hq.HqShell(
                 botsContent = {
-                    ChatSplitScaffoldRoute(
-                        initialSessionId = null,
-                        navController = navController,
-                        chatRepository = chatRepository,
-                        providerRepository = providerRepository,
-                        memoryRepository = memoryRepository,
-                        skillRepository = skillRepository,
-                        mcpRepository = mcpRepository,
+                    com.mibot.ui.hq.HqBotsScreen(
+                        onOpenBot = {
+                            navController.safeNavigate(Routes.chat(java.util.UUID.randomUUID().toString()))
+                        },
                     )
                 },
                 onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
