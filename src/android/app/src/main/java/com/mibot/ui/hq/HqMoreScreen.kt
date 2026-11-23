@@ -101,7 +101,6 @@ fun HqMoreScreen(
             HqMoreEntry("dynamics", "动态", MikaIcons.Spark, Color(0xFF32D74B)),
         ), onEntry)
         HqMenuGroup("消息与数据", listOf(
-            HqMoreEntry("messaging", "消息", MikaIcons.Message, Hq.ok),
             HqMoreEntry("groupchats", "群聊", MikaIcons.Route, Color(0xFF40C8E0)),
             HqMoreEntry("voice", "语音模型", MikaIcons.Message, Color(0xFF32D74B)),
             HqMoreEntry("files", "文件库", MikaIcons.Folder, Hq.accent),
@@ -109,9 +108,6 @@ fun HqMoreScreen(
             HqMoreEntry("usage", "用量", MikaIcons.Chart, Hq.ok),
         ), onEntry)
         HqMenuGroup("工作与智能", listOf(
-            HqMoreEntry("plans", "计划", MikaIcons.Clock, Hq.ink2),
-            HqMoreEntry("screens", "后台屏", MikaIcons.Route, Color(0xFF40C8E0)),
-            HqMoreEntry("teach", "教", MikaIcons.Edit, Hq.accent),
             HqMoreEntry("calls", "通话", MikaIcons.Message, Hq.ok),
             HqMoreEntry("plugins", "插件中心", MikaIcons.Apps, Color(0xFFBF5AF2)),
         ), onEntry)
