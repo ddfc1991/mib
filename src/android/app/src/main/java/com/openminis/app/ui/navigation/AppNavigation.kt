@@ -936,6 +936,25 @@ fun AppNavigation(
         // [fork/openbots] Hermes HQ 5-tab 主框架:chat 本体 + Sessions/Jobs/Kanban/More。
         composable(Routes.HQ_HOME) {
             val chatSession = remember { java.util.UUID.randomUUID().toString() }
+            // [destiny/omega-hq-data] Real data into the HQ tabs: sessions from
+            // the chat DB (live), 动态 from the feed store (assets posts.json).
+            // Jobs/Kanban stay empty — TaskCenterState (run events) is not
+            // ported to this repo yet, so there is no source to feed them.
+            val hqSessions by chatRepository.dao.observeSessions().collectAsState(initial = emptyList())
+            val hqConvSummaries = remember(hqSessions) {
+                hqSessions
+                    .filter { !it.isChild }
+                    .map {
+                        com.mibot.chat.ConversationSummary(
+                            id = it.id,
+                            title = it.title?.takeIf { t -> t.isNotBlank() } ?: "New Chat",
+                            updatedAt = it.updatedAt,
+                            pinnedAt = it.pinnedAt,
+                        )
+                    }
+            }
+            val hqFeedStore = remember { com.mibot.ui.hq.FeedStore(context).also { it.load() } }
+            val hqPosts by hqFeedStore.posts.collectAsState()
             com.mibot.ui.hq.HqShell(
                 botsContent = {
                     com.mibot.ui.hq.HqBotsScreen(
@@ -944,6 +963,8 @@ fun AppNavigation(
                         },
                     )
                 },
+                sessions = hqConvSummaries,
+                posts = hqPosts,
                 onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
                 onDeleteSession = { },
                 onOpenUrl = { url -> android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).also { navController.context.startActivity(it) } },
