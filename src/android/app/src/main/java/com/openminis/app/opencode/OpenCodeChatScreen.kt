@@ -19,10 +19,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +41,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mibot.ui.theme.MikaIcons
 import kotlinx.coroutines.launch
 
 /**
@@ -147,7 +144,7 @@ fun OpenCodeChatScreen(
                     IconButton(onClick = {
                         scope.launch { runCatching { OpenCodeApi.interrupt(baseUrl, token, sessionId) } }
                     }) {
-                        Icon(Icons.Default.Stop, "停止", tint = OcTheme.danger, modifier = Modifier.size(18.dp))
+                        Icon(MikaIcons.Stop, "停止", tint = OcTheme.danger, modifier = Modifier.size(18.dp))
                     }
                 }
             },
@@ -215,7 +212,7 @@ fun OpenCodeChatScreen(
             )
             IconButton(onClick = { send() }, enabled = draft.isNotBlank() && !busy) {
                 Icon(
-                    Icons.AutoMirrored.Filled.Send,
+                    MikaIcons.Up,
                     "发送",
                     tint = if (draft.isNotBlank() && !busy) OcTheme.accent else OcTheme.ink3,
                 )

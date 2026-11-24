@@ -1,5 +1,7 @@
 package com.openminis.app.ui.theme
 
+import com.mibot.ui.theme.MikaIcons
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -14,8 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -64,7 +64,7 @@ fun AppTopBar(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
+                        MikaIcons.Back,
                         contentDescription = null,
                         tint = p.ink,
                         modifier = Modifier.size(22.dp),

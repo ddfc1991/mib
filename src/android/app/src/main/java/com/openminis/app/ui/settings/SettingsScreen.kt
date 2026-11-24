@@ -77,6 +77,8 @@ import com.openminis.app.BuildConfig
 import com.openminis.app.R
 import com.openminis.app.ui.components.openExternalUrl
 import com.openminis.app.i18n.uppercaseForDisplay
+import com.openminis.app.ui.theme.AppTokens
+import com.mibot.ui.theme.MikaIcons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -163,22 +165,22 @@ fun SettingsScreen(
                 footer = stringResource(R.string.settings_section_llm_providers_footer),
             ) {
                 SettingsItem(
-                    icon = Icons.Outlined.Lock,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Lock,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_manage_providers),
                     subtitle = stringResource(R.string.settings_manage_providers_subtitle),
                     onClick = onProvidersClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Settings,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Gear,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_model_groups),
                     subtitle = stringResource(R.string.settings_model_groups_subtitle),
                     onClick = onModelGroupsClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.BarChart,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Chart,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_token_usage),
                     subtitle = stringResource(R.string.settings_token_usage_subtitle),
                     onClick = onUsageClick,
@@ -189,8 +191,8 @@ fun SettingsScreen(
             // -- Appearance --
             SettingsSection(title = stringResource(R.string.settings_section_appearance)) {
                 SettingsItem(
-                    icon = Icons.Outlined.Palette,
-                    iconColor = Color(0xFF5856D6),
+                    icon = MikaIcons.Spark,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_section_appearance),
                     subtitle = stringResource(R.string.settings_appearance_subtitle),
                     onClick = onAppearanceClick,
@@ -198,8 +200,8 @@ fun SettingsScreen(
                 )
                 if (onBackdropClick != null) {
                     SettingsItem(
-                        icon = Icons.Outlined.Wallpaper,
-                        iconColor = Color(0xFF30B0C7),
+                        icon = MikaIcons.Photo,
+                        iconColor = AppTokens.currentAccent,
                         title = stringResource(R.string.glass_backdrop_title),
                         subtitle = stringResource(R.string.glass_backdrop_subtitle),
                         onClick = onBackdropClick,
@@ -212,8 +214,8 @@ fun SettingsScreen(
             if (onReportBugClick != null) {
                 SettingsSection(title = stringResource(R.string.glass_section_feedback)) {
                     SettingsItem(
-                        icon = Icons.Outlined.BugReport,
-                        iconColor = Color(0xFFFF3B30),
+                        icon = MikaIcons.Bug,
+                        iconColor = AppTokens.current.danger,
                         title = stringResource(R.string.glass_report_bug),
                         subtitle = stringResource(R.string.glass_report_bug_desc),
                         onClick = onReportBugClick,
@@ -236,37 +238,37 @@ fun SettingsScreen(
             SettingsSection(title = stringResource(R.string.settings_section_agent_runtime)) {
                 // [T-tools-granular-switches] Which optional tools the agent may use.
                 SettingsItem(
-                    icon = Icons.Outlined.Handyman,
-                    iconColor = Color(0xFF5E5CE6),
+                    icon = MikaIcons.Wrench,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_agent_tools),
                     subtitle = stringResource(R.string.settings_agent_tools_subtitle),
                     onClick = onAgentToolsClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Groups,
+                    icon = MikaIcons.Chats,
                     iconColor = com.openminis.app.ui.chat.HelperAccentStatic,
                     title = stringResource(R.string.settings_agents),
                     subtitle = stringResource(R.string.settings_agents_subtitle),
                     onClick = onAgentsClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Extension,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Apps,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_skills),
                     subtitle = stringResource(R.string.settings_skills_subtitle),
                     onClick = onSkillsClick,
                 )
                 // [T-soul-md] Between Skills and Memory, as on iOS.
                 SettingsItem(
-                    icon = Icons.Outlined.AutoAwesome,
-                    iconColor = Color(0xFFFF9500),
+                    icon = MikaIcons.Spark,
+                    iconColor = AppTokens.current.warn,
                     title = stringResource(R.string.settings_soul),
                     subtitle = stringResource(R.string.settings_soul_subtitle),
                     onClick = onSoulClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Psychology,
-                    iconColor = Color(0xFF5856D6),
+                    icon = MikaIcons.Spark,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_memory),
                     subtitle = stringResource(R.string.settings_memory_subtitle),
                     onClick = onMemoryClick,
@@ -276,15 +278,15 @@ fun SettingsScreen(
                 // Extension so MCP no longer shares the Skills row's puzzle-piece icon —
                 // the grid reads as "multiple composed blocks/servers". teal unchanged.
                 SettingsItem(
-                    icon = Icons.Outlined.Dashboard,
-                    iconColor = Color(0xFF30B0C7),
+                    icon = MikaIcons.Apps,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_mcp),
                     subtitle = stringResource(R.string.settings_mcp_subtitle),
                     onClick = onMcpClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Terminal,
-                    iconColor = Color(0xFF34C759),
+                    icon = MikaIcons.Terminal,
+                    iconColor = AppTokens.current.success,
                     title = stringResource(R.string.settings_env_vars),
                     subtitle = stringResource(R.string.settings_env_vars_subtitle),
                     onClick = onEnvVarsClick,
@@ -295,29 +297,29 @@ fun SettingsScreen(
             // -- Storage --
             SettingsSection(title = stringResource(R.string.settings_section_storage)) {
                 SettingsItem(
-                    icon = Icons.Outlined.Inventory2,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Apps,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_section_storage),
                     subtitle = stringResource(R.string.settings_storage_subtitle),
                     onClick = onRootfsClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Folder,
-                    iconColor = Color(0xFF34C759),
+                    icon = MikaIcons.Folder,
+                    iconColor = AppTokens.current.success,
                     title = stringResource(R.string.settings_shared_folders),
                     subtitle = stringResource(R.string.settings_shared_folders_subtitle),
                     onClick = onSharedFoldersClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.FolderShared,
-                    iconColor = Color(0xFFFF9500),
+                    icon = MikaIcons.Folder,
+                    iconColor = AppTokens.current.warn,
                     title = stringResource(R.string.settings_mount_external_folders),
                     subtitle = stringResource(R.string.settings_mount_external_folders_subtitle),
                     onClick = onMountedFoldersClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Backup,
-                    iconColor = Color(0xFF34C759),
+                    icon = MikaIcons.Download,
+                    iconColor = AppTokens.current.success,
                     title = stringResource(R.string.settings_backup_restore),
                     subtitle = stringResource(R.string.settings_backup_restore_subtitle),
                     onClick = onBackupClick,
@@ -330,36 +332,36 @@ fun SettingsScreen(
             // Container DNS (until now only on the Rootfs page).
             SettingsSection(title = stringResource(R.string.network_title)) {
                 SettingsItem(
-                    icon = Icons.Outlined.Lan,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Globe,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.network_routing_title),
                     subtitle = null,
                     onClick = onNetworkClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.VpnLock,
-                    iconColor = Color(0xFF5856D6),
+                    icon = MikaIcons.Lock,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.network_tailscale),
                     subtitle = null,
                     onClick = onTailscaleClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Dns,
-                    iconColor = Color(0xFF8E8E93),
+                    icon = MikaIcons.Screens,
+                    iconColor = AppTokens.current.ink3,
                     title = stringResource(R.string.destiny_servers_title),
                     subtitle = stringResource(R.string.destiny_servers_subtitle),
                     onClick = onServersClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Router,
-                    iconColor = Color(0xFFFF9500),
+                    icon = MikaIcons.Desktop,
+                    iconColor = AppTokens.current.warn,
                     title = stringResource(R.string.network_proxies),
                     subtitle = null,
                     onClick = onProxiesClick,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Dns,
-                    iconColor = Color(0xFF8E8E93),
+                    icon = MikaIcons.Screens,
+                    iconColor = AppTokens.current.ink3,
                     title = stringResource(R.string.network_container_dns),
                     subtitle = null,
                     onClick = onContainerDnsClick,
@@ -370,8 +372,8 @@ fun SettingsScreen(
             // -- Permissions --
             SettingsSection(title = stringResource(R.string.settings_section_permissions)) {
                 SettingsItem(
-                    icon = Icons.Outlined.Shield,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Shield,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_section_permissions),
                     subtitle = stringResource(R.string.settings_permissions_subtitle),
                     onClick = onPermissionsClick,
@@ -385,8 +387,8 @@ fun SettingsScreen(
                 footer = stringResource(R.string.bg_section_footer),
             ) {
                 SettingsItem(
-                    icon = Icons.Outlined.BatteryFull,
-                    iconColor = Color(0xFFFF9500),
+                    icon = MikaIcons.Leaf,
+                    iconColor = AppTokens.current.warn,
                     title = stringResource(R.string.bg_section_header),
                     subtitle = stringResource(R.string.bg_section_subtitle),
                     onClick = onBackgroundClick,
@@ -397,8 +399,8 @@ fun SettingsScreen(
             // -- Logs --
             SettingsSection(title = stringResource(R.string.settings_section_logs)) {
                 SettingsItem(
-                    icon = Icons.Outlined.Description,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Doc,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_section_logs),
                     subtitle = stringResource(R.string.settings_logs_subtitle),
                     onClick = onLogsClick,
@@ -411,24 +413,24 @@ fun SettingsScreen(
                 // [T-update-channels] The update badge's Settings layer.
                 val updateBadge by com.openminis.app.data.UpdateStateStore.hasUpdateBadge.collectAsState()
                 SettingsItem(
-                    icon = Icons.Outlined.Info,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Info,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_about_minis),
                     subtitle = stringResource(R.string.settings_about_subtitle),
                     onClick = onAboutClick,
                     badge = updateBadge,
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.FrontHand,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Hand,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_privacy_policy),
                     subtitle = null,
                     // iOS canonical URL — ContentView.swift / AddProviderView.swift
                     onClick = { openExternalUrl(context, "https://openminis.github.io/privacy-policy.html") },
                 )
                 SettingsItem(
-                    icon = Icons.Outlined.Feedback,
-                    iconColor = Color(0xFF007AFF),
+                    icon = MikaIcons.Message,
+                    iconColor = AppTokens.currentAccent,
                     title = stringResource(R.string.settings_feedback),
                     subtitle = null,
                     onClick = { showFeedbackSheet = true },
@@ -444,7 +446,7 @@ fun SettingsScreen(
         ModalBottomSheet(onDismissRequest = { showFeedbackSheet = false }) {
             Column(modifier = Modifier.padding(bottom = 24.dp)) {
                 FeedbackSheetItem(
-                    icon = Icons.Outlined.BugReport,
+                    icon = MikaIcons.Bug,
                     title = stringResource(R.string.settings_submit_github_issues),
                     onClick = {
                         showFeedbackSheet = false
@@ -452,7 +454,7 @@ fun SettingsScreen(
                     },
                 )
                 FeedbackSheetItem(
-                    icon = Icons.AutoMirrored.Outlined.Send,
+                    icon = MikaIcons.Up,
                     title = stringResource(R.string.settings_feedback_telegram),
                     onClick = {
                         showFeedbackSheet = false
@@ -460,7 +462,7 @@ fun SettingsScreen(
                     },
                 )
                 FeedbackSheetItem(
-                    icon = Icons.Outlined.Email,
+                    icon = MikaIcons.Message,
                     title = stringResource(R.string.settings_feedback_email),
                     onClick = {
                         showFeedbackSheet = false

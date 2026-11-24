@@ -96,20 +96,20 @@ fun HqMoreScreen(
             HqMoreEntry("settings", "设置", MikaIcons.Gear, Hq.ink2),
             HqMoreEntry("models", "模型", MikaIcons.Star, Hq.accent),
             HqMoreEntry("groups", "模型组", MikaIcons.Apps, Hq.accent),
-            HqMoreEntry("vault", "账户金库", MikaIcons.Shield, Color(0xFFAF52DE)),
-            HqMoreEntry("dynamics", "动态", MikaIcons.Spark, Color(0xFF32D74B)),
+            HqMoreEntry("vault", "账户金库", MikaIcons.Shield, Hq.accent),
+            HqMoreEntry("dynamics", "动态", MikaIcons.Spark, Hq.ok),
         ), onEntry)
         HqMenuGroup("消息与数据", listOf(
-            HqMoreEntry("groupchats", "群聊", MikaIcons.Route, Color(0xFF40C8E0)),
-            HqMoreEntry("voice", "语音模型", MikaIcons.Message, Color(0xFF32D74B)),
+            HqMoreEntry("groupchats", "群聊", MikaIcons.Route, Hq.accent),
+            HqMoreEntry("voice", "语音模型", MikaIcons.Message, Hq.ok),
             HqMoreEntry("files", "文件库", MikaIcons.Folder, Hq.accent),
-            HqMoreEntry("memory", "记忆", MikaIcons.Spark, Color(0xFFBF5AF2)),
+            HqMoreEntry("memory", "记忆", MikaIcons.Spark, Hq.warn),
             HqMoreEntry("usage", "用量", MikaIcons.Chart, Hq.ok),
         ), onEntry)
         HqMenuGroup("工作与智能", listOf(
             HqMoreEntry("calls", "通话", MikaIcons.Message, Hq.ok),
-            HqMoreEntry("plugins", "插件中心", MikaIcons.Apps, Color(0xFFBF5AF2)),
-            HqMoreEntry("opencode", "OpenCode", MikaIcons.Spark, Color(0xFF5FB8A0)),
+            HqMoreEntry("plugins", "插件中心", MikaIcons.Apps, Hq.warn),
+            HqMoreEntry("opencode", "OpenCode", MikaIcons.Spark, Hq.accent),
         ), onEntry)
         Spacer(Modifier.height(80.dp))
     }

@@ -1,5 +1,7 @@
 package com.openminis.app.ui.chat
 
+import com.mibot.ui.theme.MikaIcons
+
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
@@ -3227,7 +3229,7 @@ fun ChatScreen(
                                         // already use for `square.stack.3d.up`.
                                         if (selectedGroupId != null) {
                                             Icon(
-                                                Icons.Default.Layers,
+                                                MikaIcons.Screens,
                                                 contentDescription = null,
                                                 tint = ChatColors.tertiaryText,
                                                 modifier = Modifier.size(10.dp),
@@ -3338,11 +3340,11 @@ fun ChatScreen(
                     // [T-android-tablet-split] See `isTwoPane`.
                     if (!isTwoPane && onOpenDrawer != null) {
                         IconButton(onClick = onOpenDrawer) {
-                            Icon(androidx.compose.material.icons.Icons.Filled.Menu, contentDescription = "Conversations")
+                            Icon(MikaIcons.Menu, contentDescription = "Conversations")
                         }
                     } else if (!isTwoPane) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(MikaIcons.Back, contentDescription = "Back")
                         }
                     } else if (onToggleSidebar != null) {
                         // [T-android-tablet-sidebar-collapse] The slot the back
@@ -3403,7 +3405,7 @@ fun ChatScreen(
                             modifier = Modifier.offset(y = (-2).dp),
                         ) {
                             Icon(
-                                Icons.Filled.Menu,
+                                MikaIcons.Menu,
                                 contentDescription = stringResource(
                                     if (sidebarCollapsed) {
                                         R.string.chat_show_sidebar
@@ -3420,7 +3422,7 @@ fun ChatScreen(
                     // iOS: "..." circle button → dropdown menu
                     Box {
                         IconButton(onClick = { showChatMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More")
+                            Icon(MikaIcons.More, contentDescription = "More")
                         }
                         MinisMenu(
                             expanded = showChatMenu,
@@ -3465,7 +3467,7 @@ fun ChatScreen(
                                     openSharePicker(null)
                                 },
                                 leadingIcon = {
-                                    MenuItemIcon(Icons.Outlined.IosShare)
+                                    MenuItemIcon(MikaIcons.Share)
                                 },
                             )
                             // [T-in-chat-search] Search in Chat, after Share Chat…
@@ -3478,7 +3480,7 @@ fun ChatScreen(
                                     chatSearch.activate()
                                 },
                                 leadingIcon = {
-                                    MenuItemIcon(Icons.Default.Search)
+                                    MenuItemIcon(MikaIcons.Search)
                                 },
                             )
                             MinisMenuDivider()
@@ -3490,7 +3492,7 @@ fun ChatScreen(
                                     showClearChatDialog = true
                                 },
                                 leadingIcon = {
-                                    MenuItemIcon(Icons.Outlined.Delete, tint = MaterialTheme.colorScheme.error)
+                                    MenuItemIcon(MikaIcons.Trash, tint = MaterialTheme.colorScheme.error)
                                 },
                             )
                             MinisMenuDivider()
@@ -3502,7 +3504,7 @@ fun ChatScreen(
                                     onOpenTerminal()
                                 },
                                 leadingIcon = {
-                                    MenuItemIcon(Icons.Outlined.Terminal)
+                                    MenuItemIcon(MikaIcons.Terminal)
                                 },
                             )
                             // Open Browser (iOS parity)
@@ -3513,7 +3515,7 @@ fun ChatScreen(
                                     viewModel.toggleBrowserSheet()
                                 },
                                 leadingIcon = {
-                                    MenuItemIcon(Icons.Outlined.Language)
+                                    MenuItemIcon(MikaIcons.Globe)
                                 },
                             )
                             // Browse Chat Files (iOS parity) — opens file browser at /var/minis
@@ -3524,7 +3526,7 @@ fun ChatScreen(
                                     onBrowseChatFiles()
                                 },
                                 leadingIcon = {
-                                    MenuItemIcon(Icons.Outlined.Folder)
+                                    MenuItemIcon(MikaIcons.Folder)
                                 },
                             )
                             MinisMenuDivider()
@@ -3537,7 +3539,7 @@ fun ChatScreen(
                                         showSkillsSheet = true
                                     },
                                     leadingIcon = {
-                                        MenuItemIcon(Icons.Outlined.Extension)
+                                        MenuItemIcon(MikaIcons.Apps)
                                     },
                                 )
                             }
@@ -3550,7 +3552,7 @@ fun ChatScreen(
                                         showMcpsSheet = true
                                     },
                                     leadingIcon = {
-                                        MenuItemIcon(Icons.Outlined.Handyman)
+                                        MenuItemIcon(MikaIcons.Wrench)
                                     },
                                 )
                             }
@@ -3563,7 +3565,7 @@ fun ChatScreen(
                                         viewModel.toggleMemorySheet()
                                     },
                                     leadingIcon = {
-                                        MenuItemIcon(Icons.Outlined.Psychology)
+                                        MenuItemIcon(MikaIcons.Spark)
                                     },
                                 )
                             }
@@ -3576,7 +3578,7 @@ fun ChatScreen(
                                     showTokenUsageSheet = true
                                 },
                                 leadingIcon = {
-                                    MenuItemIcon(Icons.Outlined.Tag)
+                                    MenuItemIcon(MikaIcons.Bookmark)
                                 },
                             )
                             // Enhanced Cache (iOS parity, commit 57aaf122):
@@ -3601,7 +3603,7 @@ fun ChatScreen(
                                         }
                                     },
                                     leadingIcon = {
-                                        MenuItemIcon(Icons.Outlined.History)
+                                        MenuItemIcon(MikaIcons.Clock)
                                     },
                                     trailingIcon = {
                                         SettingsSwitch(
@@ -3664,7 +3666,7 @@ fun ChatScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                             Icon(
-                                                Icons.Default.ChevronRight,
+                                                MikaIcons.Forward,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 modifier = Modifier.size(18.dp),
@@ -3731,7 +3733,7 @@ fun ChatScreen(
                                     },
                                     leadingIcon = {
                                         MenuItemIcon(
-                                            Icons.Outlined.BugReport,
+                                            MikaIcons.Bug,
                                             tint = MaterialTheme.colorScheme.error,
                                         )
                                     },
@@ -3757,7 +3759,7 @@ fun ChatScreen(
                                     trailingIcon = {
                                         if (tier == currentTier) {
                                             Icon(
-                                                Icons.Default.Check,
+                                                MikaIcons.Check,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(18.dp),
@@ -7368,7 +7370,7 @@ fun ChatScreen(
                                 onClick = { showAttachMenu = true },
                             ) {
                                 Icon(
-                                    Icons.Default.Add,
+                                    MikaIcons.Plus,
                                     contentDescription = "Attach",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp),
@@ -8717,7 +8719,7 @@ private fun ThinkingLevelSheet(
                     )
                     if (isSelected) {
                         Icon(
-                            imageVector = Icons.Default.Check,
+                            imageVector = MikaIcons.Check,
                             contentDescription = null,
                             tint = ChatColors.thinking,
                             modifier = Modifier.size(18.dp),
