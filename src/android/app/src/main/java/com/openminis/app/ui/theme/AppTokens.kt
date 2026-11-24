@@ -70,7 +70,7 @@ object AppTokens {
         warn = Color(0xFF9A6B1F),
     )
 
-    fun of(dark: Boolean): OmegaPalette = if (dark) dark else light
+    fun of(dark: Boolean): OmegaPalette = if (dark) AppTokens.dark else light
 
     /**
      * 当前有效配色：明暗由皮肤决定，强调色由皮肤覆盖。
