@@ -109,6 +109,7 @@ fun HqMoreScreen(
         HqMenuGroup("工作与智能", listOf(
             HqMoreEntry("calls", "通话", MikaIcons.Message, Hq.ok),
             HqMoreEntry("plugins", "插件中心", MikaIcons.Apps, Color(0xFFBF5AF2)),
+            HqMoreEntry("opencode", "OpenCode", MikaIcons.Spark, Color(0xFF5FB8A0)),
         ), onEntry)
         Spacer(Modifier.height(80.dp))
     }

@@ -99,6 +99,11 @@ object Routes {
     const val HQ_PREVIEW = "hq_preview"
     /** 动态(团队动态 feed,Muse/team-dynamics-plugin)。 */
     const val DYNAMICS = "dynamics"
+    /** OpenCode 手机客户端：配对 / 会话列表 / 聊天。独立于原生 OpenCode App，连同一台电脑的 OpenCode 服务。 */
+    const val OPENCODE_PAIR = "opencode_pair"
+    const val OPENCODE_SESSIONS = "opencode_sessions"
+    const val OPENCODE_CHAT = "opencode_chat/{sessionId}"
+    fun openCodeChat(sessionId: String) = "opencode_chat/$sessionId"
     const val PROVIDER_LIST = "providers"
     const val ADD_PROVIDER = "add_provider"
     const val PROVIDER_DETAIL = "provider/{instanceId}"
@@ -983,6 +988,10 @@ fun AppNavigation(
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
                         "voice" -> navController.safeNavigate(Routes.MIBOT_VOICE)
+                        "opencode" -> navController.safeNavigate(
+                            if (com.openminis.app.opencode.OpenCodeStore.isConnected(context))
+                                Routes.OPENCODE_SESSIONS else Routes.OPENCODE_PAIR
+                        )
                         else -> {}
                     }
                 },
@@ -1005,9 +1014,37 @@ fun AppNavigation(
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
+                        "opencode" -> navController.safeNavigate(
+                            if (com.openminis.app.opencode.OpenCodeStore.isConnected(context))
+                                Routes.OPENCODE_SESSIONS else Routes.OPENCODE_PAIR
+                        )
                         else -> {}
                     }
                 },
+            )
+        }
+        // ---- OpenCode 手机客户端（新增模块，不改任何原有功能） ----
+        composable(Routes.OPENCODE_PAIR) {
+            com.openminis.app.opencode.OpenCodePairScreen(
+                onConnected = { navController.safeNavigate(Routes.OPENCODE_SESSIONS) },
+                onBack = { navController.safePopBackStack() },
+            )
+        }
+        composable(Routes.OPENCODE_SESSIONS) {
+            com.openminis.app.opencode.OpenCodeSessionListScreen(
+                onOpenSession = { id -> navController.safeNavigate(Routes.openCodeChat(id)) },
+                onBack = { navController.safePopBackStack() },
+                onDisconnect = {
+                    com.openminis.app.opencode.OpenCodeStore.clear(context)
+                    navController.safeNavigate(Routes.OPENCODE_PAIR)
+                },
+            )
+        }
+        composable(Routes.OPENCODE_CHAT) { entry ->
+            val sid = entry.arguments?.getString("sessionId").orEmpty()
+            com.openminis.app.opencode.OpenCodeChatScreen(
+                sessionId = sid,
+                onBack = { navController.safePopBackStack() },
             )
         }
         composable("destiny_v7_home") {
