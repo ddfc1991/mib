@@ -1,6 +1,8 @@
 package com.openminis.app.ui.chat
 
 import com.openminis.app.R
+import com.mibot.ui.theme.MikaIcons
+import com.openminis.app.ui.theme.AppTokens
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
@@ -52,33 +54,34 @@ internal fun formatStepDuration(seconds: Long, stillRunning: Boolean): String {
     return if (stillRunning) "$base…" else base
 }
 
-// Helper: tool accent color
+// Helper: tool accent color — 收敛到 AppTokens，工具之间只靠透明度区分，
+// 不再各自带一套 iOS 系统色，跳页/跳工具卡片时不会像换 App。
 internal fun toolAccentColor(toolName: String): Color = when (toolName) {
-    "shell_execute" -> Color(0xFF34C759)
-    "file_read" -> Color(0xFF32ADE6)
-    "file_write" -> Color(0xFF007AFF)
-    "file_edit" -> Color(0xFFFF9500)
-    "browser_use" -> Color(0xFF007AFF)
-    "read_image" -> Color(0xFFAF52DE)
-    "memory_write", "memory_get" -> Color(0xFFFF2D55)
-    "web_search" -> Color(0xFF32ADE6)    // iOS: .cyan for search
+    "shell_execute" -> AppTokens.StaticSuccess
+    "file_read" -> AppTokens.StaticLink
+    "file_write" -> AppTokens.StaticAccent
+    "file_edit" -> AppTokens.StaticWarn
+    "browser_use" -> AppTokens.StaticAccent
+    "read_image" -> AppTokens.StaticAccent.copy(alpha = 0.82f)
+    "memory_write", "memory_get" -> AppTokens.StaticDanger
+    "web_search" -> AppTokens.StaticLink
     // [T-sub-agents-v1] Current name + the pre-rename one still in shipped transcripts.
-    "subagent_task", "delegate_task", "agent_status" -> HelperAccentStatic  // iOS: HelperAccent.color (electric violet)
-    else -> Color(0xFF8E8E93)
+    "subagent_task", "delegate_task", "agent_status" -> AppTokens.StaticAccent.copy(alpha = 0.75f)
+    else -> AppTokens.StaticMuted
 }
 
-// Helper: tool icon (iOS: distinct SF Symbols per tool type)
+// Helper: tool icon — 统一使用 Hermes HQ 的 MikaIcons 线条图标。
 internal fun toolIconFor(toolName: String) = when (toolName) {
-    "shell_execute" -> Icons.Default.Terminal
-    "file_read" -> Icons.Default.Description         // iOS: doc.text
-    "file_write" -> Icons.AutoMirrored.Filled.NoteAdd   // iOS: doc.text.fill (filled variant)
-    "file_edit" -> Icons.Default.EditNote             // iOS: square.and.pencil
-    "browser_use" -> Icons.Default.Language            // iOS: globe
-    "read_image" -> Icons.Default.Image                // iOS: photo
-    "memory_write", "memory_get" -> Icons.Default.Psychology // iOS: brain.head.profile
-    "web_search" -> Icons.Default.Search               // iOS: magnifyingglass
-    "subagent_task", "delegate_task", "agent_status" -> Icons.Default.Groups  // iOS: person.2.wave.2
-    else -> Icons.Default.Build
+    "shell_execute" -> MikaIcons.Terminal
+    "file_read" -> MikaIcons.Doc
+    "file_write" -> MikaIcons.Edit
+    "file_edit" -> MikaIcons.Edit
+    "browser_use" -> MikaIcons.Globe
+    "read_image" -> MikaIcons.Photo
+    "memory_write", "memory_get" -> MikaIcons.Spark
+    "web_search" -> MikaIcons.Search
+    "subagent_task", "delegate_task", "agent_status" -> MikaIcons.Chats
+    else -> MikaIcons.Wrench
 }
 
 // [T-android-overlay-two-row] View-layer twin of [toolIconFor], for callers

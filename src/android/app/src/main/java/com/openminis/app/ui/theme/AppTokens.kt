@@ -93,6 +93,17 @@ object AppTokens {
         @ReadOnlyComposable
         get() = current.accent
 
+    /**
+     * 非 Composable 上下文可用的静态语义色（工具卡片、状态徽标等）。
+     * 全部取自基准 palette，避免旧版 iOS 蓝紫绿红散落在页面里。
+     */
+    val StaticAccent: Color get() = dark.accent
+    val StaticSuccess: Color get() = dark.success
+    val StaticWarn: Color get() = dark.warn
+    val StaticDanger: Color get() = dark.danger
+    val StaticMuted: Color get() = dark.ink3
+    val StaticLink: Color get() = dark.accent
+
     // ---- 圆角（全 App 统一） ----
     val radiusXs = 4.dp     // 状态点、小标签
     val radiusSm = 10.dp    // 控件、命令块、按钮

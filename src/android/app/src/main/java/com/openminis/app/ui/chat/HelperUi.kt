@@ -89,6 +89,7 @@ import com.openminis.app.agent.jobs.AgentJobRegistry
 import com.openminis.app.agent.jobs.HelperRunner
 import com.openminis.app.debug.HeadlessChatRunner
 import com.openminis.app.ui.theme.ChatColors
+import com.openminis.app.ui.theme.AppTokens
 import com.openminis.app.ui.DisplayBitmapLimits
 import kotlinx.coroutines.delay
 import org.json.JSONObject
@@ -110,16 +111,16 @@ import com.openminis.app.ui.components.DecorativeSpinner
 /** Electric violet, dynamic per appearance (#734DED light / #A385FF dark):
  *  reads as "AI / tech" and stays clear of red (stop/error), green (done),
  *  yellow (timeout) and blue (thinking). */
-val HelperAccentLight = Color(0xFF734DED)
-val HelperAccentDark = Color(0xFFA385FF)
+val HelperAccentLight: Color get() = AppTokens.light.accent
+val HelperAccentDark: Color get() = AppTokens.dark.accent
 @Composable
 internal fun helperAccent(): Color = if (ChatColors.isDark) HelperAccentDark else HelperAccentLight
 /** Static mid-tone for non-composable call sites (tool colour map). */
-val HelperAccentStatic = Color(0xFF8B6CF6)
+val HelperAccentStatic: Color get() = AppTokens.StaticAccent
 
-internal val HelperStatusGreen = Color(0xFF34C759)
-internal val HelperStatusYellow = Color(0xFFFFCC00)
-internal val HelperStatusRed = Color(0xFFFF3B30)
+internal val HelperStatusGreen: Color get() = AppTokens.StaticSuccess
+internal val HelperStatusYellow: Color get() = AppTokens.StaticWarn
+internal val HelperStatusRed: Color get() = AppTokens.StaticDanger
 
 /** What an agent block's content currently says, in structured form. */
 internal sealed class HelperPhase {
