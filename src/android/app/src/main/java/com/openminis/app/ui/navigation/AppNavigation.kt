@@ -236,6 +236,7 @@ object Routes {
     const val MIBOT_CALLS = "mibot_calls"
     const val MIBOT_SMS_LOGIN = "mibot_sms_login"
     const val MIBOT_PROACTIVE = "mibot_proactive"
+    const val MIBOT_OPENCODE = "mibot_opencode"
 
     fun scheduledTaskRuns(taskId: String): String = "scheduled_tasks/runs/$taskId"
 
@@ -982,6 +983,7 @@ fun AppNavigation(
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
+                        "opencode" -> navController.safeNavigate(Routes.MIBOT_OPENCODE)
                         "voice" -> navController.safeNavigate(Routes.MIBOT_VOICE)
                         else -> {}
                     }
@@ -1005,6 +1007,7 @@ fun AppNavigation(
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
+                        "opencode" -> navController.safeNavigate(Routes.MIBOT_OPENCODE)
                         else -> {}
                     }
                 },
@@ -2195,6 +2198,14 @@ fun AppNavigation(
                     onOpenProviders = { navController.safeNavigate(Routes.PROVIDER_LIST) },
                 )
             }
+        }
+
+        composable(Routes.MIBOT_OPENCODE) {
+            val store = remember { com.mibot.opencode.OpenCodeStore(context.applicationContext) }
+            com.mibot.opencode.OpenCodePairScreen(
+                onBack = { navController.safePopBackStack() },
+                store = store,
+            )
         }
 
         composable(Routes.MIBOT_PROACTIVE) {
