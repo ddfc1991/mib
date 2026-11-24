@@ -75,9 +75,9 @@ fun HqMoreScreen(
                 Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color.Black),
+                    .background(Hq.accent.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center,
-            ) { Icon(MikaIcons.Spark, null, tint = Color.White, modifier = Modifier.size(24.dp)) }
+            ) { Icon(MikaIcons.Spark, null, tint = Hq.accent, modifier = Modifier.size(24.dp)) }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("Mac mini", style = HqType.RowTitle, color = Hq.ink)
@@ -91,25 +91,28 @@ fun HqMoreScreen(
         }
         Spacer(Modifier.height(24.dp))
 
+        // 全 App 一套 UI：More 页所有入口统一用同一个强调色，图标统一 HQ 线稿。
+        // 之前混用 accent / ink2 / ok / warn 四种颜色，视觉上像几套风格拼在一起。
+        val entryTint = Hq.accent
         HqMenuGroup("系统", listOf(
-            HqMoreEntry("bots", "机器人", MikaIcons.Spark, Hq.accent),
-            HqMoreEntry("settings", "设置", MikaIcons.Gear, Hq.ink2),
-            HqMoreEntry("models", "模型", MikaIcons.Star, Hq.accent),
-            HqMoreEntry("groups", "模型组", MikaIcons.Apps, Hq.accent),
-            HqMoreEntry("vault", "账户金库", MikaIcons.Shield, Hq.accent),
-            HqMoreEntry("dynamics", "动态", MikaIcons.Spark, Hq.ok),
+            HqMoreEntry("bots", "机器人", MikaIcons.Spark, entryTint),
+            HqMoreEntry("settings", "设置", MikaIcons.Gear, entryTint),
+            HqMoreEntry("models", "模型", MikaIcons.Star, entryTint),
+            HqMoreEntry("groups", "模型组", MikaIcons.Apps, entryTint),
+            HqMoreEntry("vault", "账户金库", MikaIcons.Shield, entryTint),
+            HqMoreEntry("dynamics", "动态", MikaIcons.Spark, entryTint),
         ), onEntry)
         HqMenuGroup("消息与数据", listOf(
-            HqMoreEntry("groupchats", "群聊", MikaIcons.Route, Hq.accent),
-            HqMoreEntry("voice", "语音模型", MikaIcons.Message, Hq.ok),
-            HqMoreEntry("files", "文件库", MikaIcons.Folder, Hq.accent),
-            HqMoreEntry("memory", "记忆", MikaIcons.Spark, Hq.warn),
-            HqMoreEntry("usage", "用量", MikaIcons.Chart, Hq.ok),
+            HqMoreEntry("groupchats", "群聊", MikaIcons.Route, entryTint),
+            HqMoreEntry("voice", "语音模型", MikaIcons.Message, entryTint),
+            HqMoreEntry("files", "文件库", MikaIcons.Folder, entryTint),
+            HqMoreEntry("memory", "记忆", MikaIcons.Spark, entryTint),
+            HqMoreEntry("usage", "用量", MikaIcons.Chart, entryTint),
         ), onEntry)
         HqMenuGroup("工作与智能", listOf(
-            HqMoreEntry("calls", "通话", MikaIcons.Message, Hq.ok),
-            HqMoreEntry("plugins", "插件中心", MikaIcons.Apps, Hq.warn),
-            HqMoreEntry("opencode", "OpenCode", MikaIcons.Spark, Hq.accent),
+            HqMoreEntry("calls", "通话", MikaIcons.Message, entryTint),
+            HqMoreEntry("plugins", "插件中心", MikaIcons.Apps, entryTint),
+            HqMoreEntry("opencode", "OpenCode", MikaIcons.Spark, entryTint),
         ), onEntry)
         Spacer(Modifier.height(80.dp))
     }
