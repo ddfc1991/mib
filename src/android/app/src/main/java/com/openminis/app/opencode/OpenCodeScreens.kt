@@ -31,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,19 +47,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openminis.app.ui.theme.AppTokens
 import kotlinx.coroutines.launch
 
-/** OpenCode 深色主题色（贴近官方桌面/移动端：近黑底 + 青绿强调）。 */
+/**
+ * OpenCode 页面配色 —— 直接读取全 App 唯一视觉真源。
+ * 旧常量名保留，页面代码不用改；明暗与皮肤强调色自动跟随全局设置。
+ */
 object OcTheme {
-    val bg = Color(0xFF0A0A0B)
-    val surface = Color(0xFF151517)
-    val surface2 = Color(0xFF1E1E21)
-    val ink = Color(0xFFEDEDED)
-    val ink2 = Color(0xFF9A9A9E)
-    val ink3 = Color(0xFF6A6A70)
-    val accent = Color(0xFF5FB8A0)
-    val danger = Color(0xFFE06C75)
-    val border = Color(0xFF2A2A2E)
+    private val p: com.openminis.app.ui.theme.OmegaPalette
+        @Composable
+        @ReadOnlyComposable
+        get() = AppTokens.current
+
+    val bg: Color
+        @Composable @ReadOnlyComposable get() = p.bg
+    val surface: Color
+        @Composable @ReadOnlyComposable get() = p.surface
+    val surface2: Color
+        @Composable @ReadOnlyComposable get() = p.surface2
+    val ink: Color
+        @Composable @ReadOnlyComposable get() = p.ink
+    val ink2: Color
+        @Composable @ReadOnlyComposable get() = p.ink2
+    val ink3: Color
+        @Composable @ReadOnlyComposable get() = p.ink3
+    val accent: Color
+        @Composable @ReadOnlyComposable get() = p.accent
+    val danger: Color
+        @Composable @ReadOnlyComposable get() = p.danger
+    val border: Color
+        @Composable @ReadOnlyComposable get() = p.border
 }
 
 /**
@@ -76,21 +95,15 @@ fun OpenCodePairScreen(
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(OcTheme.bg)
-            .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = OcTheme.ink)
-            }
-            Spacer(Modifier.width(4.dp))
-            Text("连接 OpenCode", color = OcTheme.ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-        }
+    Column(modifier.fillMaxSize().background(OcTheme.bg)) {
+        com.openminis.app.ui.theme.AppTopBar(title = "连接 OpenCode", onBack = onBack)
+        Column(
+            Modifier
+                .fillMaxSize()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+        ) {
         Spacer(Modifier.height(24.dp))
 
         Text("在电脑上运行：", color = OcTheme.ink2, fontSize = 13.sp)
@@ -158,6 +171,7 @@ fun OpenCodePairScreen(
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = OcTheme.bg, strokeWidth = 2.dp)
             else Text("连接", fontWeight = FontWeight.SemiBold)
         }
+        }
     }
 }
 
@@ -193,24 +207,19 @@ fun OpenCodeSessionListScreen(
     LaunchedEffect(Unit) { refresh() }
 
     Column(modifier = modifier.fillMaxSize().background(OcTheme.bg)) {
-        Row(
-            Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = OcTheme.ink)
-            }
-            Column(Modifier.weight(1f)) {
-                Text("OpenCode", color = OcTheme.ink, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Text(baseUrl, color = OcTheme.ink3, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-            }
-            Text(
-                "断开",
-                color = OcTheme.ink2,
-                fontSize = 12.sp,
-                modifier = Modifier.clickable { onDisconnect() }.padding(8.dp),
-            )
-        }
+        com.openminis.app.ui.theme.AppTopBar(
+            title = "OpenCode",
+            subtitle = baseUrl,
+            onBack = onBack,
+            actions = {
+                Text(
+                    "断开",
+                    color = OcTheme.ink2,
+                    fontSize = 12.sp,
+                    modifier = Modifier.clickable { onDisconnect() }.padding(8.dp),
+                )
+            },
+        )
 
         when {
             loading -> Box(Modifier.fillMaxSize(), Alignment.Center) {

@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.openminis.app.ui.theme.AppTokens
 
 /**
  * [fork/glass-ui] Colour scheme for glass-hosted screens (tab pages, the chat
@@ -22,46 +23,46 @@ object GlassPalette {
     // A: dark dusk glass
     // [fork/mibot-v2] "Dusk" now means the night variant of the unified
     // Mibot design system, "Warm" the light cloud-sky variant.
-    val DuskBackground = Color(0xFF0E1014)
-    val DuskSurface = Color(0xFF1B1D22)
-    val DuskOn = Color(0xFFE8EAEE)
-    val DuskOnMuted = Color(0xFF9EA3AD)
-    val DuskAccent = Color(0xFFE07E66)
-    val DuskTint = Color(0xFF14161A)
+    val DuskBackground = AppTokens.dark.bg
+    val DuskSurface = AppTokens.dark.surface
+    val DuskOn = AppTokens.dark.ink
+    val DuskOnMuted = AppTokens.dark.ink2
+    val DuskAccent = AppTokens.dark.accent
+    val DuskTint = AppTokens.dark.surface2
 
-    // B: warm-white minimal
-    val WarmBackground = Color(0xFFF3F0EA)
-    val WarmSurface = Color(0xFFFFFFFF)
-    val WarmOn = Color(0xFF1B1D22)
-    val WarmOnMuted = Color(0xFF5C606A)
-    val WarmAccent = Color(0xFFAE4530)
-    val WarmTint = Color(0xFFF8F6F2)
+    // B: light variant of the same palette
+    val WarmBackground = AppTokens.light.bg
+    val WarmSurface = AppTokens.light.surface
+    val WarmOn = AppTokens.light.ink
+    val WarmOnMuted = AppTokens.light.ink2
+    val WarmAccent = AppTokens.light.accent
+    val WarmTint = AppTokens.light.surface2
 
     fun scheme(base: ColorScheme, style: GlassStyle): ColorScheme = when (style) {
         GlassStyle.DUSK -> base.copy(
-            primary = DuskAccent, onPrimary = Color(0xFF231A3D),
-            primaryContainer = Color(0xFF3A3156), onPrimaryContainer = DuskOn,
-            secondaryContainer = Color(0xFF2E2940), onSecondaryContainer = DuskOn,
+            primary = DuskAccent, onPrimary = AppTokens.dark.onAccent,
+            primaryContainer = DuskTint, onPrimaryContainer = DuskOn,
+            secondaryContainer = DuskTint, onSecondaryContainer = DuskOn,
             background = DuskBackground, onBackground = DuskOn,
             surface = DuskSurface, onSurface = DuskOn,
-            surfaceVariant = Color(0xFF2B2639), onSurfaceVariant = DuskOnMuted,
-            surfaceContainerLowest = Color(0xFF121019), surfaceContainerLow = Color(0xFF1C1927),
-            surfaceContainer = Color(0xFF221E2F), surfaceContainerHigh = Color(0xFF2A2638),
-            surfaceContainerHighest = Color(0xFF332E42),
-            outline = Color(0xFF6E6884), outlineVariant = Color(0xFF3A3549),
+            surfaceVariant = DuskTint, onSurfaceVariant = DuskOnMuted,
+            surfaceContainerLowest = DuskBackground, surfaceContainerLow = DuskSurface,
+            surfaceContainer = DuskTint, surfaceContainerHigh = DuskTint,
+            surfaceContainerHighest = DuskTint,
+            outline = AppTokens.dark.border, outlineVariant = AppTokens.dark.border,
             inverseSurface = DuskOn, inverseOnSurface = DuskBackground,
         )
         GlassStyle.WARM -> base.copy(
-            primary = Color(0xFF8A5A33), onPrimary = Color.White,
-            primaryContainer = Color(0xFFF1E4D6), onPrimaryContainer = WarmOn,
-            secondaryContainer = Color(0xFFF0EAE1), onSecondaryContainer = WarmOn,
+            primary = WarmAccent, onPrimary = AppTokens.light.onAccent,
+            primaryContainer = WarmTint, onPrimaryContainer = WarmOn,
+            secondaryContainer = WarmTint, onSecondaryContainer = WarmOn,
             background = WarmBackground, onBackground = WarmOn,
             surface = WarmSurface, onSurface = WarmOn,
-            surfaceVariant = Color(0xFFF0EAE1), onSurfaceVariant = WarmOnMuted,
-            surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFF7F3ED),
-            surfaceContainer = Color(0xFFF3EEE7), surfaceContainerHigh = Color(0xFFEDE7DF),
-            surfaceContainerHighest = Color(0xFFE7E0D7),
-            outline = Color(0xFFB9AFA3), outlineVariant = Color(0xFFE6DFD5),
+            surfaceVariant = WarmTint, onSurfaceVariant = WarmOnMuted,
+            surfaceContainerLowest = WarmSurface, surfaceContainerLow = WarmTint,
+            surfaceContainer = WarmTint, surfaceContainerHigh = WarmTint,
+            surfaceContainerHighest = WarmTint,
+            outline = AppTokens.light.border, outlineVariant = AppTokens.light.border,
             inverseSurface = WarmOn, inverseOnSurface = WarmBackground,
         )
     }

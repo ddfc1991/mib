@@ -6,20 +6,10 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// Semantic chat colors mirroring iOS ChatColors (AIChatView.swift).
-// Resolved from LocalChatPalette, which is provided by MinisTheme.
-//
-// iOS reference:
-//   systemBackground        -> background
-//   secondarySystemBackground -> secondaryBg
-//   tertiarySystemFill      -> userBubble
-//   tertiarySystemGroupedBackground -> toolBg
-//   label                   -> primaryText
-//   secondaryLabel          -> secondaryText
-//   tertiaryLabel           -> tertiaryText
-//   quaternaryLabel         -> sendButtonDisabled
-//   separator               -> border
-//   systemGray6             -> inlineCodeBg / toolCapsuleBg
+// 聊天语义色全量收敛到 AppTokens —— 明暗两套，皮肤只覆盖强调色。
+// 原先 DarkChatPalette / MibotDarkChatPalette / HermesDarkChatPalette
+// 三套用户气泡（#2F3A5C / #2A2D34 / #3478F6）是「跳页像换 App」的主因，
+// 现在三套 alias 到同一份基准。
 @Immutable
 data class ChatPalette(
     val isDark: Boolean,
@@ -58,181 +48,90 @@ data class ChatPalette(
     val fabAccent: Color,
 )
 
+private val lp = AppTokens.light
+private val dp = AppTokens.dark
+
 val LightChatPalette = ChatPalette(
     isDark = false,
-    background = Color.White,
-    secondaryBg = Color(0xFFF2F2F7),
-    inputBg = Color.White,
-    inputIconBg = Color(0xFFF2F2F7),
+    background = lp.bg,
+    secondaryBg = lp.surface2,
+    inputBg = lp.surface,
+    inputIconBg = lp.surface2,
     inputIconBorder = Color.Transparent,
-    inputBorder = Color(0x4D3C3C43),
-    primaryText = Color(0xFF000000),
-    secondaryText = Color(0x993C3C43),
-    tertiaryText = Color(0x4D3C3C43),
-    disabledText = Color(0x2E3C3C43),
-    userBubble = Color(0x1E787880),
-    toolBg = Color(0xFFF2F2F7),
-    toolBorder = Color(0x14000000),
-    toolCapsuleBg = Color(0xFFF2F2F7),
-    separator = Color(0x4D3C3C43),
-    sendButton = Color(0xFF000000),
-    sendButtonDisabled = Color(0x2E3C3C43),
-    codeBlockBg = Color(0xFF000000),
-    codeBlockText = Color(0xFF34C759),
-    inlineCodeBg = Color(0xFFF2F2F7),
-    inlineCodeText = Color(0xFFFF9500),
-    link = Color(0xFF007AFF),
-    blockquoteBar = Color(0x80FF9500),
-    thinking = Color(0xFF007AFF),
-    warningBg = Color(0x14FF9500),
-    warningText = Color(0x73000000),
-    tableBorder = Color(0x1F000000),
+    inputBorder = lp.border.copy(alpha = 0.5f),
+    primaryText = lp.ink,
+    secondaryText = lp.ink2,
+    tertiaryText = lp.ink3,
+    disabledText = lp.ink3.copy(alpha = 0.45f),
+    userBubble = lp.bubbleUser,
+    toolBg = lp.surface2,
+    toolBorder = lp.border.copy(alpha = 0.4f),
+    toolCapsuleBg = lp.surface2,
+    separator = lp.border,
+    sendButton = lp.accent,
+    sendButtonDisabled = lp.ink3.copy(alpha = 0.3f),
+    codeBlockBg = lp.surface2,
+    codeBlockText = lp.ink,
+    inlineCodeBg = lp.surface2,
+    inlineCodeText = lp.accent,
+    link = lp.accent,
+    blockquoteBar = lp.accent.copy(alpha = 0.5f),
+    thinking = lp.accent,
+    warningBg = lp.warn.copy(alpha = 0.08f),
+    warningText = lp.ink,
+    tableBorder = lp.border.copy(alpha = 0.4f),
     inputShadow = Color.Transparent,
-    toastBg = Color(0x2E007AFF),
-    thumbnailBorder = Color(0x33808080),
-    sheetHeaderBg = Color(0xFFFFFFFF),
-    sheetHeaderBorder = Color(0x1A000000),
-    fabAccent = Color(0xFFB7AF96),
+    toastBg = lp.accent.copy(alpha = 0.18f),
+    thumbnailBorder = lp.border,
+    sheetHeaderBg = lp.surface,
+    sheetHeaderBorder = lp.border.copy(alpha = 0.4f),
+    fabAccent = lp.accent,
 )
 
-// T153: Android-specific dark palette tweaks. iOS borrows the system
-// palette (#1C1C1E / #2C2C2E etc.) which reads as "layered dark grey"
-// on a 1000+ nit display, but on a typical Android phone (Pixel 6 ≈
-// 500 nits, mid-range OEMs even less) those layers crush together
-// into a single near-black wash and the user can't tell tool capsules
-// from background or input from message list. Lift the non-background
-// layers ~6-10% so the contrast survives the brightness gap; the pure
-// `background` itself stays #000 because every other color is keyed
-// to "darker than this".
 val DarkChatPalette = ChatPalette(
     isDark = true,
-    background = Color(0xFF000000),
-    secondaryBg = Color(0xFF26262A),
-    inputBg = Color(0xFF2C2C30),
-    inputIconBg = Color(0xFF1C1C1E),
-    inputIconBorder = Color(0xFF595959),
-    inputBorder = Color(0x40545458),
-    primaryText = Color(0xFFFFFFFF),
-    secondaryText = Color(0x99EBEBF5),
-    tertiaryText = Color(0x4DEBEBF5),
-    disabledText = Color(0x2EEBEBF5),
-    // [T-android-user-bubble-dark-contrast] The old 0x247676D7 was a 14%-alpha
-    // translucent blue-grey that washed out to near-invisible on the #000 chat
-    // background on real (≈500-nit) displays — exactly the "crush to a near-black
-    // wash" failure the palette header warns about. Use an OPAQUE cool slate-blue
-    // so the user's own messages read as a distinct accent; white primaryText
-    // stays legible on it.
-    userBubble = Color(0xFF2F3A5C),
-    toolBg = Color(0xFF3A3A3F),
-    toolBorder = Color(0x40545458),
-    toolCapsuleBg = Color(0xFF28282C),
-    separator = Color(0x99545458),
-    sendButton = Color(0xFFFFFFFF),
-    sendButtonDisabled = Color(0x2EEBEBF5),
-    codeBlockBg = Color(0xFF262626),
-    codeBlockText = Color(0xFF8CF38C),
-    // [T-inline-code-dark-bg-android] Lifted into the T153 ramp — the old
-    // #1C1C1E chip was invisible on the #000 chat background (the comment
-    // block above explains why non-background layers need the ~6-10% lift;
-    // this one was missed). #34343A sits between inputBg (#2C2C30) and
-    // toolBg (#3A3A3F), clearly above codeBlockBg (#262626) so small inline
-    // chips read against both the wash and fenced blocks.
-    inlineCodeBg = Color(0xFF34343A),
-    inlineCodeText = Color(0xFFFF9F0A),
-    link = Color(0xFF0A84FF),
-    blockquoteBar = Color(0x80FF9F0A),
-    thinking = Color(0xFF0A84FF),
-    warningBg = Color(0x14FF9F0A),
-    warningText = Color(0x73FFFFFF),
-    tableBorder = Color(0xFF38383A),
+    background = dp.bg,
+    secondaryBg = dp.surface2,
+    inputBg = dp.surface2,
+    inputIconBg = dp.surface2,
+    inputIconBorder = dp.border,
+    inputBorder = dp.border.copy(alpha = 0.7f),
+    primaryText = dp.ink,
+    secondaryText = dp.ink2,
+    tertiaryText = dp.ink3,
+    disabledText = dp.ink3.copy(alpha = 0.45f),
+    userBubble = dp.bubbleUser,
+    toolBg = dp.surface2,
+    toolBorder = dp.border.copy(alpha = 0.7f),
+    toolCapsuleBg = dp.surface2,
+    separator = dp.border,
+    sendButton = dp.accent,
+    sendButtonDisabled = dp.ink3.copy(alpha = 0.3f),
+    codeBlockBg = dp.surface2,
+    codeBlockText = dp.ink,
+    inlineCodeBg = dp.surface2,
+    inlineCodeText = dp.accent,
+    link = dp.accent,
+    blockquoteBar = dp.accent.copy(alpha = 0.5f),
+    thinking = dp.accent,
+    warningBg = dp.warn.copy(alpha = 0.12f),
+    warningText = dp.ink,
+    tableBorder = dp.border.copy(alpha = 0.7f),
     inputShadow = Color(0x80000000),
-    toastBg = Color(0x2E0A84FF),
-    thumbnailBorder = Color(0x20545458),
-    sheetHeaderBg = Color(0xFF2C2C2E),
-    sheetHeaderBorder = Color(0x33FFFFFF),
-    fabAccent = Color(0xFF504C42),
+    toastBg = dp.accent.copy(alpha = 0.22f),
+    thumbnailBorder = dp.border,
+    sheetHeaderBg = dp.surface,
+    sheetHeaderBorder = dp.border.copy(alpha = 0.6f),
+    fabAccent = dp.accent,
 )
 
-// [fork/mibot-v5] Chat colours for the Mibot design system: neutral glass
-// user bubbles, one cinnabar accent (send / links), frosted tool capsules.
-val MibotLightChatPalette = LightChatPalette.copy(
-    background = Color(0xFFF3F0EA),
-    secondaryBg = Color(0xE6FFFFFF),
-    inputBg = Color(0xF2FFFFFF),
-    inputIconBg = Color(0xFFF1EEE9),
-    primaryText = Color(0xFF1B1D22),
-    userBubble = Color(0xFFEAE4DC),
-    toolBg = Color(0xD9FFFFFF),
-    toolCapsuleBg = Color(0xD9FFFFFF),
-    sendButton = Color(0xFFAE4530),
-    link = Color(0xFFAE4530),
-    thinking = Color(0xFF4F6577),
-    toastBg = Color(0x2EAE4530),
-    sheetHeaderBg = Color(0xFFF7F5F1),
-    fabAccent = Color(0xFFAE4530),
-)
-
-val MibotDarkChatPalette = DarkChatPalette.copy(
-    background = Color(0xFF0E1014),
-    secondaryBg = Color(0xE61B1D22),
-    inputBg = Color(0xF21B1D22),
-    inputIconBg = Color(0xFF26282E),
-    userBubble = Color(0xFF2A2D34),
-    toolBg = Color(0xD91B1D22),
-    toolCapsuleBg = Color(0xD9181A1F),
-    sendButton = Color(0xFFE07E66),
-    link = Color(0xFFE07E66),
-    thinking = Color(0xFFA9BCCB),
-    toastBg = Color(0x2EE07E66),
-    sheetHeaderBg = Color(0xFF212328),
-    fabAccent = Color(0xFFC8553D),
-)
-
-// [destiny/omega-hermes-chat] Hermes HQ chat page palette (OLED black +
-// iOS blue user bubble + neutral bot bubble), per hermes-hq-replica/规范.md
-// §1. Applied only to the full-screen chat page (Routes.CHAT) so the rest of
-// the app keeps its Mibot glass skin.
-val HermesDarkChatPalette = DarkChatPalette.copy(
-    background = Color(0xFF0A0A0A),
-    secondaryBg = Color(0xFF1C1C1E),
-    // [openbots/glass] 输入胶囊:透明毛玻璃(约 90% 不透明,内容不渗透)+ 更亮的玻璃描边。
-    inputBg = Color(0xE61C1C1E),
-    inputIconBg = Color(0xFF2C2C2E),
-    inputIconBorder = Color(0xFF45454A),
-    inputBorder = Color(0xFF45454A),
-    primaryText = Color(0xFFFFFFFF),
-    secondaryText = Color(0x998E8E93),
-    tertiaryText = Color(0x4D8E8E93),
-    disabledText = Color(0x2EFFFFFF),
-    // User's own messages: iOS blue bubble (#3478F6), white text on top.
-    userBubble = Color(0xFF3478F6),
-    toolBg = Color(0xFF1E1E1E),
-    toolBorder = Color(0xFF2C2C2E),
-    toolCapsuleBg = Color(0xFF1C1C1E),
-    separator = Color(0x99545458),
-    sendButton = Color(0xFF0A84FF),
-    sendButtonDisabled = Color(0x4D0A84FF),
-    codeBlockBg = Color(0xFF1C1C1E),
-    codeBlockText = Color(0xFF30D158),
-    inlineCodeBg = Color(0xFF2C2C2E),
-    inlineCodeText = Color(0xFFFF9F0A),
-    link = Color(0xFF0A84FF),
-    blockquoteBar = Color(0x80FF9F0A),
-    thinking = Color(0xFF0A84FF),
-    warningBg = Color(0x14FF9F0A),
-    warningText = Color(0x73FFFFFF),
-    tableBorder = Color(0xFF38383A),
-    inputShadow = Color(0x80000000),
-    toastBg = Color(0x2E0A84FF),
-    thumbnailBorder = Color(0x20545458),
-    sheetHeaderBg = Color(0xFF1C1C1E),
-    sheetHeaderBorder = Color(0x33FFFFFF),
-    fabAccent = Color(0xFF0A84FF),
-)
+// 统一别名：原有三套 chat palette 不再各自带色，全部继承同一基准。
+val MibotLightChatPalette: ChatPalette get() = LightChatPalette
+val MibotDarkChatPalette: ChatPalette get() = DarkChatPalette
+val HermesDarkChatPalette: ChatPalette get() = DarkChatPalette
 
 val LocalChatPalette = compositionLocalOf { LightChatPalette }
 
-// Short accessor: ChatColors.primaryText instead of LocalChatPalette.current.primaryText
 val ChatColors: ChatPalette
     @Composable
     @ReadOnlyComposable

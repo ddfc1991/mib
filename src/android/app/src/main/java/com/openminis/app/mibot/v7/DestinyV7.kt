@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.openminis.app.data.db.ChatSessionEntity
 import com.openminis.app.data.repository.ChatRepository
 import com.openminis.app.ui.navigation.Routes
+import com.openminis.app.ui.theme.AppTokens
 
 /**
  * [destiny/v7-full] The 56-screen design spec, rendered as NATIVE Compose UI.
@@ -63,18 +64,19 @@ import com.openminis.app.ui.navigation.Routes
  * screens look like the HTML spec regardless of the app's own theme switch.
  */
 object V7 {
-    val Bg = Color(0xFF0A0A0B)
-    val Bg2 = Color(0xFF0F0F11)
-    val Sf = Color(0xFF17171A)
-    val Sf2 = Color(0xFF1F1F23)
-    val Ln = Color(0x15FFFFFF)
-    val Tx = Color(0xFFF2F0EB)
-    val Tx2 = Color(0xFF9E9C97)
-    val Tx3 = Color(0xFF67655F)
-    val Cu = Color(0xFFC8926A)
-    val Ok = Color(0xFF63B87F)
-    val Wa = Color(0xFFC9A24D)
-    val Er = Color(0xFFD2604F)
+    // 全 App 视觉统一：V7 不再自带铜色体系，全部 alias 到统一 token。
+    val Bg = AppTokens.dark.bg
+    val Bg2 = AppTokens.dark.surface
+    val Sf = AppTokens.dark.surface
+    val Sf2 = AppTokens.dark.surface2
+    val Ln = AppTokens.dark.border.copy(alpha = 0.35f)
+    val Tx = AppTokens.dark.ink
+    val Tx2 = AppTokens.dark.ink2
+    val Tx3 = AppTokens.dark.ink3
+    val Cu = AppTokens.dark.accent
+    val Ok = AppTokens.dark.success
+    val Wa = AppTokens.dark.warn
+    val Er = AppTokens.dark.danger
 
     private val Tones = listOf(
         Color(0xFF2B2A33), Color(0xFF26332F), Color(0xFF3A2E25),

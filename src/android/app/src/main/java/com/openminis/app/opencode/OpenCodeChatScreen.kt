@@ -136,29 +136,22 @@ fun OpenCodeChatScreen(
     }
 
     Column(modifier = modifier.fillMaxSize().background(OcTheme.bg)) {
-        // 顶栏
-        Row(
-            Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = OcTheme.ink)
-            }
-            Spacer(Modifier.width(4.dp))
-            Column(Modifier.weight(1f)) {
-                Text("会话", color = OcTheme.ink, fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-                Text(sessionId, color = OcTheme.ink3, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-            }
-            if (streaming) {
-                Text("运行中", color = OcTheme.accent, fontSize = 12.sp)
-                Spacer(Modifier.width(4.dp))
-                IconButton(onClick = {
-                    scope.launch { runCatching { OpenCodeApi.interrupt(baseUrl, token, sessionId) } }
-                }) {
-                    Icon(Icons.Default.Stop, "停止", tint = OcTheme.danger, modifier = Modifier.size(18.dp))
+        // 全 App 统一顶栏
+        com.openminis.app.ui.theme.AppTopBar(
+            title = "会话",
+            subtitle = sessionId,
+            onBack = onBack,
+            actions = {
+                if (streaming) {
+                    Text("运行中", color = OcTheme.accent, fontSize = 12.sp)
+                    IconButton(onClick = {
+                        scope.launch { runCatching { OpenCodeApi.interrupt(baseUrl, token, sessionId) } }
+                    }) {
+                        Icon(Icons.Default.Stop, "停止", tint = OcTheme.danger, modifier = Modifier.size(18.dp))
+                    }
                 }
-            }
-        }
+            },
+        )
 
         if (error != null) {
             Text(error!!, color = OcTheme.danger, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp))

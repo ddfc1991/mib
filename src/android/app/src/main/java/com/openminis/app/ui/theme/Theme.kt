@@ -33,56 +33,56 @@ import androidx.compose.ui.unit.sp
 //
 // Names keep the `Teal` prefix only to avoid churning 90+ call sites; the
 // value is the contract, not the name.
-private val TealPrimary = Color(0xFF528AD2)
-private val TealOnPrimary = Color(0xFFFFFFFF)
+private val TealPrimary = AppTokens.light.accent
+private val TealOnPrimary = AppTokens.light.onAccent
 private val TealPrimaryContainer = Color(0xFFB2DFDB)
 private val TealOnPrimaryContainer = Color(0xFF00332F)
-private val TealSecondary = Color(0xFF4A6360)
-private val TealOnSecondary = Color(0xFFFFFFFF)
-private val TealSecondaryContainer = Color(0xFFCCE8E4)
-private val TealOnSecondaryContainer = Color(0xFF05201D)
-private val TealTertiary = Color(0xFF46617A)
-private val TealOnTertiary = Color(0xFFFFFFFF)
-private val TealTertiaryContainer = Color(0xFFCDE5FF)
-private val TealOnTertiaryContainer = Color(0xFF001D32)
-private val TealBackground = Color(0xFFF5FAFA)
-private val TealOnBackground = Color(0xFF171D1C)
-private val TealSurface = Color(0xFFF5FAFA)
-private val TealOnSurface = Color(0xFF171D1C)
-private val TealSurfaceVariant = Color(0xFFDAE5E2)
-private val TealOnSurfaceVariant = Color(0xFF3F4947)
-private val TealOutline = Color(0xFF6F7977)
+private val TealSecondary = AppTokens.light.ink2
+private val TealOnSecondary = AppTokens.light.onAccent
+private val TealSecondaryContainer = AppTokens.light.surface2
+private val TealOnSecondaryContainer = AppTokens.light.ink
+private val TealTertiary = AppTokens.light.ink2
+private val TealOnTertiary = AppTokens.light.onAccent
+private val TealTertiaryContainer = AppTokens.light.surface2
+private val TealOnTertiaryContainer = AppTokens.light.ink
+private val TealBackground = AppTokens.light.bg
+private val TealOnBackground = AppTokens.light.ink
+private val TealSurface = AppTokens.light.surface
+private val TealOnSurface = AppTokens.light.ink
+private val TealSurfaceVariant = AppTokens.light.surface2
+private val TealOnSurfaceVariant = AppTokens.light.ink2
+private val TealOutline = AppTokens.light.border
 
-private val TealDarkPrimary = Color(0xFF6A94CE)
-private val TealDarkOnPrimary = Color(0xFF003737)
+private val TealDarkPrimary = AppTokens.dark.accent
+private val TealDarkOnPrimary = AppTokens.dark.onAccent
 private val TealDarkPrimaryContainer = Color(0xFF1A6B6B)
 private val TealDarkOnPrimaryContainer = Color(0xFFB2DFDB)
-private val TealDarkSecondary = Color(0xFFB1CCC8)
-private val TealDarkOnSecondary = Color(0xFF1C3532)
-private val TealDarkSecondaryContainer = Color(0xFF334B48)
-private val TealDarkOnSecondaryContainer = Color(0xFFCCE8E4)
-private val TealDarkBackground = Color(0xFF0E1514)
-private val TealDarkOnBackground = Color(0xFFDEE4E2)
-private val TealDarkSurface = Color(0xFF0E1514)
-private val TealDarkOnSurface = Color(0xFFDEE4E2)
-private val TealDarkSurfaceVariant = Color(0xFF3F4947)
-private val TealDarkOnSurfaceVariant = Color(0xFFBEC9C6)
-private val TealDarkOutline = Color(0xFF899390)
+private val TealDarkSecondary = AppTokens.dark.ink2
+private val TealDarkOnSecondary = AppTokens.dark.onAccent
+private val TealDarkSecondaryContainer = AppTokens.dark.surface2
+private val TealDarkOnSecondaryContainer = AppTokens.dark.ink
+private val TealDarkBackground = AppTokens.dark.bg
+private val TealDarkOnBackground = AppTokens.dark.ink
+private val TealDarkSurface = AppTokens.dark.surface
+private val TealDarkOnSurface = AppTokens.dark.ink
+private val TealDarkSurfaceVariant = AppTokens.dark.surface2
+private val TealDarkOnSurfaceVariant = AppTokens.dark.ink2
+private val TealDarkOutline = AppTokens.dark.border
 
 // Neutral grouped-card surfaces (iOS-style system-grouped background).
 // Override Material3's tonal `surfaceContainer*` so cards don't pick up the
 // teal primary tint.
 // Light: page = #F2F2F7 gray, card = white
 // Dark:  page = #000, card = #1C1C1E
-private val NeutralGroupedBg = Color(0xFFF2F2F7)
-private val NeutralGroupedCard = Color(0xFFFFFFFF)
-private val NeutralGroupedCardElevated = Color(0xFFF7F7FA)
-private val NeutralOutline = Color(0xFFD1D1D6)
+private val NeutralGroupedBg = AppTokens.light.bg
+private val NeutralGroupedCard = AppTokens.light.surface
+private val NeutralGroupedCardElevated = AppTokens.light.surface2
+private val NeutralOutline = AppTokens.light.border
 
-private val NeutralDarkGroupedBg = Color(0xFF000000)
-private val NeutralDarkGroupedCard = Color(0xFF1C1C1E)
-private val NeutralDarkGroupedCardElevated = Color(0xFF2C2C2E)
-private val NeutralDarkOutline = Color(0xFF38383A)
+private val NeutralDarkGroupedBg = AppTokens.dark.bg
+private val NeutralDarkGroupedCard = AppTokens.dark.surface
+private val NeutralDarkGroupedCardElevated = AppTokens.dark.surface2
+private val NeutralDarkOutline = AppTokens.dark.border
 
 private val LightColorScheme = lightColorScheme(
     primary = TealPrimary,
@@ -146,11 +146,11 @@ fun minisFabColor(): Color = LocalChatPalette.current.fabAccent
 // dividers and flat sections instead of stacked rounded cards, so the global
 // M3 shapes are pulled in — only sheets/dialogs keep a visible corner.
 private val MinisShapes = Shapes(
-    extraSmall = RoundedCornerShape(4.dp),    // DropdownMenu, Tooltip, OutlinedTextField default
-    small = RoundedCornerShape(8.dp),         // Chip, TextField
-    medium = RoundedCornerShape(10.dp),       // Card, Snackbar
-    large = RoundedCornerShape(12.dp),        // NavigationDrawer
-    extraLarge = RoundedCornerShape(14.dp),   // Dialog, BottomSheet
+    extraSmall = RoundedCornerShape(AppTokens.radiusXs),
+    small = RoundedCornerShape(AppTokens.radiusSm),
+    medium = RoundedCornerShape(AppTokens.radiusMd),
+    large = RoundedCornerShape(AppTokens.radiusLg),
+    extraLarge = RoundedCornerShape(AppTokens.radiusLg),
 )
 
 /** [destiny/omega-skin] Material scheme derived from the user's skin. */
@@ -210,14 +210,18 @@ fun MinisTheme(
     skin: Skin = SkinStore.current.value,
     content: @Composable () -> Unit,
 ) {
+    // 明暗由主题模式唯一决定；皮肤只贡献强调色。
+    // 旧实现里皮肤自带 isDark，会出现「主题模式=浅色但皮肤=深色」时
+    // MaterialTheme 与页面底色互相打架的情况。
+    val effectiveSkin = skin.copy(isDark = darkTheme)
     val colorScheme = when {
-        mibot -> skinColorScheme(skin)
+        mibot -> skinColorScheme(effectiveSkin)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
     val typography = if (mibot) mibotTypography(fontScale) else scaledTypography(fontScale)
     val chatPalette = when {
-        mibot -> skinChatPalette(skin)
+        mibot -> skinChatPalette(effectiveSkin)
         darkTheme -> DarkChatPalette
         else -> LightChatPalette
     }
@@ -259,99 +263,88 @@ val LocalMibotDark = androidx.compose.runtime.staticCompositionLocalOf { false }
 // still clears WCAG AA. Semantic colours stay muted — a status is a dot plus
 // a sentence, never a coloured badge.
 object MibotPalette {
-    // [destiny/omega-hermes-unify] Hermes HQ accent everywhere: iOS blue.
-    // Was Mibot's cinnabar/tan, which read as a different app next to the
-    // Hermes-black main frame.
-    val AccentLight = Color(0xFF007AFF)
-    val AccentDark = Color(0xFF0A84FF)
-    val InkLight = Color(0xFF1B1D22)
-    val InkMutedLight = Color(0xFF5C606A)
-    val InkDark = Color(0xFFF2F0EB)
-    val InkMutedDark = Color(0xFFA3A099)
-    val Porcelain = Color(0xFFFAF9F5)
-    val Graphite = Color(0xFF0A0A0B)
-    val HairlineDark = Color(0xFF26262C)
-    val HairlineLight = Color(0xFFD8D3C9)
-    // Muted semantic colours (text-safe on the card fill in each theme).
-    val SuccessLight = Color(0xFF456E53)
-    val WarnLight = Color(0xFF87591A)
-    val ErrorLight = Color(0xFFA8404C)
-    val SuccessDark = Color(0xFF8FBE9D)
-    val WarnDark = Color(0xFFDDB067)
-    val ErrorDark = Color(0xFFEC939C)
+    val AccentLight = AppTokens.light.accent
+    val AccentDark = AppTokens.dark.accent
+    val InkLight = AppTokens.light.ink
+    val InkMutedLight = AppTokens.light.ink2
+    val InkDark = AppTokens.dark.ink
+    val InkMutedDark = AppTokens.dark.ink2
+    val Porcelain = AppTokens.light.bg
+    val Graphite = AppTokens.dark.bg
+    val HairlineDark = AppTokens.dark.border
+    val HairlineLight = AppTokens.light.border
+    val SuccessLight = AppTokens.light.success
+    val WarnLight = AppTokens.light.warn
+    val ErrorLight = AppTokens.light.danger
+    val SuccessDark = AppTokens.dark.success
+    val WarnDark = AppTokens.dark.warn
+    val ErrorDark = AppTokens.dark.danger
 }
 
 val MibotLightColorScheme = lightColorScheme(
     primary = MibotPalette.AccentLight,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFF1E3DD),
-    onPrimaryContainer = Color(0xFF3E160D),
-    secondary = Color(0xFF5E6470),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE9E6E1),
+    onPrimary = AppTokens.light.onAccent,
+    primaryContainer = AppTokens.light.surface2,
+    onPrimaryContainer = MibotPalette.InkLight,
+    secondary = MibotPalette.InkMutedLight,
+    onSecondary = AppTokens.light.onAccent,
+    secondaryContainer = AppTokens.light.surface2,
     onSecondaryContainer = MibotPalette.InkLight,
-    tertiary = Color(0xFF4F6577),
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFE2E7EC),
-    onTertiaryContainer = Color(0xFF17232D),
+    tertiary = MibotPalette.InkMutedLight,
+    onTertiary = AppTokens.light.onAccent,
+    tertiaryContainer = AppTokens.light.surface2,
+    onTertiaryContainer = MibotPalette.InkLight,
     background = MibotPalette.Porcelain,
     onBackground = MibotPalette.InkLight,
-    surface = MibotPalette.Porcelain,
+    surface = AppTokens.light.surface,
     onSurface = MibotPalette.InkLight,
-    surfaceVariant = Color(0xFFF3F1EB),
+    surfaceVariant = AppTokens.light.surface2,
     onSurfaceVariant = MibotPalette.InkMutedLight,
     surfaceContainerLowest = MibotPalette.Porcelain,
-    surfaceContainerLow = Color(0xFFF6F4EF),
-    surfaceContainer = Color(0xFFF3F1EB),
-    surfaceContainerHigh = Color(0xFFEDEAE3),
-    surfaceContainerHighest = Color(0xFFE7E3DA),
+    surfaceContainerLow = AppTokens.light.surface,
+    surfaceContainer = AppTokens.light.surface2,
+    surfaceContainerHigh = AppTokens.light.surface2,
+    surfaceContainerHighest = AppTokens.light.surface2,
     outline = MibotPalette.HairlineLight,
     outlineVariant = MibotPalette.HairlineLight,
-    inverseSurface = Color(0xFF26282D),
-    inverseOnSurface = Color(0xFFF1EFEB),
+    inverseSurface = MibotPalette.InkLight,
+    inverseOnSurface = MibotPalette.Porcelain,
     error = MibotPalette.ErrorLight,
 )
 
 val MibotDarkColorScheme = darkColorScheme(
     primary = MibotPalette.AccentDark,
-    onPrimary = Color(0xFF1A0F0B),
-    primaryContainer = Color(0xFF3A2620),
-    onPrimaryContainer = Color(0xFFF6DDD5),
-    secondary = Color(0xFFB4B9C2),
-    onSecondary = Color(0xFF1A1C21),
-    secondaryContainer = Color(0xFF262930),
+    onPrimary = AppTokens.dark.onAccent,
+    primaryContainer = AppTokens.dark.surface2,
+    onPrimaryContainer = MibotPalette.InkDark,
+    secondary = MibotPalette.InkMutedDark,
+    onSecondary = AppTokens.dark.onAccent,
+    secondaryContainer = AppTokens.dark.surface2,
     onSecondaryContainer = MibotPalette.InkDark,
-    tertiary = Color(0xFFA9BCCB),
-    onTertiary = Color(0xFF15202A),
-    tertiaryContainer = Color(0xFF243039),
-    onTertiaryContainer = Color(0xFFDCE5EC),
+    tertiary = MibotPalette.InkMutedDark,
+    onTertiary = AppTokens.dark.onAccent,
+    tertiaryContainer = AppTokens.dark.surface2,
+    onTertiaryContainer = MibotPalette.InkDark,
     background = MibotPalette.Graphite,
     onBackground = MibotPalette.InkDark,
-    surface = Color(0xFF131316),
+    surface = AppTokens.dark.surface,
     onSurface = MibotPalette.InkDark,
-    surfaceVariant = Color(0xFF1A1A1E),
+    surfaceVariant = AppTokens.dark.surface2,
     onSurfaceVariant = MibotPalette.InkMutedDark,
     surfaceContainerLowest = MibotPalette.Graphite,
-    surfaceContainerLow = Color(0xFF101013),
-    surfaceContainer = Color(0xFF131316),
-    surfaceContainerHigh = Color(0xFF1A1A1E),
-    surfaceContainerHighest = Color(0xFF222226),
+    surfaceContainerLow = AppTokens.dark.surface,
+    surfaceContainer = AppTokens.dark.surface2,
+    surfaceContainerHigh = AppTokens.dark.surface2,
+    surfaceContainerHighest = AppTokens.dark.surface2,
     outline = MibotPalette.HairlineDark,
     outlineVariant = MibotPalette.HairlineDark,
     inverseSurface = MibotPalette.InkDark,
-    inverseOnSurface = Color(0xFF1A1C21),
+    inverseOnSurface = MibotPalette.Graphite,
     error = MibotPalette.ErrorDark,
 )
 
-// [destiny/omega-hermes-chat] Hermes HQ accent (iOS blue #0A84FF) replacing
-// Mibot's cinnabar for the full-screen chat page, so the "选择模型" chip and
-// any other MaterialTheme.primary element inside chat reads Hermes blue.
-val HermesDarkColorScheme = MibotDarkColorScheme.copy(
-    primary = Color(0xFF0A84FF),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFF0A3A66),
-    onPrimaryContainer = Color(0xFFFFFFFF),
-)
+// 统一别名：聊天页不再自带一套 iOS 蓝，跟随全局 token。
+val HermesDarkColorScheme = MibotDarkColorScheme
 
 /**
  * [T-multi-select-share] Re-themes a subtree light or dark regardless of the app's

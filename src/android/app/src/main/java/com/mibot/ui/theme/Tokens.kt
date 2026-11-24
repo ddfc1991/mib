@@ -6,40 +6,41 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openminis.app.ui.theme.AppTokens
 
 /** 字号与字重。只定大小、字重、行高,颜色由用的地方给。 */
 object MikaType {
     /** 大标题:空状态、欢迎页。 */
     val LargeTitle = TextStyle(fontSize = 28.sp, lineHeight = 35.sp, fontWeight = FontWeight.Bold)
     /** 页面标题:顶栏。 */
-    val Title = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+    val Title = TextStyle(fontSize = AppTokens.section, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
     /** 正文、行标题。 */
-    val Body = TextStyle(fontSize = 15.5.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal)
+    val Body = TextStyle(fontSize = AppTokens.body, lineHeight = 22.sp, fontWeight = FontWeight.Normal)
     /** 卡片标题等需要强调的正文。 */
-    val BodyStrong = TextStyle(fontSize = 15.5.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+    val BodyStrong = TextStyle(fontSize = AppTokens.body, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
     /** 说明文字。 */
-    val Caption = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal)
+    val Caption = TextStyle(fontSize = AppTokens.body2, lineHeight = 18.sp, fontWeight = FontWeight.Normal)
     /** 分组小标题。 */
-    val Label = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
+    val Label = TextStyle(fontSize = AppTokens.body2, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
     /** 提示、页脚。 */
-    val Hint = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Normal)
+    val Hint = TextStyle(fontSize = AppTokens.caption, lineHeight = 17.sp, fontWeight = FontWeight.Normal)
     /** 行尾的值。 */
     val Value = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal)
     /** 徽标、标签、极小的计数。 */
-    val Micro = TextStyle(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
+    val Micro = TextStyle(fontSize = AppTokens.micro, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
     /** 超大数字:总量、验证码等展示用大数字。 */
     val Display = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold)
 }
 
 /** 间距。页面左右留 [Page]。 */
 object MikaSpace {
-    val S4 = 4.dp
-    val S8 = 8.dp
-    val S12 = 12.dp
-    val S16 = 16.dp
-    val S20 = 20.dp
+    val S4 = AppTokens.spaceXs
+    val S8 = AppTokens.spaceSm
+    val S12 = AppTokens.spaceMd
+    val S16 = AppTokens.spaceLg
+    val S20 = AppTokens.spaceXl
     val S24 = 24.dp
-    val Page = 16.dp
+    val Page = AppTokens.page
 }
 
 /** 各类元素的尺寸。 */
@@ -61,13 +62,13 @@ object MikaSize {
 /** 圆角。 */
 object MikaRadius {
     /** 极小:徽标、圆点。 */
-    val Micro = 4.dp
+    val Micro = AppTokens.radiusXs
     val BubbleTail = 6.dp
-    val Tile = 9.dp
+    val Tile = AppTokens.radiusSm
     /** 小卡片、图片、芯片。 */
-    val Chip = 12.dp
-    val Button = 14.dp
-    val Card = 16.dp
+    val Chip = AppTokens.radiusMd
+    val Button = AppTokens.radiusLg
+    val Card = AppTokens.radiusLg
     val Bubble = 20.dp
     /** 大卡片、对话框、底部弹窗。 */
     val Sheet = 24.dp

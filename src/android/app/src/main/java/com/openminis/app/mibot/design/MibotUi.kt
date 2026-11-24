@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openminis.app.ui.theme.LocalMibotDark
+import com.openminis.app.ui.theme.AppTokens
 import com.openminis.app.ui.glass.FrostLevel
 import com.openminis.app.ui.glass.FrostTokens
 import com.openminis.app.ui.glass.frosted
@@ -66,17 +67,17 @@ import com.openminis.app.ui.glass.frosted
  * system sans (Roboto / Noto Sans CJK SC for Chinese), weights 400/500/600.
  */
 object MibotType {
-    val PageHeader: TextUnit = 22.sp
-    val Title: TextUnit = 17.sp
-    val TitleSmall: TextUnit = 15.sp
-    val Body: TextUnit = 14.sp
+    val PageHeader: TextUnit = AppTokens.title
+    val Title: TextUnit = AppTokens.section
+    val TitleSmall: TextUnit = AppTokens.body
+    val Body: TextUnit = AppTokens.body
     val BodyLine: TextUnit = 20.sp
-    val Secondary: TextUnit = 12.5.sp
+    val Secondary: TextUnit = AppTokens.body2
     val SecondaryLine: TextUnit = 17.sp
-    val Caption: TextUnit = 11.sp
-    val Footnote: TextUnit = 11.5.sp
-    val Section: TextUnit = 13.sp
-    val Button: TextUnit = 14.sp
+    val Caption: TextUnit = AppTokens.micro
+    val Footnote: TextUnit = AppTokens.caption
+    val Section: TextUnit = AppTokens.body2
+    val Button: TextUnit = AppTokens.body
     val Hero: TextUnit = 22.sp
     val Family: FontFamily = FontFamily.Default
     val Regular = FontWeight.Normal
@@ -98,25 +99,24 @@ object MibotIcon {
 }
 
 object MibotSpace {
-    val XS: Dp = 4.dp
-    val S: Dp = 8.dp
-    val M: Dp = 12.dp
-    val L: Dp = 16.dp
-    val XL: Dp = 20.dp
-    // [destiny/ui-unify] 14dp → 22dp：和 V7 的四个 tab、页头、按钮都对齐到同一条左线。
-    // 原来从「设置」列表（22dp）点进子页，内容突然往里缩 8dp，看着就是两套版。
-    val Screen: Dp = 22.dp
+    val XS: Dp = AppTokens.spaceXs
+    val S: Dp = AppTokens.spaceSm
+    val M: Dp = AppTokens.spaceMd
+    val L: Dp = AppTokens.spaceLg
+    val XL: Dp = AppTokens.spaceXl
+    // 与 HQ / OpenCode 页边距统一为 16dp。
+    val Screen: Dp = AppTokens.page
     val RowMin: Dp = 50.dp
     val TopBar: Dp = 52.dp
     val ButtonMin: Dp = 38.dp
 }
 
 object MibotRadius {
-    val Card: Dp = 18.dp
-    val Row: Dp = 12.dp
-    val Chip: Dp = 10.dp
-    val CardShape = RoundedCornerShape(18.dp)
-    val RowShape = RoundedCornerShape(12.dp)
+    val Card: Dp = AppTokens.radiusLg
+    val Row: Dp = AppTokens.radiusMd
+    val Chip: Dp = AppTokens.radiusSm
+    val CardShape = RoundedCornerShape(AppTokens.radiusLg)
+    val RowShape = RoundedCornerShape(AppTokens.radiusMd)
     val Pill = RoundedCornerShape(50)
 }
 
@@ -136,22 +136,22 @@ object MibotTokens {
     // [fork/mibot-v5] Identity colours (avatars, tags): low-saturation, mid
     // lightness so they sit quietly on both porcelain and graphite. The UI
     // accent itself is MaterialTheme.colorScheme.primary (deep cinnabar).
-    val Slate = Color(0xFF66778A)
-    val Sky = Color(0xFF6E8AA3)
-    val Brick = Color(0xFFA9604F)
-    val Green = Color(0xFF6C8A74)
-    val Purple = Color(0xFF7F7591)
-    val Red = Color(0xFFA36565)
-    val Teal = Color(0xFF5F8B86)
-    val Amber = Color(0xFFA68B5B)
-    val Taupe = Color(0xFF8A7D72)
-    val Rose = Color(0xFF9E6B73)
-    val Navy = Color(0xFF55687D)
-    val Steel = Color(0xFF6E7784)
+    val Slate = AppTokens.dark.ink2
+    val Sky = AppTokens.dark.ink2
+    val Brick = AppTokens.dark.warn
+    val Green = AppTokens.dark.success
+    val Purple = AppTokens.dark.ink3
+    val Red = AppTokens.dark.danger
+    val Teal = AppTokens.dark.accent
+    val Amber = AppTokens.dark.warn
+    val Taupe = AppTokens.dark.ink2
+    val Rose = AppTokens.dark.danger
+    val Navy = AppTokens.dark.ink2
+    val Steel = AppTokens.dark.ink2
 
-    val Ok = Color(0xFF6C8A74)
-    val Warn = Color(0xFFA68B5B)
-    val Err = Color(0xFFA8404C)
+    val Ok = AppTokens.dark.success
+    val Warn = AppTokens.dark.warn
+    val Err = AppTokens.dark.danger
 
     @Composable
     @ReadOnlyComposable
@@ -249,46 +249,8 @@ fun MibotScaffold(
  */
 @Composable
 fun MibotTopBar(title: String, onBack: (() -> Unit)?, actions: @Composable RowScope.() -> Unit = {}) {
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .height(56.dp)
-                .padding(start = if (onBack != null) 8.dp else 22.dp, end = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (onBack != null) {
-                Box(
-                    Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onBack)
-                        .semantics { contentDescription = "返回" },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-                Spacer(Modifier.width(6.dp))
-            }
-            Text(
-                title,
-                modifier = Modifier.weight(1f),
-                fontSize = MibotType.Hero,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(verticalAlignment = Alignment.CenterVertically, content = actions)
-        }
-        HorizontalDivider(thickness = 1.dp, color = MibotTokens.hairline())
-    }
+    // 全 App 视觉统一：Mibot 页顶栏与 OpenCode / Omega 共用同一实现。
+    com.openminis.app.ui.theme.AppTopBar(title = title, onBack = onBack, actions = actions)
 }
 
 /** Large left-aligned page title for top-level tabs. */
