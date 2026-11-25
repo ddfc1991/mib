@@ -6207,7 +6207,24 @@ class ChatViewModel(
 
     /** Ensure the session exists in the database. Called before first message. */
     private suspend fun ensureSession(): String {
-        if (realSessionId.isNotEmpty()) return realSessionId
+        if (realSessionId.isNotEmpty()) {
+            // [fork/crash-fk-missing-session] The VM can outlive its row: a
+            // notification/deep-link may reopen a chat whose session was
+            // deleted, and the screen stays alive if cleanup removed the row
+            // underneath it. Sending then used to die on messages' FK with
+            // SQLiteConstraintException(FOREIGN KEY). Repair the parent row
+            // before any message write so the open chat remains usable.
+            if (chatRepository.getSession(realSessionId) == null) {
+                val repairModelId = currentModel?.id ?: "unknown"
+                if (chatRepository.restoreMissingSession(realSessionId, repairModelId)) {
+                    AppLogger.warning(
+                        TAG_STREAM,
+                        "ensureSession repaired missing session row ${realSessionId.take(8)}",
+                    )
+                }
+            }
+            return realSessionId
+        }
         val modelId = currentModel?.id ?: providerRepository.allVisibleEntries().firstOrNull()?.model?.id ?: "unknown"
         // [T-memory-global-toggle-settings-ui-android] Snapshot the
         // current in-memory `_memoryEnabled` into the new row. For a

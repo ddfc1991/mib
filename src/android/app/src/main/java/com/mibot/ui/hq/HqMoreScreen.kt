@@ -28,6 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mibot.ui.theme.MikaIcons
+import com.openminis.app.ui.glass.FrostLevel
+import com.openminis.app.ui.glass.frosted
 
 /**
  * More 屏菜单项：彩色图标块 + 名称。
@@ -51,7 +53,9 @@ fun HqMoreScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Hq.bg)
+            // [fork/glass-depth] No opaque page fill: HqShell already lays a
+            // light veil over the shared atmosphere, and the glass groups need
+            // that backdrop to refract instead of sitting on a flat slab.
             .verticalScroll(rememberScrollState())
             .padding(top = 8.dp),
     ) {
@@ -64,8 +68,7 @@ fun HqMoreScreen(
             Text("更多", style = HqType.LargeTitle, color = Hq.ink, modifier = Modifier.weight(1f))
             Box(
                 Modifier
-                    .clip(HqShape.Capsule)
-                    .background(Hq.surface)
+                    .frosted(HqShape.Capsule, FrostLevel.Bar, elevation = 3.dp)
                     .padding(10.dp),
             ) { Icon(MikaIcons.Search, null, tint = Hq.ink, modifier = Modifier.size(20.dp)) }
         }
@@ -76,8 +79,10 @@ fun HqMoreScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = HqSpace.Page)
-                .clip(HqShape.Card)
-                .background(Hq.surface)
+                // [fork/glass-depth] The gateway is the hero surface: frosted,
+                // lifted, with the accent tint from `frosted` tying it to the
+                // active skin.
+                .frosted(HqShape.Card, FrostLevel.Card, elevation = 3.dp)
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -106,8 +111,10 @@ fun HqMoreScreen(
         //
         // [fork/ia-dedupe] More 不再重复外层已有的功能：
         //   机器人 / 动态      -> 底部 Tab（对话 / 动态）
-        //   模型 / 模型组 / 用量 / 记忆 / 文件库 -> 外层「设置」页
+        //   模型 / 模型组 / 用量 / 记忆 / 文件库 -> 外层「设置」页或侧边栏「文件」
         // 这里只保留 Outer 没有快捷入口的能力，并在「设置」上标注那些入口的新位置。
+        // 文件库不写在设置 hint 里：设置页只有存储管理/共享文件夹，
+        // 真正的文件库在侧边栏「文件」入口（rootfs 文件浏览器）。
         val entryTint = Hq.accent
         HqMenuGroup("连接与账户", listOf(
             HqMoreEntry("vault", "账户金库", MikaIcons.Shield, entryTint),
@@ -122,7 +129,7 @@ fun HqMoreScreen(
             HqMoreEntry("plugins", "插件中心", MikaIcons.Apps, entryTint),
             HqMoreEntry(
                 "settings", "设置", MikaIcons.Gear, entryTint,
-                hint = "模型 · 模型组 · 用量 · 记忆 · 文件库",
+                hint = "模型 · 模型组 · 用量 · 记忆",
             ),
         ), onEntry)
         Spacer(Modifier.height(80.dp))
@@ -135,46 +142,63 @@ private fun HqMenuGroup(
     entries: List<HqMoreEntry>,
     onEntry: (HqMoreEntry) -> Unit,
 ) {
-    Column(Modifier.padding(bottom = 12.dp)) {
+    Column(Modifier.padding(bottom = 14.dp)) {
         if (title.isNotEmpty()) {
             Text(
                 title,
                 style = HqType.Section,
                 color = Hq.ink2,
-                modifier = Modifier.padding(horizontal = HqSpace.Page + 4.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = HqSpace.Page + 6.dp, vertical = 7.dp),
             )
         }
-        entries.forEach { e ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = HqSpace.Page, vertical = 3.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onEntry(e) }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    Modifier
-                        .size(30.dp)
-                        .clip(RoundedCornerShape(7.dp))
-                        .background(e.tint.copy(alpha = 0.22f)),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(e.icon, null, tint = e.tint, modifier = Modifier.size(17.dp)) }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(e.name, style = HqType.Body, color = Hq.ink)
-                    if (e.hint != null) {
-                        Text(
-                            e.hint,
-                            style = HqType.Caption,
-                            color = Hq.ink2,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+        // [fork/glass-depth] One glass pane per group (iOS inset-grouped
+        // look), not loose transparent rows. The pane carries the blur, lit
+        // rim and sheen; rows only add their press feedback.
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = HqSpace.Page)
+                .frosted(RoundedCornerShape(18.dp), FrostLevel.Card, elevation = 2.dp),
+        ) {
+            entries.forEachIndexed { index, e ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onEntry(e) }
+                        .padding(horizontal = 14.dp, vertical = 11.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier
+                            .size(30.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(e.tint.copy(alpha = 0.20f)),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(e.icon, null, tint = e.tint, modifier = Modifier.size(17.dp)) }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(e.name, style = HqType.Body, color = Hq.ink)
+                        if (e.hint != null) {
+                            Text(
+                                e.hint,
+                                style = HqType.Caption,
+                                color = Hq.ink2,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
+                    Icon(MikaIcons.Forward, null, tint = Hq.ink2.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
                 }
-                Icon(MikaIcons.Forward, null, tint = Hq.ink2.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
+                if (index != entries.lastIndex) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 56.dp, end = 14.dp)
+                            .height(0.5.dp)
+                            .background(Hq.edge.copy(alpha = 0.55f)),
+                    )
+                }
             }
         }
     }

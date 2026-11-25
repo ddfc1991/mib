@@ -26,6 +26,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.mibot.ui.theme.MikaIcons
+import com.openminis.app.ui.glass.FrostLevel
+import com.openminis.app.ui.glass.frosted
+import dev.chrisbanes.haze.HazeState
 
 /** HQ 底部 5 个 tab。 */
 enum class HqTab(val label: String, val icon: ImageVector) {
@@ -45,14 +48,23 @@ fun HqTabBar(
     current: HqTab,
     onSelect: (HqTab) -> Unit,
     modifier: Modifier = Modifier,
+    /** Page-local Haze source: blur the content the bar floats over. */
+    haze: HazeState? = null,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
             .height(52.dp)
-            .clip(RoundedCornerShape(26.dp))
-            .background(Hq.surface.copy(alpha = 0.85f)),
+            // [fork/glass-depth] True frosted capsule: blur + lit rim + sheen.
+            // Falls back to a denser flat tint on API < 31 or without a source.
+            .frosted(
+                shape = RoundedCornerShape(26.dp),
+                level = FrostLevel.Bar,
+                border = true,
+                elevation = 8.dp,
+                haze = haze,
+            ),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {

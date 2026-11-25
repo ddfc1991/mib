@@ -22,13 +22,23 @@ object GlassStyles {
     @Composable
     @ReadOnlyComposable
     fun bar(style: GlassStyle): HazeStyle =
-        FrostTokens.style(style == GlassStyle.DUSK, FrostLevel.Bar, LocalFrost.current.photo)
+        FrostTokens.style(
+            style == GlassStyle.DUSK,
+            FrostLevel.Bar,
+            LocalFrost.current.photo,
+            com.openminis.app.ui.theme.AppTokens.currentAccent,
+        )
 
     /** Sidebar sheet: denser so long lists stay readable. */
     @Composable
     @ReadOnlyComposable
     fun sheet(style: GlassStyle): HazeStyle =
-        FrostTokens.style(style == GlassStyle.DUSK, FrostLevel.Sheet, LocalFrost.current.photo)
+        FrostTokens.style(
+            style == GlassStyle.DUSK,
+            FrostLevel.Sheet,
+            LocalFrost.current.photo,
+            com.openminis.app.ui.theme.AppTokens.currentAccent,
+        )
 
     /** Hairline colour for borders/dividers on glass. */
     fun hairline(style: GlassStyle): Color = FrostTokens.hairline(style == GlassStyle.DUSK)

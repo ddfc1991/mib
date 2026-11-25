@@ -25,6 +25,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import com.mibot.chat.ConversationSummary
 import com.mibot.core.record.RunSummary
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
 /** 任务占位(UI 用):goal 显示;数据由 MainActivity 映射。 */
 data class HqJob(val id: String = "", val goal: String)
@@ -48,8 +50,21 @@ fun HqShell(
     modifier: Modifier = Modifier,
 ) {
     var tab by rememberSaveable { mutableStateOf(HqTab.Bots) }
-    Column(modifier = modifier.fillMaxSize().background(Hq.bg).statusBarsPadding()) {
-        Box(Modifier.weight(1f)) {
+    // [fork/glass-depth] The floating tab bar blurs the page it covers, not
+    // the app-wide backdrop. A local Haze source on the content area gives the
+    // bar real list content (rows, cards, header) to refract as it scrolls
+    // underneath, which is what makes a docked bar read as glass rather than a
+    // flat tinted pill.
+    val pageHaze = rememberHazeState()
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            // A light veil, not an opaque slab: the shared atmosphere stays
+            // faintly visible and the glass cards have something to sit on.
+            .background(Hq.bg.copy(alpha = 0.88f))
+            .statusBarsPadding(),
+    ) {
+        Box(Modifier.weight(1f).hazeSource(pageHaze)) {
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
@@ -73,7 +88,7 @@ fun HqShell(
                 .navigationBarsPadding()
                 .padding(top = 8.dp),
         ) {
-            HqTabBar(current = tab, onSelect = { tab = it })
+            HqTabBar(current = tab, onSelect = { tab = it }, haze = pageHaze)
         }
     }
 }

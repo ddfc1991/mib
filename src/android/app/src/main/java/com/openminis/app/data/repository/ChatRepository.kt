@@ -1,6 +1,7 @@
 package com.openminis.app.data.repository
 
 import android.database.sqlite.SQLiteBlobTooBigException
+import android.database.sqlite.SQLiteConstraintException
 import com.openminis.app.data.db.ChatDao
 import com.openminis.app.data.db.ChatSessionEntity
 import com.openminis.app.data.db.FolderEntity
@@ -45,6 +46,63 @@ class ChatRepository(internal val dao: ChatDao) {
     }
 
     suspend fun getSession(id: String): ChatSessionEntity? = dao.getSession(id)
+
+    /**
+     * [fork/crash-fk-missing-session] Re-create a session row that vanished
+     * while a live ChatViewModel still pointed at it.
+     *
+     * `messages.session_id` is a real FOREIGN KEY into `sessions`, so writing
+     * a turn whose parent row is gone throws SQLiteConstraintException and
+     * takes the process down. That happens when the chat was opened from a
+     * stale source — a notification for a deleted session, a restored
+     * deep-link, or a row removed by cleanup while the screen stayed alive.
+     * Recreating the row with the SAME id keeps the open conversation usable
+     * and is the least surprising repair: the user is looking at that chat and
+     * pressed send.
+     *
+     * Deliberately refuses draft keys (`__new__…`): a draft gets a real row
+     * in [createSession] on first send, and persisting a draft id would leak
+     * `__new__` into the session list.
+     *
+     * @return true when a row was missing and has just been inserted.
+     */
+    suspend fun restoreMissingSession(sessionId: String, modelId: String? = null): Boolean {
+        if (sessionId.isBlank() || sessionId.startsWith("__new__")) return false
+        if (dao.getSession(sessionId) != null) return false
+        val now = System.currentTimeMillis()
+        return try {
+            dao.insertSession(
+                ChatSessionEntity(
+                    id = sessionId,
+                    modelId = modelId ?: "unknown",
+                    createdAt = now,
+                    updatedAt = now,
+                ),
+            )
+            true
+        } catch (e: SQLiteConstraintException) {
+            // Lost a race with another writer (or the row came back between
+            // the SELECT and the INSERT). The parent now exists, which is all
+            // the caller needs; the message retry will decide the rest.
+            dao.getSession(sessionId) != null
+        }
+    }
+
+    /**
+     * Insert a message, repairing a missing parent session once if SQLite
+     * rejects the foreign key. All message writes must go through here (or
+     * [appendMessage], which does) so no call site can crash the app with the
+     * same FK race. A second failure is a genuine bug and is rethrown.
+     */
+    private suspend fun insertMessageRepairingSession(message: MessageEntity) {
+        try {
+            dao.insertMessage(message)
+        } catch (e: SQLiteConstraintException) {
+            val repaired = restoreMissingSession(message.sessionId, message.modelId)
+            if (!repaired) throw e
+            dao.insertMessage(message)
+        }
+    }
 
     /** All persisted token_usage JSON strings for a session (one per LLM call). */
     suspend fun sessionTokenUsages(sessionId: String): List<String> = dao.tokenUsages(sessionId)
@@ -545,7 +603,7 @@ class ChatRepository(internal val dao: ChatDao) {
         )
         // Deliberately not appendMessage(): the carrier has no preview and must
         // not touch the session's last_message / ordering.
-        dao.insertMessage(carrier)
+        insertMessageRepairingSession(carrier)
         return TurnErrorWrite.Carrier(carrier.id)
     }
 
@@ -596,7 +654,7 @@ class ChatRepository(internal val dao: ChatDao) {
             providerType = modelSnapshot?.providerTypeRaw,
             providerInstanceId = modelSnapshot?.providerInstanceId,
         )
-        dao.insertMessage(message)
+        insertMessageRepairingSession(message)
         // [T-android-preview-flicker-toolresult] Only overwrite the preview
         // when this row actually yields one. A tool-result row is
         // `[{"type":"toolResult",…}]`, a shape extractTextPreview does not

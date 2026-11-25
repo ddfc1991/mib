@@ -55,7 +55,6 @@ import androidx.compose.ui.unit.sp
 import com.openminis.app.ui.theme.LocalMibotDark
 import com.openminis.app.ui.theme.AppTokens
 import com.openminis.app.ui.glass.FrostLevel
-import com.openminis.app.ui.glass.FrostTokens
 import com.openminis.app.ui.glass.frosted
 
 /**
@@ -280,9 +279,10 @@ fun MibotCard(
             .fillMaxWidth()
             .padding(horizontal = MibotTokens.ScreenPadding)
             // [fork/opencode-ui] One card treatment across the whole app:
-            // blurred translucent glass + hairline rim, not a solid fill.
-            .frosted(MibotTokens.CardShape, FrostLevel.Card, border = false, elevation = 2.dp)
-            .border(1.dp, FrostTokens.rim(LocalMibotDark.current), MibotTokens.CardShape)
+            // blurred translucent glass + lit rim, not a solid fill. The rim is
+            // drawn by `frosted` now so the card cannot drift from the shared
+            // sheen / inner-shade recipe.
+            .frosted(MibotTokens.CardShape, FrostLevel.Card, border = true, elevation = 2.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(padding),
         content = content,

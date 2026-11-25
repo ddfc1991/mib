@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -107,7 +106,6 @@ object GlassIsland {
 fun GlassIslandHost() {
     val state by GlassIsland.state.collectAsState()
     val p = AppTokens.current
-    val dark = frostIsDark()
     val expanded = !state.detail.isNullOrBlank()
     val width = animateDpAsState(
         targetValue = if (expanded) 304.dp else 220.dp,
@@ -144,8 +142,7 @@ fun GlassIslandHost() {
                 Modifier
                     .width(width)
                     .height(height)
-                    .frosted(shape = shape, level = FrostLevel.Bar, border = false, elevation = 10.dp)
-                    .border(1.dp, FrostTokens.rim(dark), shape)
+                    .frosted(shape = shape, level = FrostLevel.Bar, border = true, elevation = 10.dp)
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {

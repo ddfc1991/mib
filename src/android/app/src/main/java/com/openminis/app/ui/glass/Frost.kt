@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -77,32 +78,36 @@ object FrostTokens {
 
     fun base(dark: Boolean): Color = if (dark) DarkBase else LightBase
 
-    /** Scrim alpha over the blurred backdrop. */
+    /**
+     * Scrim alpha over the blurred backdrop.
+     *
+     * [fork/glass-depth] Airier than the old 0.62/0.72 wash: the tint now only
+     * has to keep text legible, while the sheen + rim (see [sheen], [rim]) do
+     * the "this is a sheet of glass" reading. Sheets stay denser because they
+     * hold long-form text; a user photo keeps the strongest scrim because its
+     * detail is arbitrary (pure white / pure black can sit under the panel).
+     */
     fun scrimAlpha(dark: Boolean, level: FrostLevel, photo: Boolean = false): Float {
-        // [fork/opencode-ui] Transparent frosted glass: keep the blur and the
-        // hairline rim, but lower the tinted scrim so the backdrop still reads.
-        // Sheet stays denser because it holds long text; cards/bars are airier.
         var a = when (level) {
-            FrostLevel.Card, FrostLevel.Bar -> if (dark) 0.52f else 0.62f
-            FrostLevel.Sheet -> if (dark) 0.66f else 0.72f
+            FrostLevel.Card, FrostLevel.Bar -> if (dark) 0.46f else 0.55f
+            FrostLevel.Sheet -> if (dark) 0.60f else 0.66f
         }
-        // A photo can put white (dark theme) or black (light theme) right under
-        // the glass even after its veil; muted text needs an extra-strong scrim.
-        if (photo) a = maxOf(a, if (dark) 0.78f else 0.82f)
+        if (photo) a = maxOf(a, if (dark) 0.76f else 0.80f)
         return a
     }
 
     /** Flat tint when there is no blur (API < 31, other windows, no host). */
     fun fallbackAlpha(level: FrostLevel, photo: Boolean = false): Float = when {
-        photo -> 0.93f
-        level == FrostLevel.Sheet -> 0.94f
-        else -> 0.88f
+        photo -> 0.94f
+        level == FrostLevel.Sheet -> 0.93f
+        else -> 0.86f
     }
 
+    /** [fork/glass-depth] A wider kernel is what makes the backdrop read as "frosted", not "tinted". */
     fun blurRadius(level: FrostLevel): Dp = when (level) {
-        FrostLevel.Card -> 28.dp
-        FrostLevel.Bar -> 32.dp
-        FrostLevel.Sheet -> 36.dp
+        FrostLevel.Card -> 30.dp
+        FrostLevel.Bar -> 40.dp
+        FrostLevel.Sheet -> 48.dp
     }
 
     /** The no-blur fill; also what [com.openminis.app.mibot.design.MibotTokens.card] returns. */
@@ -110,23 +115,66 @@ object FrostTokens {
         base(dark).copy(alpha = fallbackAlpha(level, photo))
 
     fun hairline(dark: Boolean): Color =
-        if (dark) Color.White.copy(alpha = 0.10f) else Color(0xFF1B1D22).copy(alpha = 0.09f)
+        if (dark) Color.White.copy(alpha = 0.10f) else Color(0xFF1B1D22).copy(alpha = 0.10f)
 
-    /** Rim: faint top highlight fading into the hairline. */
-    fun rim(dark: Boolean): Brush = Brush.verticalGradient(
-        listOf(
-            Color.White.copy(alpha = if (dark) 0.16f else 0.70f),
-            hairline(dark),
+    /**
+     * Rim: a lit top-left edge falling to the hairline at the bottom-right.
+     * A single alpha for the whole ring reads as a plain outline; the gradient
+     * is what sells a bevelled pane under a light source.
+     */
+    fun rim(dark: Boolean): Brush = Brush.linearGradient(
+        colorStops = arrayOf(
+            0f to Color.White.copy(alpha = if (dark) 0.30f else 0.92f),
+            0.45f to Color.White.copy(alpha = if (dark) 0.10f else 0.28f),
+            1f to hairline(dark),
         ),
     )
 
-    fun style(dark: Boolean, level: FrostLevel, photo: Boolean = false): HazeStyle = HazeStyle(
-        backgroundColor = base(dark),
-        tints = listOf(HazeTint(base(dark).copy(alpha = scrimAlpha(dark, level, photo)))),
-        blurRadius = blurRadius(level),
-        noiseFactor = if (dark) 0.035f else 0.045f,
-        fallbackTint = HazeTint(flat(dark, level, photo)),
+    /**
+     * [fork/glass-depth] Specular sheen: a soft white wash from the top-left
+     * corner, gone by the middle. Drawn behind content so it never tints text.
+     * Dark glass gets a faint version; light glass needs more to separate a
+     * near-white pane from a near-white page.
+     */
+    fun sheen(dark: Boolean): Brush = Brush.linearGradient(
+        listOf(
+            Color.White.copy(alpha = if (dark) 0.10f else 0.55f),
+            Color.White.copy(alpha = if (dark) 0.025f else 0.16f),
+            Color.Transparent,
+        ),
     )
+
+    /** Inner bottom shade: the pane has thickness, so its lower edge sits in shadow. */
+    fun innerShade(dark: Boolean): Brush = Brush.verticalGradient(
+        colorStops = arrayOf(
+            0f to Color.Transparent,
+            0.62f to Color.Transparent,
+            1f to Color.Black.copy(alpha = if (dark) 0.12f else 0.05f),
+        ),
+    )
+
+    fun style(
+        dark: Boolean,
+        level: FrostLevel,
+        photo: Boolean = false,
+        accent: Color = Color.Transparent,
+    ): HazeStyle {
+        val tints = ArrayList<HazeTint>(2)
+        tints += HazeTint(base(dark).copy(alpha = scrimAlpha(dark, level, photo)))
+        // [fork/glass-depth] 2–3% of the active skin accent keeps the glass
+        // tied to the theme instead of reading as neutral grey, without
+        // turning the card into a coloured panel.
+        if (accent.alpha > 0f) {
+            tints += HazeTint(accent.copy(alpha = if (dark) 0.045f else 0.028f))
+        }
+        return HazeStyle(
+            backgroundColor = base(dark),
+            tints = tints,
+            blurRadius = blurRadius(level),
+            noiseFactor = if (dark) 0.045f else 0.055f,
+            fallbackTint = HazeTint(flat(dark, level, photo)),
+        )
+    }
 }
 
 /** Dark when the Mibot night variant is active (else: the current scheme is dark). */
@@ -180,17 +228,34 @@ fun Modifier.frosted(
     val blur = state != null && Build.VERSION.SDK_INT >= 31
     var m = this
     if (elevation > 0.dp) {
-        val c = Color.Black.copy(alpha = if (dark) 0.30f else 0.10f)
+        // A wider, softer shadow than the old 2dp card lift. Dark glass needs
+        // more black to detach from the page; light glass reads better with a
+        // grey-blue shadow than with pure black.
+        val c = if (dark) Color.Black.copy(alpha = 0.38f) else Color(0xFF2A2F3A).copy(alpha = 0.14f)
         m = m.shadow(elevation, shape, clip = false, ambientColor = c, spotColor = c)
     }
     m = m.clip(shape)
     m = if (blur) {
-        m.hazeEffect(state = state, style = FrostTokens.style(dark, level, env.photo)) { blurEnabled = true }
+        m.hazeEffect(
+            state = state,
+            style = FrostTokens.style(
+                dark = dark,
+                level = level,
+                photo = env.photo,
+                accent = com.openminis.app.ui.theme.AppTokens.currentAccent,
+            ),
+        ) { blurEnabled = true }
     } else {
         m.background(FrostTokens.flat(dark, level, env.photo))
     }
     if (tint.alpha > 0f) m = m.background(tint)
-    if (border) m = m.border(1.dp, FrostTokens.rim(dark), shape)
+    // [fork/glass-depth] Sheen + lower-edge shade sit above the tint but behind
+    // the composable's own content, so text is never washed out.
+    m = m.drawBehind {
+        drawRect(FrostTokens.sheen(dark))
+        drawRect(FrostTokens.innerShade(dark))
+    }
+    if (border) m = m.border(0.8.dp, FrostTokens.rim(dark), shape)
     return m
 }
 
