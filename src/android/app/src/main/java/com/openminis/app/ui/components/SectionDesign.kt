@@ -148,14 +148,14 @@ fun SectionHeader(
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.2.sp,
-                color = com.openminis.app.mibot.v7.V7.Tx3,
+                color = com.openminis.app.ui.theme.AppTokens.current.ink3,
             )
             Spacer(Modifier.width(10.dp))
             Box(
                 Modifier
                     .weight(1f)
                     .height(1.dp)
-                    .background(com.openminis.app.mibot.v7.V7.Ln),
+                    .background(com.openminis.app.ui.theme.AppTokens.current.border),
             )
         }
         return

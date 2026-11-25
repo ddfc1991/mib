@@ -53,10 +53,10 @@ fun SettingsSection(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.2.sp,
-                    color = com.openminis.app.mibot.v7.V7.Tx3,
+                    color = com.openminis.app.ui.theme.AppTokens.current.ink3,
                 )
                 Spacer(Modifier.width(10.dp))
-                Box(Modifier.weight(1f).height(1.dp).background(com.openminis.app.mibot.v7.V7.Ln))
+                Box(Modifier.weight(1f).height(1.dp).background(com.openminis.app.ui.theme.AppTokens.current.border))
             }
         } else {
             Text(
@@ -72,7 +72,7 @@ fun SettingsSection(
             color = if (mibotUi) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.surface,
             border = if (mibotUi) androidx.compose.foundation.BorderStroke(
                 1.dp,
-                com.openminis.app.mibot.v7.V7.Ln,
+                com.openminis.app.ui.theme.AppTokens.current.border,
             ) else null,
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,

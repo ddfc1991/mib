@@ -31,6 +31,8 @@ import androidx.activity.enableEdgeToEdge
 import com.mibot.settings.FeatureFlags
 import com.mibot.settings.ThemeAccent
 import com.mibot.settings.ThemeMode
+import com.openminis.app.ui.theme.AppTokens
+import com.openminis.app.ui.theme.LocalMibotDark
 
 /** 动效:时长和曲线。系统关了动画时([MikaTheme.reduceMotion])直接到位。 */
 object MikaMotion {
@@ -50,8 +52,20 @@ fun animationsOff(context: Context): Boolean =
 val LocalReduceMotion = staticCompositionLocalOf { false }
 
 object MikaTheme {
+    /**
+     * 全 App 一套配色。过去这里读 LocalMikaColors，但 MikaTheme{} 从未被任何页面包裹，
+     * 于是这 12 个 MIbot 原生页面永远停在 LightColors（深色模式下仍然是白底）。
+     * 现在直接派生自唯一真源 AppTokens.current：明暗跟 MinisTheme，强调色跟皮肤，
+     * 页面代码一行都不用改。LocalMikaColors 仅保留给显式包裹 MikaTheme{} 的测试使用。
+     */
     val colors: MikaColors
-        @Composable @ReadOnlyComposable get() = LocalMikaColors.current
+        @Composable
+        @ReadOnlyComposable
+        get() {
+            val p = AppTokens.current
+            val base = if (LocalMibotDark.current) DarkColors else LightColors
+            return if (p.accent == base.accent) base else base.withAccent(p.accent, p.onAccent)
+        }
 
     val reduceMotion: Boolean
         @Composable @ReadOnlyComposable get() = LocalReduceMotion.current

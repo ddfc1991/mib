@@ -153,62 +153,60 @@ object MibotTokens {
     val Warn = AppTokens.dark.warn
     val Err = AppTokens.dark.danger
 
-    @Composable
-    @ReadOnlyComposable
-    fun hairline(): Color =
-        if (LocalMibotDark.current) Color.White.copy(alpha = 0.09f) else Color(0xFF1B1D22).copy(alpha = 0.08f)
+    // [destiny/ui-unify] 以下全部改为从唯一真源 AppTokens.current 取色。
+    // 过去这里读 LocalMibotDark + FrostTokens + MaterialTheme 三处真源，
+    // 导致同一张卡片在 MIbot 页、设置页、HQ 页呈现三种底色。
 
-    /**
-     * [fork/frost] Flat card fill for places that can't blur (row strips,
-     * Material `Surface(color=)`). Was 0.72 over the moving sky; now the
-     * frost fallback (~0.88) so text never sits on a busy background.
-     * Real cards use [com.openminis.app.ui.glass.frosted] instead.
-     */
     @Composable
     @ReadOnlyComposable
-    fun card(): Color = FrostTokens.flat(LocalMibotDark.current)
+    fun hairline(): Color = AppTokens.current.border
+
+    /** 卡片底色。深色/浅色/皮肤全部跟随 AppTokens，不再走毛玻璃独立色板。 */
+    @Composable
+    @ReadOnlyComposable
+    fun card(): Color = AppTokens.current.surface
 
     /** Muted tint for every line icon in rows (one consistent colour, no multicolour). */
     @Composable
     @ReadOnlyComposable
-    fun iconTint(): Color = MaterialTheme.colorScheme.onSurfaceVariant
+    fun iconTint(): Color = AppTokens.current.ink2
 
     /** Neutral tile behind grid icons. */
     @Composable
     @ReadOnlyComposable
-    fun tile(): Color = if (LocalMibotDark.current) Color.White.copy(alpha = 0.07f) else Color(0x0F1B1D22)
+    fun tile(): Color = AppTokens.current.surface2
 
     /** Field fill inside cards. */
     @Composable
     @ReadOnlyComposable
-    fun field(): Color = if (LocalMibotDark.current) Color.White.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.55f)
+    fun field(): Color = AppTokens.current.surface2.copy(alpha = 0.6f)
 
     @Composable
     @ReadOnlyComposable
-    fun okColor(): Color = if (LocalMibotDark.current) com.openminis.app.ui.theme.MibotPalette.SuccessDark else com.openminis.app.ui.theme.MibotPalette.SuccessLight
+    fun okColor(): Color = AppTokens.current.success
 
     @Composable
     @ReadOnlyComposable
-    fun warnColor(): Color = if (LocalMibotDark.current) com.openminis.app.ui.theme.MibotPalette.WarnDark else com.openminis.app.ui.theme.MibotPalette.WarnLight
+    fun warnColor(): Color = AppTokens.current.warn
 
     @Composable
     @ReadOnlyComposable
-    fun errColor(): Color = if (LocalMibotDark.current) com.openminis.app.ui.theme.MibotPalette.ErrorDark else com.openminis.app.ui.theme.MibotPalette.ErrorLight
+    fun errColor(): Color = AppTokens.current.danger
 
-    /** [fork/mibot-v5] Secondary (tonal glass) button / chip fill. */
+    /** Secondary (tonal) button / chip fill. */
     @Composable
     @ReadOnlyComposable
-    fun tonal(): Color = FrostTokens.flat(LocalMibotDark.current)
+    fun tonal(): Color = AppTokens.current.surface2
 
-    /** [fork/mibot-v5] Selected chip fill: a faint accent wash, never a solid block. */
+    /** Selected chip fill: a faint accent wash, never a solid block. */
     @Composable
     @ReadOnlyComposable
-    fun selected(): Color = MaterialTheme.colorScheme.primary.copy(alpha = if (LocalMibotDark.current) 0.18f else 0.10f)
+    fun selected(): Color = AppTokens.current.accent.copy(alpha = 0.16f)
 
-    /** The one accent (deep cinnabar; lighter on graphite). Use sparingly. */
+    /** The one accent. Use sparingly. */
     @Composable
     @ReadOnlyComposable
-    fun accent(): Color = MaterialTheme.colorScheme.primary
+    fun accent(): Color = AppTokens.current.accent
 }
 
 /** Page frame: transparent scaffold over the shared backdrop + Mibot top bar. */
@@ -281,7 +279,8 @@ fun MibotCard(
         modifier
             .fillMaxWidth()
             .padding(horizontal = MibotTokens.ScreenPadding)
-            .frosted(MibotTokens.CardShape, elevation = 1.dp)
+            .background(AppTokens.current.surface, MibotTokens.CardShape)
+            .border(1.dp, AppTokens.current.border, MibotTokens.CardShape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(padding),
         content = content,
@@ -459,24 +458,25 @@ fun StatusChip(text: String, kind: ChipKind) {
  */
 @Composable
 fun MibotButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, tonal: Boolean = false, compact: Boolean = false) {
-    val accent = MibotTokens.accent()
+    // [destiny/ui-unify] 颜色取 AppTokens，形状取 HQ 统一圆角：
+    // 不再有 MIbot 专属的彩色实心药丸，主/次按钮与全 App 同一语言。
+    val p = AppTokens.current
+    val shape = com.mibot.ui.hq.HqShape.Button
     val bg = when {
-        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-        tonal -> MibotTokens.tonal()
-        else -> accent
+        !enabled -> p.surface2
+        tonal -> p.surface2
+        else -> p.accent
     }
     val fg = when {
-        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        tonal -> MaterialTheme.colorScheme.onSurface
-        else -> MaterialTheme.colorScheme.onPrimary
+        !enabled -> p.ink3
+        tonal -> p.ink
+        else -> p.onAccent
     }
     Box(
         modifier
             .heightIn(min = if (compact) MibotSpace.S else MibotSpace.ButtonMin)
-            .then(
-                if (tonal && enabled) Modifier.frosted(MibotRadius.Pill)
-                else Modifier.clip(MibotRadius.Pill).background(bg),
-            )
+            .clip(shape)
+            .background(bg)
             .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = if (compact) MibotSpace.M else MibotSpace.L, vertical = if (compact) MibotSpace.XS else MibotSpace.S),
         contentAlignment = Alignment.Center,

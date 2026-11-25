@@ -23,6 +23,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -43,9 +45,13 @@ fun AppTopBar(
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     modifier: Modifier = Modifier,
+    /** 自定义左侧图标（例如设置齿轮）；为空且 [onBack] 非空时用标准返回箭头。 */
+    navigationIcon: ImageVector? = null,
+    navigationLabel: String = "返回",
+    background: Color? = null,
 ) {
     val p = AppTokens.current
-    Column(modifier.fillMaxWidth().background(p.surface)) {
+    Column(modifier.fillMaxWidth().background(background ?: p.surface)) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -54,17 +60,18 @@ fun AppTopBar(
                 .padding(horizontal = AppTokens.spaceSm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (onBack != null) {
+            val navIcon = navigationIcon ?: if (onBack != null) MikaIcons.Back else null
+            if (navIcon != null && onBack != null) {
                 Box(
                     Modifier
                         .size(44.dp)
                         .clip(CircleShape)
                         .clickable(onClick = onBack)
-                        .semantics { contentDescription = "返回" },
+                        .semantics { contentDescription = navigationLabel },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        MikaIcons.Back,
+                        navIcon,
                         contentDescription = null,
                         tint = p.ink,
                         modifier = Modifier.size(22.dp),

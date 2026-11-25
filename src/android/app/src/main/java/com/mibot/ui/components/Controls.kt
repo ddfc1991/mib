@@ -250,34 +250,25 @@ fun TopBar(
     left: ImageVector? = null,
     onLeft: () -> Unit = {},
     leftLabel: String = "",
-    /** 左边按钮上的小圆点,见 [BarIconButton]。 */
+    /** 统一顶栏不再绘制小圆点；保留参数以免改页面签名。 */
     leftBadge: Boolean = false,
     right: (@Composable RowScope.() -> Unit)? = null,
     subtitle: String? = null,
     subtitleColor: Color = Color.Unspecified,
     background: Color = MikaTheme.colors.bg,
 ) {
-    val c = MikaTheme.colors
-    Box(Modifier.fillMaxWidth().pageBackground(background).windowInsetsPadding(WindowInsets.statusBars)) {
-        Row(
-            Modifier.fillMaxWidth().height(MikaSize.TopBar).padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            if (left != null) BarIconButton(left, leftLabel, onLeft, badge = leftBadge) else Spacer(Modifier.size(MikaSize.IconButton))
-            Column(Modifier.weight(1f).padding(horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(title, style = MikaType.Title, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (!subtitle.isNullOrEmpty()) {
-                    Text(
-                        subtitle, style = MikaType.Hint, fontWeight = FontWeight.Medium,
-                        color = if (subtitleColor == Color.Unspecified) c.ink3 else subtitleColor, maxLines = 1,
-                    )
-                }
-            }
-            if (right != null) Row(verticalAlignment = Alignment.CenterVertically, content = right)
-            else Spacer(Modifier.size(MikaSize.IconButton))
-        }
-    }
+    // 全 App 唯一顶栏实现：左对齐标题 + 44dp 图标热区 + 1dp 发丝线。
+    // 旧版「居中标题 + 圆形玻璃返回键」是 MIbot 原生风格，已废弃。
+    // left 既可能是返回箭头，也可能是设置齿轮，统一当作左侧导航按钮处理。
+    com.openminis.app.ui.theme.AppTopBar(
+        title = title,
+        subtitle = subtitle,
+        onBack = if (left != null) onLeft else null,
+        actions = { if (right != null) right() },
+        navigationIcon = left,
+        navigationLabel = leftLabel,
+        background = background,
+    )
 }
 
 // ---------- 选择胶囊 ----------

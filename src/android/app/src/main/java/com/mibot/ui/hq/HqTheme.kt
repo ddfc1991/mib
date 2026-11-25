@@ -76,14 +76,15 @@ object Hq {
 
 /** 字号 —— 使用统一字号标尺。 */
 object HqType {
-    val LargeTitle = TextStyle(fontSize = 30.sp, lineHeight = 37.sp, fontWeight = FontWeight.Bold)
-    val ScreenTitle = TextStyle(fontSize = 24.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
-    val RowTitle = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
-    val Body = TextStyle(fontSize = 15.5.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal)
-    val Caption = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal)
-    val Tab = TextStyle(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium)
-    val Section = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
-    val Mono = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal, fontFamily = FontFamily.Monospace)
+    // 字号全部取自 AppTokens，避免 HQ 自己再维护一套标尺。
+    val LargeTitle = TextStyle(fontSize = AppTokens.display, lineHeight = AppTokens.display * 1.25f, fontWeight = FontWeight.Bold)
+    val ScreenTitle = TextStyle(fontSize = AppTokens.title, lineHeight = AppTokens.title * 1.25f, fontWeight = FontWeight.Bold)
+    val RowTitle = TextStyle(fontSize = AppTokens.section, lineHeight = AppTokens.section * 1.25f, fontWeight = FontWeight.SemiBold)
+    val Body = TextStyle(fontSize = AppTokens.body, lineHeight = AppTokens.body * 1.4f, fontWeight = FontWeight.Normal)
+    val Caption = TextStyle(fontSize = AppTokens.body2, lineHeight = AppTokens.body2 * 1.4f, fontWeight = FontWeight.Normal)
+    val Tab = TextStyle(fontSize = AppTokens.micro, lineHeight = AppTokens.micro * 1.3f, fontWeight = FontWeight.Medium)
+    val Section = TextStyle(fontSize = AppTokens.body2, lineHeight = AppTokens.body2 * 1.4f, fontWeight = FontWeight.SemiBold)
+    val Mono = TextStyle(fontSize = AppTokens.mono, lineHeight = AppTokens.mono * 1.4f, fontWeight = FontWeight.Normal, fontFamily = FontFamily.Monospace)
 }
 
 /** 圆角 / 尺寸 —— 使用统一圆角标尺。 */
