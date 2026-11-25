@@ -533,7 +533,33 @@ class ChatRepository(internal val dao: ChatDao) {
         return TurnErrorWrite.Skipped("scan cap $MAX_TURN_ERROR_SCAN reached")
     }
 
+    /**
+     * [T-fk-guard] Foreign-key guard: several async paths (nudge, persona
+     * reminder, queued drains) capture `activeSessionId` before the first
+     * send's `ensureSession()` has minted the row, and `insertErrorCarrier`
+     * may run for a session that was deleted meanwhile. A message insert
+     * referencing a missing session row throws SQLITE_CONSTRAINT_FOREIGNKEY
+     * (787) and KILLS the app — crash logs crash-2026-11-25_23-11-16.log et
+     * al. Instead of hunting every race, make the write layer self-healing:
+     * insert a placeholder session row when absent. REPLACE makes this a
+     * no-op for existing rows.
+     */
+    private suspend fun ensureSessionRow(sessionId: String) {
+        if (sessionId.isEmpty() || dao.getSession(sessionId) != null) return
+        val now = System.currentTimeMillis()
+        dao.insertSession(
+            ChatSessionEntity(
+                id = sessionId,
+                title = "",
+                modelId = "unknown",
+                createdAt = now,
+                updatedAt = now,
+            ),
+        )
+    }
+
     private suspend fun insertErrorCarrier(sessionId: String, errorInfo: String): TurnErrorWrite {
+        ensureSessionRow(sessionId)
         val carrier = MessageEntity(
             id = UUID.randomUUID().toString(),
             sessionId = sessionId,
@@ -569,6 +595,9 @@ class ChatRepository(internal val dao: ChatDao) {
         reasoningContent: String? = null,
         modelSnapshot: ModelAttributionSnapshot? = null,
     ): MessageEntity {
+        // [T-fk-guard] see ensureSessionRow: message writes must never
+        // reference a session row that does not exist.
+        ensureSessionRow(sessionId)
         val sortOrder = dao.nextSortOrder(sessionId)
         val now = System.currentTimeMillis()
         // Cap the body so a runaway tool_result (e.g. a 13 MB browser_use
