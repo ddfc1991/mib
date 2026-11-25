@@ -678,6 +678,10 @@ class MainActivity : ComponentActivity() {
                     initialDeepLink = launchDeepLink,
                 )
 
+                // [fork/opencode-ui] Root-level "灵动岛" capsule: quiet frosted
+                // feedback for archive/delete/connect, above every route.
+                com.openminis.app.ui.glass.GlassIslandHost()
+
                 // T-config: root-level minis-config confirm dialog.
                 // Bound to ConfigConfirmationGate.pending — the gate
                 // fires whenever a CLI write is awaiting user OK. The

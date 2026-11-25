@@ -79,13 +79,16 @@ object FrostTokens {
 
     /** Scrim alpha over the blurred backdrop. */
     fun scrimAlpha(dark: Boolean, level: FrostLevel, photo: Boolean = false): Float {
+        // [fork/opencode-ui] Transparent frosted glass: keep the blur and the
+        // hairline rim, but lower the tinted scrim so the backdrop still reads.
+        // Sheet stays denser because it holds long text; cards/bars are airier.
         var a = when (level) {
-            FrostLevel.Card, FrostLevel.Bar -> if (dark) 0.62f else 0.72f
-            FrostLevel.Sheet -> if (dark) 0.72f else 0.80f
+            FrostLevel.Card, FrostLevel.Bar -> if (dark) 0.52f else 0.62f
+            FrostLevel.Sheet -> if (dark) 0.66f else 0.72f
         }
         // A photo can put white (dark theme) or black (light theme) right under
-        // the glass even after its veil; muted text needs ≥ 0.84 / 0.86 there.
-        if (photo) a = maxOf(a, if (dark) 0.84f else 0.86f)
+        // the glass even after its veil; muted text needs an extra-strong scrim.
+        if (photo) a = maxOf(a, if (dark) 0.78f else 0.82f)
         return a
     }
 
@@ -97,9 +100,9 @@ object FrostTokens {
     }
 
     fun blurRadius(level: FrostLevel): Dp = when (level) {
-        FrostLevel.Card -> 24.dp
-        FrostLevel.Bar -> 28.dp
-        FrostLevel.Sheet -> 32.dp
+        FrostLevel.Card -> 28.dp
+        FrostLevel.Bar -> 32.dp
+        FrostLevel.Sheet -> 36.dp
     }
 
     /** The no-blur fill; also what [com.openminis.app.mibot.design.MibotTokens.card] returns. */

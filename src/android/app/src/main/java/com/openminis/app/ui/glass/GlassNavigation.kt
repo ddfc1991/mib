@@ -185,7 +185,14 @@ fun GlassDrawerHost(
                     }
                 },
                 onToggleArchive = { item ->
-                    GlassArchiveStore.toggle(context, RecentItems.archiveKey(item))
+                    val key = RecentItems.archiveKey(item)
+                    val next = GlassArchiveStore.toggle(context, key)
+                    val archivedNow = key in next
+                    GlassIsland.show(
+                        title = if (archivedNow) "已归档" else "已恢复到最近",
+                        detail = item.title ?: "未命名对话",
+                        kind = GlassIslandKind.Archive,
+                    )
                 },
                 onDelete = { item ->
                     scope.launch(kotlinx.coroutines.Dispatchers.IO) {
@@ -203,6 +210,11 @@ fun GlassDrawerHost(
                             }
                         }
                         GlassArchiveStore.remove(context, RecentItems.archiveKey(item))
+                        GlassIsland.show(
+                            title = "已删除",
+                            detail = item.title ?: "未命名对话",
+                            kind = GlassIslandKind.Delete,
+                        )
                     }
                 },
             )

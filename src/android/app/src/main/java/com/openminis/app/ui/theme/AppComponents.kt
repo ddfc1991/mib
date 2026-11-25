@@ -2,6 +2,8 @@ package com.openminis.app.ui.theme
 
 import com.mibot.ui.theme.MikaIcons
 
+import com.openminis.app.ui.glass.FrostLevel
+import com.openminis.app.ui.glass.frosted
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -51,7 +53,15 @@ fun AppTopBar(
     background: Color? = null,
 ) {
     val p = AppTokens.current
-    Column(modifier.fillMaxWidth().background(background ?: p.surface)) {
+    val barModifier = if (background != null) {
+        modifier.fillMaxWidth().background(background)
+    } else {
+        // [fork/opencode-ui] The shared top bar is transparent frosted glass,
+        // not a second solid-colour surface. On API < 31 / non-glass screens
+        // `frosted` falls back to an opaque tint so text stays readable.
+        modifier.fillMaxWidth().frosted(level = FrostLevel.Bar, border = false)
+    }
+    Column(barModifier) {
         Row(
             Modifier
                 .fillMaxWidth()

@@ -279,8 +279,10 @@ fun MibotCard(
         modifier
             .fillMaxWidth()
             .padding(horizontal = MibotTokens.ScreenPadding)
-            .background(AppTokens.current.surface, MibotTokens.CardShape)
-            .border(1.dp, AppTokens.current.border, MibotTokens.CardShape)
+            // [fork/opencode-ui] One card treatment across the whole app:
+            // blurred translucent glass + hairline rim, not a solid fill.
+            .frosted(MibotTokens.CardShape, FrostLevel.Card, border = false, elevation = 2.dp)
+            .border(1.dp, FrostTokens.rim(LocalMibotDark.current), MibotTokens.CardShape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(padding),
         content = content,

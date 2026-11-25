@@ -1,5 +1,12 @@
 package com.openminis.app.ui.glass
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -114,28 +121,42 @@ fun GlassSidebar(
                 .padding(horizontal = 12.dp),
         ) {
             Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SearchField(query, { query = it }, fg, fgMuted, dark, Modifier.weight(1f))
-                Spacer(Modifier.width(6.dp))
-                IconButton(onClick = { showArchived = !showArchived }) {
-                    Icon(
-                        Icons.Filled.Archive,
-                        contentDescription = stringResource(R.string.glass_toggle_archive),
-                        tint = if (showArchived) Hq.accent else fgMuted,
-                    )
-                }
-                IconButton(onClick = onNewChat) {
-                    Icon(Icons.Outlined.EditNote, contentDescription = stringResource(R.string.glass_new_chat), tint = fg)
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
+                    slideInVertically(animationSpec = tween(200, easing = FastOutSlowInEasing)) { -it / 4 },
+                exit = fadeOut(animationSpec = tween(150, easing = FastOutSlowInEasing)),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SearchField(query, { query = it }, fg, fgMuted, dark, Modifier.weight(1f))
+                    Spacer(Modifier.width(6.dp))
+                    IconButton(onClick = { showArchived = !showArchived }) {
+                        Icon(
+                            Icons.Filled.Archive,
+                            contentDescription = stringResource(R.string.glass_toggle_archive),
+                            tint = if (showArchived) Hq.accent else fgMuted,
+                        )
+                    }
+                    IconButton(onClick = onNewChat) {
+                        Icon(Icons.Outlined.EditNote, contentDescription = stringResource(R.string.glass_new_chat), tint = fg)
+                    }
                 }
             }
             Spacer(Modifier.height(28.dp))
-            Text(
-                stringResource(if (showArchived) R.string.glass_archived else R.string.glass_recent),
-                color = fgMuted,
-                fontSize = com.openminis.app.mibot.design.MibotType.Section,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
-            )
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
+                    slideInVertically(animationSpec = tween(200, easing = FastOutSlowInEasing)) { -it / 4 },
+                exit = fadeOut(animationSpec = tween(150, easing = FastOutSlowInEasing)),
+            ) {
+                Text(
+                    stringResource(if (showArchived) R.string.glass_archived else R.string.glass_recent),
+                    color = fgMuted,
+                    fontSize = com.openminis.app.mibot.design.MibotType.Section,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
+                )
+            }
             if (shown.isEmpty()) {
                 Text(
                     stringResource(
@@ -155,16 +176,24 @@ fun GlassSidebar(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 items(shown, key = { RecentItems.archiveKey(it) }) { item ->
-                    RecentRow(
-                        item = item,
-                        fg = fg,
-                        fgMuted = fgMuted,
-                        dark = dark,
-                        archived = RecentItems.archiveKey(item) in archivedKeys,
-                        onOpen = { onOpen(item) },
-                        onToggleArchive = { onToggleArchive(item) },
-                        onDelete = { onDelete(item) },
-                    )
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
+                            slideInVertically(animationSpec = tween(200, easing = FastOutSlowInEasing)) { it / 8 },
+                        exit = fadeOut(animationSpec = tween(150, easing = FastOutSlowInEasing)) +
+                            slideOutVertically(animationSpec = tween(180, easing = FastOutSlowInEasing)) { it / 8 },
+                    ) {
+                        RecentRow(
+                            item = item,
+                            fg = fg,
+                            fgMuted = fgMuted,
+                            dark = dark,
+                            archived = RecentItems.archiveKey(item) in archivedKeys,
+                            onOpen = { onOpen(item) },
+                            onToggleArchive = { onToggleArchive(item) },
+                            onDelete = { onDelete(item) },
+                        )
+                    }
                 }
             }
         }
