@@ -983,7 +983,9 @@ fun AppNavigation(
                         "groupchats" -> navController.safeNavigate(com.openminis.app.ui.glass.GlassRoutes.GROUPS)
                         "memory" -> navController.safeNavigate(Routes.MEMORY)
                         "usage" -> navController.safeNavigate(Routes.USAGE_STATS)
-                        "files" -> navController.safeNavigate(Routes.SETTINGS)
+                        // 文件库必须打开真实文件浏览器；之前误指向 SETTINGS，
+                        // 导致"文件库"和"设置"点进去是同一页（重叠）。
+                        "files" -> mibotOpenRootfsFiles(context, navController)
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
@@ -1010,7 +1012,7 @@ fun AppNavigation(
                         "groupchats" -> navController.safeNavigate(com.openminis.app.ui.glass.GlassRoutes.GROUPS)
                         "memory" -> navController.safeNavigate(Routes.MEMORY)
                         "usage" -> navController.safeNavigate(Routes.USAGE_STATS)
-                        "files" -> navController.safeNavigate(Routes.SETTINGS)
+                        "files" -> mibotOpenRootfsFiles(context, navController)
                         "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
