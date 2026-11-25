@@ -169,7 +169,7 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         prefs.edit().putFloat(CAPSULE_CARD_HEIGHT, fraction.coerceIn(0f, 1f)).apply()
     }
 
-    fun themeAccent(): ThemeAccent = ThemeAccent.parse(prefs.getString(THEME_ACCENT, null))
+    fun themeAccent(): ThemeAccent = ThemeAccent.parse(prefs.getString(THEME_ACCENT, ThemeAccent.Claude.name))
 
     /** 强调色的当前值,之后每次改动再发一次。 */
     fun themeAccentChanges(): Flow<ThemeAccent> = callbackFlow {

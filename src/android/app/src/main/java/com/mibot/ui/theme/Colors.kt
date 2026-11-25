@@ -110,8 +110,8 @@ val LightColors = MikaColors(
 )
 
 val DarkColors = MikaColors(
-    // [openbots/unify] 子页面配色对齐 Hermes HQ:OLED 纯黑底 + iOS 深灰卡 + 白字 + HQ 蓝。
-    bg = Color(0xFF0A0A0A),
+    // Claude 深色:纯黑底(逆向 com.anthropic.claude 主界面提取),其余沿用 Hermes HQ 对齐的深灰。
+    bg = Color(0xFF000000),
     surface = Color(0xFF1C1C1E),
     fill = Color(0x0FFFFFFF),
     ink = Color(0xFFFFFFFF),
@@ -164,7 +164,20 @@ fun accentTone(accent: ThemeAccent, dark: Boolean): Pair<Color, Color> = when (a
     ThemeAccent.Teal -> Color(if (dark) 0xFF1E9E97 else 0xFF0A8F8A) to Color.White
     // 深色下的石墨是浅灰,上面配深色字
     ThemeAccent.Graphite -> if (dark) Color(0xFFE5E5EA) to Color(0xFF1C1C1E) else Color(0xFF3A3A3C) to Color.White
+    // Claude 强调橙(逆向 com.anthropic.claude 提取,见 ClaudeTheme.kt)
+    ThemeAccent.Claude -> if (dark) ClaudeColors.darkAccent to ClaudeColors.onAccent else ClaudeColors.lightAccent to ClaudeColors.onAccentLight
 }
 
 /** 没有包在 [MikaTheme] 里时(比如界面测试)按浅色。 */
 val LocalMikaColors = staticCompositionLocalOf { LightColors }
+
+/**
+ * Claude 强调色(逆向 com.anthropic.claude 提取的官方橙)。
+ * 深浅色各取一档:深色用饱和橙,浅色用略深的橙保证对比度。
+ */
+private object ClaudeColors {
+    val darkAccent = Color(0xFFD97757)
+    val lightAccent = Color(0xFFB85C3C)
+    val onAccent = Color(0xFFFFFFFF)
+    val onAccentLight = Color(0xFFFFFFFF)
+}

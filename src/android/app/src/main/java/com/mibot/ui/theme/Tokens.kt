@@ -6,29 +6,36 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mibot.ui.claude.Claude
 
-/** 字号与字重。只定大小、字重、行高,颜色由用的地方给。 */
+/**
+ * 字号与字重。只定大小、字重、行高,颜色由用的地方给。
+ * 字体一律用 Claude Sans(逆向 com.anthropic.claude 提取的 anthropic_sans,见 ClaudeTheme.kt)。
+ */
 object MikaType {
+    private val ff = Claude.ClaudeSans
     /** 大标题:空状态、欢迎页。 */
-    val LargeTitle = TextStyle(fontSize = 28.sp, lineHeight = 35.sp, fontWeight = FontWeight.Bold)
+    val LargeTitle = TextStyle(fontSize = 28.sp, lineHeight = 35.sp, fontWeight = FontWeight.Bold, fontFamily = ff)
     /** 页面标题:顶栏。 */
-    val Title = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+    val Title = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold, fontFamily = ff)
     /** 正文、行标题。 */
-    val Body = TextStyle(fontSize = 15.5.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal)
+    val Body = TextStyle(fontSize = 15.5.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal, fontFamily = ff)
     /** 卡片标题等需要强调的正文。 */
-    val BodyStrong = TextStyle(fontSize = 15.5.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+    val BodyStrong = TextStyle(fontSize = 15.5.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold, fontFamily = ff)
     /** 说明文字。 */
-    val Caption = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal)
+    val Caption = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal, fontFamily = ff)
     /** 分组小标题。 */
-    val Label = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
+    val Label = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, fontFamily = ff)
     /** 提示、页脚。 */
-    val Hint = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Normal)
+    val Hint = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Normal, fontFamily = ff)
     /** 行尾的值。 */
-    val Value = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal)
+    val Value = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal, fontFamily = ff)
     /** 徽标、标签、极小的计数。 */
-    val Micro = TextStyle(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
+    val Micro = TextStyle(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal, fontFamily = ff)
     /** 超大数字:总量、验证码等展示用大数字。 */
-    val Display = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold)
+    val Display = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, fontFamily = ff)
+    /** 等宽(Claude Code 命令、代码块):用 Claude Mono(逆向提取的 jetbrains_mono)。 */
+    val Mono = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal, fontFamily = Claude.ClaudeMono)
 }
 
 /** 间距。页面左右留 [Page]。 */
