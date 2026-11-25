@@ -237,14 +237,17 @@ fun ClaudeSparkIcon(
         val cx = size.value / 2f
         val cy = size.value / 2f
         val len = cx * 0.92f
-        val arm = Stroke(width = size.value * 0.16f, cap = StrokeCap.Round)
+        val armWidth = size.value * 0.16f
         repeat(8) { i ->
             val a = (i * 45.0) * (Math.PI / 180.0)
+            val dx = (len * cos(a)).toFloat()
+            val dy = (len * sin(a)).toFloat()
             drawLine(
                 color = color,
-                start = Offset(cx - len * cos(a), cy - len * sin(a)),
-                end = Offset(cx + len * cos(a), cy + len * sin(a)),
-                stroke = arm,
+                start = Offset(cx - dx, cy - dy),
+                end = Offset(cx + dx, cy + dy),
+                strokeWidth = armWidth,
+                cap = StrokeCap.Round,
             )
         }
     }
@@ -266,8 +269,9 @@ fun ClaudeHamburger(
             .padding(2.dp),
     ) {
         val w = size.value - 4f
-        drawLine(color, Offset(0f, w * 0.32f), Offset(w, w * 0.32f), Stroke(width = size.value * 0.09f, cap = StrokeCap.Round))
-        drawLine(color, Offset(0f, w * 0.72f), Offset(w, w * 0.72f), Stroke(width = size.value * 0.09f, cap = StrokeCap.Round))
+        val bar = size.value * 0.09f
+        drawLine(color, Offset(0f, w * 0.32f), Offset(w, w * 0.32f), strokeWidth = bar, cap = StrokeCap.Round)
+        drawLine(color, Offset(0f, w * 0.72f), Offset(w, w * 0.72f), strokeWidth = bar, cap = StrokeCap.Round)
     }
 }
 

@@ -2,7 +2,9 @@ package com.mibot.ui.claude
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,19 +80,16 @@ object Claude {
 
     /** Claude Sans：正文、标题、按钮（app 默认界面字体）。 */
     val ClaudeSans = FontFamily(
-        FontFamily.Font(R.font.claude_sans),
-        FontFamily.Font(R.font.claude_sans_italic, style = androidx.compose.ui.text.font.FontStyle.Italic),
+        Font(R.font.claude_sans),
+        Font(R.font.claude_sans_italic, style = FontStyle.Italic)
     )
     /** Claude Serif：长文阅读、正文段落（Claude 深色界面正文用的衬线）。 */
     val ClaudeSerif = FontFamily(
-        FontFamily.Font(R.font.claude_serif),
-        FontFamily.Font(R.font.claude_serif_italic, style = androidx.compose.ui.text.font.FontStyle.Italic),
+        Font(R.font.claude_serif),
+        Font(R.font.claude_serif_italic, style = FontStyle.Italic)
     )
     /** Claude Mono：代码、命令行、Claude Code 输出。 */
-    val ClaudeMono = FontFamily(
-        FontFamily.Font(R.font.claude_mono),
-        FontFamily.Monospace,
-    )
+    val ClaudeMono = FontFamily(Font(R.font.claude_mono))
 
     /** 全局默认字体族（界面文字一律走这个）。 */
     val defaultFont = ClaudeSans

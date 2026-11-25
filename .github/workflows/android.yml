@@ -29,8 +29,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Init only the Android submodule
-        run: git submodule update --init --depth 1 deps/proot
+      - name: Fetch proot source (this repo carries the tree, not submodule gitlinks)
+        run: |
+          rm -rf deps/proot
+          git clone --depth 1 https://github.com/OpenMinis/proot.git deps/proot
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4

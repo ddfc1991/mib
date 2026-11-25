@@ -188,12 +188,7 @@ fun OpenCodePairScreen(
                             )
                         }
                         IconButton(onClick = { drop(s) }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "删除",
-                                modifier = Modifier.width(16.dp).height(16.dp),
-                                colorFilter = ColorFilter.tint(ink2),
-                            )
+                            Text("×", fontSize = 20.sp, color = ink2)
                         }
                     }
                 }

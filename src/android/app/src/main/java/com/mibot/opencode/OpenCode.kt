@@ -3,6 +3,9 @@ package com.mibot.opencode
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Credentials
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -99,7 +102,7 @@ object OpenCodeApi {
     private fun get(server: OpenCodeStore.Server, path: String): okhttp3.Response {
         val req = okhttp3.Request.Builder().url(server.url + path)
             .addHeader("Accept", "application/json")
-            .apply { if (server.password.isNotEmpty()) basic(server.password, "") }
+            .apply { if (server.password.isNotEmpty()) header("Authorization", Credentials.basic(server.password, "")) }
             .build()
         return client.newCall(req).execute()
     }
@@ -108,8 +111,8 @@ object OpenCodeApi {
         val req = okhttp3.Request.Builder().url(server.url + path)
             .addHeader("Content-Type", "application/json")
             .addHeader("Accept", "application/json")
-            .apply { if (server.password.isNotEmpty()) basic(server.password, "") }
-            .post(okhttp3.RequestBody.create(body.toString(), okhttp3.MediaType.get("application/json")))
+            .apply { if (server.password.isNotEmpty()) header("Authorization", Credentials.basic(server.password, "")) }
+            .post(body.toString().toRequestBody("application/json".toMediaType()))
             .build()
         return client.newCall(req).execute()
     }
