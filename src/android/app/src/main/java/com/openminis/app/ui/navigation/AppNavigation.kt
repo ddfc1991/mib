@@ -97,6 +97,8 @@ object Routes {
     const val HQ_HOME = "hq_home"
     /** Hermes HQ 截图 1:1 空白 UI 预览版(无记录)。 */
     const val HQ_PREVIEW = "hq_preview"
+    /** Claude 整套壳(逆向 com.anthropic.claude 提取的设计系统 + 导航骨架)。 */
+    const val CLAUDE_PREVIEW = "claude_preview"
     /** 动态(团队动态 feed,Muse/team-dynamics-plugin)。 */
     const val DYNAMICS = "dynamics"
     const val PROVIDER_LIST = "providers"
@@ -984,7 +986,32 @@ fun AppNavigation(
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
                         "opencode" -> navController.safeNavigate(Routes.MIBOT_OPENCODE)
+                        "claude" -> navController.safeNavigate(Routes.CLAUDE_PREVIEW)
                         "voice" -> navController.safeNavigate(Routes.MIBOT_VOICE)
+                        else -> {}
+                    }
+                },
+            )
+        }
+        composable(Routes.CLAUDE_PREVIEW) {
+            com.mibot.ui.claude.ClaudeUiPreviewScreen(
+                onOpenSession = { id -> navController.safeNavigate(Routes.chat(id)) },
+                onMoreEntry = { entry ->
+                    when (entry.id) {
+                        "settings" -> navController.safeNavigate(Routes.SETTINGS)
+                        "models" -> navController.safeNavigate(Routes.PROVIDER_LIST)
+                        "groups" -> navController.safeNavigate(Routes.MODEL_GROUPS)
+                        "bots" -> navController.safeNavigate(com.openminis.app.ui.glass.GlassRoutes.BOTS)
+                        "plugins" -> navController.safeNavigate(com.openminis.app.mibot.plugins.PluginRoutes.MARKET)
+                        "groupchats" -> navController.safeNavigate(com.openminis.app.ui.glass.GlassRoutes.GROUPS)
+                        "memory" -> navController.safeNavigate(Routes.MEMORY)
+                        "usage" -> navController.safeNavigate(Routes.USAGE_STATS)
+                        "files" -> navController.safeNavigate(Routes.SETTINGS)
+                        "vault" -> navController.safeNavigate(com.openminis.app.mibot.vault.VaultRoutes.LIST)
+                        "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
+                        "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
+                        "opencode" -> navController.safeNavigate(Routes.MIBOT_OPENCODE)
+                        "claude" -> navController.safeNavigate(Routes.CLAUDE_PREVIEW)
                         else -> {}
                     }
                 },
@@ -1008,6 +1035,7 @@ fun AppNavigation(
                         "calls" -> navController.safeNavigate(Routes.MIBOT_CALLS)
                         "dynamics" -> navController.safeNavigate(Routes.DYNAMICS)
                         "opencode" -> navController.safeNavigate(Routes.MIBOT_OPENCODE)
+                        "claude" -> navController.safeNavigate(Routes.CLAUDE_PREVIEW)
                         else -> {}
                     }
                 },

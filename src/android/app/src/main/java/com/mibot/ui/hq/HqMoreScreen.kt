@@ -99,6 +99,7 @@ fun HqMoreScreen(
             HqMoreEntry("vault", "账户金库", MikaIcons.Shield, Color(0xFFAF52DE)),
             HqMoreEntry("dynamics", "动态", MikaIcons.Spark, Color(0xFF32D74B)),
             HqMoreEntry("opencode", "OpenCode", MikaIcons.Globe, Color(0xFF40C8E0)),
+            HqMoreEntry("claude", "Claude 界面", MikaIcons.Spark, Color(0xFFD97757)),
         ), onEntry)
         HqMenuGroup("消息与数据", listOf(
             HqMoreEntry("groupchats", "群聊", MikaIcons.Route, Color(0xFF40C8E0)),

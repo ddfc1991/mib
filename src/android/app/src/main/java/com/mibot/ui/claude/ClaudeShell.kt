@@ -36,6 +36,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mibot.chat.ConversationSummary
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * Claude 主壳 —— 复刻 com.anthropic.claude 的界面骨架（真机截图 + 反编译源码）。
@@ -64,7 +66,7 @@ fun ClaudeShell(
                 onDeleteSession = onDeleteSession,
                 modifier = Modifier.width(300.dp),
             )
-            DividerVLine(modifier = Modifier.weight(0f).fillMaxHeight())
+            DividerVLine(modifier = Modifier.fillMaxHeight())
         }
         Column(modifier = Modifier.weight(1f).fillMaxSize()) {
             ClaudeTopBar(modifier = Modifier.fillMaxWidth())
@@ -232,16 +234,16 @@ fun ClaudeSparkIcon(
     modifier: Modifier = Modifier,
 ) {
     Canvas(modifier = modifier.size(size)) {
-        val cx = size / 2f
-        val cy = size / 2f
+        val cx = size.value / 2f
+        val cy = size.value / 2f
         val len = cx * 0.92f
-        val arm = Stroke(width = (size * 0.16f), cap = StrokeCap.Round)
+        val arm = Stroke(width = size.value * 0.16f, cap = StrokeCap.Round)
         repeat(8) { i ->
-            val a = Math.toRadians((i * 45.0))
+            val a = (i * 45.0) * (Math.PI / 180.0)
             drawLine(
                 color = color,
-                start = Offset(cx - (len * Math.cos(a)).toFloat(), cy - (len * Math.sin(a)).toFloat()),
-                end = Offset(cx + (len * Math.cos(a)).toFloat(), cy + (len * Math.sin(a)).toFloat()),
+                start = Offset(cx - len * cos(a), cy - len * sin(a)),
+                end = Offset(cx + len * cos(a), cy + len * sin(a)),
                 stroke = arm,
             )
         }
@@ -263,9 +265,9 @@ fun ClaudeHamburger(
             .clickable(onClick = onClick)
             .padding(2.dp),
     ) {
-        val w = size - 4f
-        drawLine(color, Offset(0f, w * 0.32f), Offset(w, w * 0.32f), Stroke(width = size * 0.09f, cap = StrokeCap.Round))
-        drawLine(color, Offset(0f, w * 0.72f), Offset(w, w * 0.72f), Stroke(width = size * 0.09f, cap = StrokeCap.Round))
+        val w = size.value - 4f
+        drawLine(color, Offset(0f, w * 0.32f), Offset(w, w * 0.32f), Stroke(width = size.value * 0.09f, cap = StrokeCap.Round))
+        drawLine(color, Offset(0f, w * 0.72f), Offset(w, w * 0.72f), Stroke(width = size.value * 0.09f, cap = StrokeCap.Round))
     }
 }
 
