@@ -140,6 +140,9 @@ fun GlassDrawerHost(
         .collectAsState(initial = emptyList())
     // [fork/mibot-groups] Bot group chats ride the same mixed Recent list.
     val context = LocalContext.current
+    // [fork/opencode-ui] Sidebar archive/delete wiring. The store is a tiny
+    // prefs-backed set; real deletion still goes through SessionDeleter.
+    val archived by remember(context) { GlassArchiveStore.flow(context) }.collectAsState()
     val groupStore = remember(context) { com.openminis.app.mibot.groups.GroupChats.store(context) }
     val groups by groupStore.groups.collectAsState()
     val items = remember(sessions, groups) {
@@ -159,6 +162,7 @@ fun GlassDrawerHost(
           GlassStyleTheme {
             GlassSidebar(
                 items = items,
+                archivedKeys = archived,
                 haze = haze,
                 onOpen = { item ->
                     scope.launch { drawerState.close() }
@@ -178,6 +182,27 @@ fun GlassDrawerHost(
                     scope.launch { drawerState.close() }
                     navController.navigate(Routes.chat("__new__${java.util.UUID.randomUUID()}")) {
                         popUpTo(Routes.SESSION_LIST) { inclusive = false }
+                    }
+                },
+                onToggleArchive = { item ->
+                    GlassArchiveStore.toggle(context, RecentItems.archiveKey(item))
+                },
+                onDelete = { item ->
+                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        when (item) {
+                            is RecentItem.Chat -> if (!item.id.startsWith("demo-")) {
+                                com.openminis.app.data.session.SessionDeleter.deleteTree(
+                                    context = context,
+                                    repo = chatRepository,
+                                    rootId = item.id,
+                                    reason = "glass-sidebar",
+                                )
+                            }
+                            is RecentItem.Group -> if (!item.id.startsWith("demo-")) {
+                                com.openminis.app.mibot.groups.GroupChats.delete(context, item.id)
+                            }
+                        }
+                        GlassArchiveStore.remove(context, RecentItems.archiveKey(item))
                     }
                 },
             )

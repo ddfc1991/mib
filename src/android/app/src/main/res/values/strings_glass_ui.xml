@@ -57,4 +57,13 @@
     <string name="glass_style_dusk_desc">Dark, deep frosted glass</string>
     <string name="glass_style_warm">Warm white</string>
     <string name="glass_style_warm_desc">Light, warm and minimal</string>
+    <string name="glass_toggle_archive">Toggle archive</string>
+    <string name="glass_archived">Archive</string>
+    <string name="glass_empty_archived">Archive is empty</string>
+    <string name="glass_row_actions">More actions</string>
+    <string name="glass_archive">Archive</string>
+    <string name="glass_unarchive">Unarchive</string>
+    <string name="glass_delete">Delete</string>
+    <string name="glass_delete_title">Delete this chat?</string>
+    <string name="glass_cancel">Cancel</string>
 </resources>

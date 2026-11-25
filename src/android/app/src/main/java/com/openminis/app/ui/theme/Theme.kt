@@ -153,47 +153,59 @@ private val MinisShapes = Shapes(
     extraLarge = RoundedCornerShape(AppTokens.radiusLg),
 )
 
-/** [destiny/omega-skin] Material scheme derived from the user's skin. */
-fun skinColorScheme(skin: Skin) = (if (skin.isDark) darkColorScheme() else lightColorScheme()).copy(
-    primary = skin.accent,
-    onPrimary = skin.onAccent,
-    primaryContainer = skin.accent.copy(alpha = 0.18f),
-    onPrimaryContainer = skin.text,
-    secondary = skin.text2,
-    onSecondary = skin.bg,
-    tertiary = skin.accent,
-    onTertiary = skin.onAccent,
-    background = skin.bg,
-    onBackground = skin.text,
-    surface = skin.surface,
-    onSurface = skin.text,
-    surfaceVariant = skin.surface,
-    onSurfaceVariant = skin.text2,
-    outline = skin.text2.copy(alpha = 0.35f),
-    outlineVariant = skin.text2.copy(alpha = 0.18f),
-    inverseSurface = skin.text,
-    inverseOnSurface = skin.bg,
-)
+/**
+ * [destiny/omega-skin] Material scheme derived from the user's skin.
+ *
+ * [fork/opencode-ui] A skin now overrides ONLY the accent. Background/surface/
+ * text come from [AppTokens.of] using the effective `skin.isDark` (which
+ * MinisTheme sets from the theme-mode preference). Reading them from the skin
+ * object left HERMES's dark ink/surface in the light scheme, so MibotCard —
+ * which reads AppTokens — painted a white card under white `onSurface` text.
+ */
+fun skinColorScheme(skin: Skin): androidx.compose.material3.ColorScheme {
+    val t = AppTokens.of(skin.isDark)
+    return (if (skin.isDark) darkColorScheme() else lightColorScheme()).copy(
+        primary = skin.accent,
+        onPrimary = skin.onAccent,
+        primaryContainer = skin.accent.copy(alpha = 0.18f),
+        onPrimaryContainer = t.ink,
+        secondary = t.ink2,
+        onSecondary = t.bg,
+        tertiary = skin.accent,
+        onTertiary = skin.onAccent,
+        background = t.bg,
+        onBackground = t.ink,
+        surface = t.surface,
+        onSurface = t.ink,
+        surfaceVariant = t.surface2,
+        onSurfaceVariant = t.ink2,
+        outline = t.border.copy(alpha = 0.6f),
+        outlineVariant = t.border,
+        inverseSurface = t.ink,
+        inverseOnSurface = t.bg,
+    )
+}
 
 /** [destiny/omega-skin] Chat palette derived from the user's skin. */
 fun skinChatPalette(skin: Skin): ChatPalette {
     val base = if (skin.isDark) DarkChatPalette else LightChatPalette
+    val t = AppTokens.of(skin.isDark)
     return base.copy(
         isDark = skin.isDark,
-        background = skin.bg,
-        secondaryBg = skin.surface,
-        inputBg = skin.surface,
-        inputIconBg = skin.surface,
-        primaryText = skin.text,
-        secondaryText = skin.text2,
-        tertiaryText = skin.text2.copy(alpha = 0.6f),
+        background = t.bg,
+        secondaryBg = t.surface,
+        inputBg = t.surface,
+        inputIconBg = t.surface,
+        primaryText = t.ink,
+        secondaryText = t.ink2,
+        tertiaryText = t.ink3,
         userBubble = skin.accent,
-        toolBg = skin.surface,
-        toolCapsuleBg = skin.surface,
+        toolBg = t.surface,
+        toolCapsuleBg = t.surface,
         sendButton = skin.accent,
         link = skin.accent,
         thinking = skin.accent,
-        sheetHeaderBg = skin.surface,
+        sheetHeaderBg = t.surface,
         fabAccent = skin.accent,
     )
 }

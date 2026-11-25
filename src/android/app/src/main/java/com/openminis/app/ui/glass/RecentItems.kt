@@ -29,6 +29,12 @@ sealed class RecentItem {
 }
 
 object RecentItems {
+    /** [fork/opencode-ui] Namespaced key used by the sidebar's archive store. */
+    fun archiveKey(item: RecentItem): String = when (item) {
+        is RecentItem.Chat -> "chat:${item.id}"
+        is RecentItem.Group -> "group:${item.id}"
+    }
+
     fun fromSessions(sessions: List<ChatSessionEntity>): List<RecentItem> =
         sessions.asSequence()
             .filter { !it.isChild }

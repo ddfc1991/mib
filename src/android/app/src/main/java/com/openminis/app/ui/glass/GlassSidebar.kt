@@ -26,11 +26,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,22 +59,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mibot.ui.hq.Hq
 import com.openminis.app.R
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 
 /**
  * [fork/glass-ui] The sidebar has one job: the recent list. Chats and bot
- * group chats sit together in a single "Recent" list; the only other controls
- * are search and new chat. Every other feature lives on its own page behind
- * the bottom navigation bar.
+ * group chats sit together in a single "Recent" list. Search, new chat,
+ * archive and delete are the only row-level controls; every other feature
+ * lives on its own page behind the bottom navigation bar.
+ *
+ * [fork/opencode-ui] Archive is a sidebar affordance: archived rows leave
+ * Recent but stay reachable through the archive toggle, where they can be
+ * restored or deleted. Delete goes through the app's real delete funnel.
  */
 @Composable
 fun GlassSidebar(
     items: List<RecentItem>,
+    archivedKeys: Set<String>,
     haze: HazeState,
     onOpen: (RecentItem) -> Unit,
     onNewChat: () -> Unit,
+    onToggleArchive: (RecentItem) -> Unit,
+    onDelete: (RecentItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val style = LocalGlassStyle.current
@@ -75,7 +90,11 @@ fun GlassSidebar(
     val fg = if (dark) GlassPalette.DuskOn else GlassPalette.WarmOn
     val fgMuted = fg.copy(alpha = 0.72f) // [fork/frost] ≥4.5:1 on the sheet
     var query by rememberSaveable { mutableStateOf("") }
-    val shown = remember(items, query) { RecentItems.merge(items, emptyList(), query) }
+    var showArchived by rememberSaveable { mutableStateOf(false) }
+    val shown = remember(items, archivedKeys, query, showArchived) {
+        RecentItems.merge(items, emptyList(), query)
+            .filter { (RecentItems.archiveKey(it) in archivedKeys) == showArchived }
+    }
 
     val hairline = GlassStyles.hairline(style)
     Box(
@@ -98,13 +117,20 @@ fun GlassSidebar(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SearchField(query, { query = it }, fg, fgMuted, dark, Modifier.weight(1f))
                 Spacer(Modifier.width(6.dp))
+                IconButton(onClick = { showArchived = !showArchived }) {
+                    Icon(
+                        Icons.Filled.Archive,
+                        contentDescription = stringResource(R.string.glass_toggle_archive),
+                        tint = if (showArchived) Hq.accent else fgMuted,
+                    )
+                }
                 IconButton(onClick = onNewChat) {
                     Icon(Icons.Outlined.EditNote, contentDescription = stringResource(R.string.glass_new_chat), tint = fg)
                 }
             }
             Spacer(Modifier.height(28.dp))
             Text(
-                stringResource(R.string.glass_recent),
+                stringResource(if (showArchived) R.string.glass_archived else R.string.glass_recent),
                 color = fgMuted,
                 fontSize = com.openminis.app.mibot.design.MibotType.Section,
                 fontWeight = FontWeight.Medium,
@@ -112,7 +138,13 @@ fun GlassSidebar(
             )
             if (shown.isEmpty()) {
                 Text(
-                    stringResource(if (query.isBlank()) R.string.glass_empty_recent else R.string.glass_no_results),
+                    stringResource(
+                        when {
+                            query.isNotBlank() -> R.string.glass_no_results
+                            showArchived -> R.string.glass_empty_archived
+                            else -> R.string.glass_empty_recent
+                        },
+                    ),
                     color = fgMuted,
                     fontSize = com.openminis.app.mibot.design.MibotType.Body,
                     modifier = Modifier.padding(start = 12.dp, top = 12.dp),
@@ -122,8 +154,17 @@ fun GlassSidebar(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                items(shown, key = { it.id }) { item ->
-                    RecentRow(item, fg, fgMuted, dark) { onOpen(item) }
+                items(shown, key = { RecentItems.archiveKey(it) }) { item ->
+                    RecentRow(
+                        item = item,
+                        fg = fg,
+                        fgMuted = fgMuted,
+                        dark = dark,
+                        archived = RecentItems.archiveKey(item) in archivedKeys,
+                        onOpen = { onOpen(item) },
+                        onToggleArchive = { onToggleArchive(item) },
+                        onDelete = { onDelete(item) },
+                    )
                 }
             }
         }
@@ -164,12 +205,24 @@ private fun SearchField(
 }
 
 @Composable
-private fun RecentRow(item: RecentItem, fg: Color, fgMuted: Color, dark: Boolean, onClick: () -> Unit) {
+private fun RecentRow(
+    item: RecentItem,
+    fg: Color,
+    fgMuted: Color,
+    dark: Boolean,
+    archived: Boolean,
+    onOpen: () -> Unit,
+    onToggleArchive: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
+            .clickable(onClick = onOpen)
             .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -189,6 +242,49 @@ private fun RecentRow(item: RecentItem, fg: Color, fgMuted: Color, dark: Boolean
                 StackedAvatars(item.members, dark)
             }
         }
+        Box {
+            IconButton(
+                onClick = { menuOpen = true },
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = stringResource(R.string.glass_row_actions),
+                    tint = fgMuted,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(if (archived) R.string.glass_unarchive else R.string.glass_archive)) },
+                    leadingIcon = { Icon(Icons.Filled.Archive, contentDescription = null, tint = fgMuted) },
+                    onClick = { menuOpen = false; onToggleArchive() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.glass_delete), color = Hq.bad) },
+                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = Hq.bad) },
+                    onClick = { menuOpen = false; confirmDelete = true },
+                )
+            }
+        }
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.glass_delete_title)) },
+            text = { Text(item.title ?: stringResource(R.string.glass_untitled)) },
+            confirmButton = {
+                TextButton(onClick = { confirmDelete = false; onDelete() }) {
+                    Text(stringResource(R.string.glass_delete), color = Hq.bad)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text(stringResource(R.string.glass_cancel))
+                }
+            },
+        )
     }
 }
 

@@ -57,4 +57,13 @@
     <string name="glass_style_dusk_desc">深色、深邃的磨砂玻璃</string>
     <string name="glass_style_warm">暖白简约</string>
     <string name="glass_style_warm_desc">明亮、温暖、简约</string>
+    <string name="glass_toggle_archive">切换归档</string>
+    <string name="glass_archived">归档</string>
+    <string name="glass_empty_archived">归档为空</string>
+    <string name="glass_row_actions">更多操作</string>
+    <string name="glass_archive">归档</string>
+    <string name="glass_unarchive">取消归档</string>
+    <string name="glass_delete">删除</string>
+    <string name="glass_delete_title">删除这条对话？</string>
+    <string name="glass_cancel">取消</string>
 </resources>
