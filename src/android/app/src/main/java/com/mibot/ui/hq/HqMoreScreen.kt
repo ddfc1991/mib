@@ -29,8 +29,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mibot.ui.theme.MikaIcons
 
-/** More 屏菜单项：彩色图标块 + 名称。 */
-data class HqMoreEntry(val id: String, val name: String, val icon: ImageVector, val tint: Color)
+/**
+ * More 屏菜单项：彩色图标块 + 名称。
+ * [hint] 用来说明这一项对应的外层能力（例如设置页里的模型/存储），
+ * 避免用户以为这里是另一套功能。
+ */
+data class HqMoreEntry(
+    val id: String,
+    val name: String,
+    val icon: ImageVector,
+    val tint: Color,
+    val hint: String? = null,
+)
 
 /** More 屏：Gateway 信息卡 + 分组菜单。 */
 @Composable
@@ -93,26 +103,27 @@ fun HqMoreScreen(
 
         // 全 App 一套 UI：More 页所有入口统一用同一个强调色，图标统一 HQ 线稿。
         // 之前混用 accent / ink2 / ok / warn 四种颜色，视觉上像几套风格拼在一起。
+        //
+        // [fork/ia-dedupe] More 不再重复外层已有的功能：
+        //   机器人 / 动态      -> 底部 Tab（对话 / 动态）
+        //   模型 / 模型组 / 用量 / 记忆 / 文件库 -> 外层「设置」页
+        // 这里只保留 Outer 没有快捷入口的能力，并在「设置」上标注那些入口的新位置。
         val entryTint = Hq.accent
-        HqMenuGroup("系统", listOf(
-            HqMoreEntry("bots", "机器人", MikaIcons.Spark, entryTint),
-            HqMoreEntry("settings", "设置", MikaIcons.Gear, entryTint),
-            HqMoreEntry("models", "模型", MikaIcons.Star, entryTint),
-            HqMoreEntry("groups", "模型组", MikaIcons.Apps, entryTint),
+        HqMenuGroup("连接与账户", listOf(
             HqMoreEntry("vault", "账户金库", MikaIcons.Shield, entryTint),
-            HqMoreEntry("dynamics", "动态", MikaIcons.Spark, entryTint),
+            HqMoreEntry("opencode", "OpenCode", MikaIcons.Spark, entryTint),
         ), onEntry)
-        HqMenuGroup("消息与数据", listOf(
+        HqMenuGroup("沟通", listOf(
             HqMoreEntry("groupchats", "群聊", MikaIcons.Route, entryTint),
             HqMoreEntry("voice", "语音模型", MikaIcons.Message, entryTint),
-            HqMoreEntry("files", "文件库", MikaIcons.Folder, entryTint),
-            HqMoreEntry("memory", "记忆", MikaIcons.Spark, entryTint),
-            HqMoreEntry("usage", "用量", MikaIcons.Chart, entryTint),
-        ), onEntry)
-        HqMenuGroup("工作与智能", listOf(
             HqMoreEntry("calls", "通话", MikaIcons.Message, entryTint),
+        ), onEntry)
+        HqMenuGroup("扩展与设置", listOf(
             HqMoreEntry("plugins", "插件中心", MikaIcons.Apps, entryTint),
-            HqMoreEntry("opencode", "OpenCode", MikaIcons.Spark, entryTint),
+            HqMoreEntry(
+                "settings", "设置", MikaIcons.Gear, entryTint,
+                hint = "模型 · 模型组 · 用量 · 记忆 · 文件库",
+            ),
         ), onEntry)
         Spacer(Modifier.height(80.dp))
     }
@@ -151,7 +162,18 @@ private fun HqMenuGroup(
                     contentAlignment = Alignment.Center,
                 ) { Icon(e.icon, null, tint = e.tint, modifier = Modifier.size(17.dp)) }
                 Spacer(Modifier.width(12.dp))
-                Text(e.name, style = HqType.Body, color = Hq.ink, modifier = Modifier.weight(1f))
+                Column(Modifier.weight(1f)) {
+                    Text(e.name, style = HqType.Body, color = Hq.ink)
+                    if (e.hint != null) {
+                        Text(
+                            e.hint,
+                            style = HqType.Caption,
+                            color = Hq.ink2,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
                 Icon(MikaIcons.Forward, null, tint = Hq.ink2.copy(alpha = 0.5f), modifier = Modifier.size(14.dp))
             }
         }
