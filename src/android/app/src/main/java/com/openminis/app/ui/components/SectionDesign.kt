@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openminis.app.ui.glass.frosted
 
 /**
  * Single source of truth for Settings section-card visual rhythm.
@@ -207,13 +208,21 @@ fun SectionCard(
 ) {
     val mibotUi = com.openminis.app.ui.theme.LocalMibotActive.current
     Surface(
-        color = SectionDesign.cardColor(),
+        // [fork/sweep-glass] Let `frosted` own the pane: blur + lit rim +
+        // sheen. A solid fill here would hide the backdrop the rim refracts.
+        color = if (mibotUi) Color.Transparent else SectionDesign.cardColor(),
         shape = if (mibotUi) com.openminis.app.mibot.design.MibotRadius.CardShape else SectionDesign.CardShape,
-        border = if (mibotUi) androidx.compose.foundation.BorderStroke(1.dp, com.openminis.app.mibot.design.MibotTokens.hairline()) else null,
         contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SectionDesign.ScreenHorizontalPadding),
+            .padding(horizontal = SectionDesign.ScreenHorizontalPadding)
+            .then(
+                if (mibotUi) Modifier.frosted(
+                    com.openminis.app.mibot.design.MibotRadius.CardShape,
+                    com.openminis.app.ui.glass.FrostLevel.Card,
+                    elevation = 2.dp,
+                ) else Modifier,
+            ),
     ) {
         Column(
             modifier = Modifier.padding(vertical = SectionDesign.CardInnerVerticalPadding),

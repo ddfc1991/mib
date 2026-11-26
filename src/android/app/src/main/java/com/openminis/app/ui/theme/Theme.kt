@@ -173,9 +173,20 @@ fun skinColorScheme(skin: Skin): androidx.compose.material3.ColorScheme {
         onSecondary = t.bg,
         tertiary = skin.accent,
         onTertiary = skin.onAccent,
-        background = t.bg,
+        // [fork/sweep-glass] Page + bar surfaces are a VEIL, not a slab.
+        //
+        // Every screen paints its page through `Scaffold(containerColor =
+        // colorScheme.background)` or `SettingsScaffold`, and every top bar
+        // through `colorScheme.surface`. Opaque values here covered the shared
+        // `MibotBackdrop` completely, so `frosted` cards had nothing to refract
+        // and fell back to a flat tint — which is exactly why only the HQ tabs
+        // (they paint their own translucent layer) looked like glass.
+        //
+        // Menus, dialogs and sheets keep their opaque `surfaceContainer*`
+        // values, so popup text never sits directly on the moving backdrop.
+        background = t.bg.copy(alpha = 0.88f),
         onBackground = t.ink,
-        surface = t.surface,
+        surface = t.surface.copy(alpha = 0.90f),
         onSurface = t.ink,
         surfaceVariant = t.surface2,
         onSurfaceVariant = t.ink2,

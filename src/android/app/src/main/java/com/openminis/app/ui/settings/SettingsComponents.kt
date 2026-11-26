@@ -281,20 +281,28 @@ fun SettingsSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                // [destiny/ui-one-look] V7 下把容器水平边距从 22dp 收到 6dp，
-                // 同时把行自身的内缩统一成 16dp —— 6 + 16 = 22dp，正好落在页边距上。
+                // [fork/sweep-glass] One glass pane per section — the same
+                // inset-grouped treatment the More tab uses (16dp page inset,
+                // 18dp corner, lit rim, 2dp lift).
                 //
-                // 为什么要绕这一下：全 App 有二十多个页面自己写了行（MemoryFileRow、
-                // SubAgentRow、StorageRow…），它们内部硬编码 16dp 内缩；而
-                // SettingsRow 是共享组件。若容器保持 22dp、行设 0，那些自定义行就会
-                // 变成 22+16=38dp —— 比分组标题多缩 16dp，截图里「GLOBAL.md」「子代理」
-                // 比上面的标题缩进去一截就是这个原因。反过来做，自定义行一行都不用改
-                // 就自动对齐，共享行的发丝线再加回 16dp 内缩即可。
-                .padding(
-                    horizontal = if (mibotUi) com.openminis.app.mibot.design.MibotSpace.Screen - 16.dp else 16.dp,
-                )
+                // The previous V7 branch drew NO card at all: rows floated on
+                // the page separated by hairlines. That is why every settings
+                // sub-page read as flat next to the HQ tabs even though the
+                // rows themselves already used the shared tokens.
+                //
+                // Rows keep their own 16dp inner inset, so content lands at
+                // 32dp while section headers sit at 22dp — the same 10dp
+                // offset the approved More screen has between its group title
+                // and the icon column inside the card.
+                .padding(horizontal = 16.dp)
                 .then(
                     if (mibotUi) Modifier
+                        .clip(RoundedCornerShape(18.dp))
+                        .frosted(
+                            RoundedCornerShape(18.dp),
+                            com.openminis.app.ui.glass.FrostLevel.Card,
+                            elevation = 2.dp,
+                        )
                     else Modifier
                         .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerLow),
