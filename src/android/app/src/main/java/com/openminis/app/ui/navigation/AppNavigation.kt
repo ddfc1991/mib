@@ -538,21 +538,37 @@ fun AppNavigation(
     // draft chat, seeding the pending action so ChatScreen consumes it on
     // its first LaunchedEffect tick. Mirrors the htmlShortcut path —
     // avoids a sessions-list flash and a duplicate back-stack entry.
-    val quickActionStart: String? = when (initialDeepLink) {
-        is DeepLinkAction.NewVoiceChat -> {
-            DeepLinkCoordinator.setPendingChatAction(
-                DeepLinkCoordinator.ChatAction.START_VOICE,
-            )
-            Routes.chat("__new__${java.util.UUID.randomUUID()}")
+    // [fork/sweep-glass] Seed deep-link side effects ONCE per launch intent.
+    // Computing startDestination on every recomposition used to re-publish the
+    // pending action after ChatScreen had already consumed it, which could
+    // re-trigger voice/camera or the env-var create dialog on a routine
+    // recomposition. remember() keys the seed to the intent itself.
+    val quickActionStart: String? = remember(initialDeepLink) {
+        when (initialDeepLink) {
+            is DeepLinkAction.NewVoiceChat -> {
+                DeepLinkCoordinator.setPendingChatAction(
+                    DeepLinkCoordinator.ChatAction.START_VOICE,
+                )
+                Routes.chat("__new__${java.util.UUID.randomUUID()}")
+            }
+            is DeepLinkAction.NewCameraChat -> {
+                DeepLinkCoordinator.setPendingChatAction(
+                    DeepLinkCoordinator.ChatAction.OPEN_CAMERA,
+                )
+                Routes.chat("__new__${java.util.UUID.randomUUID()}")
+            }
+            is DeepLinkAction.NewChat -> Routes.chat("__new__${java.util.UUID.randomUUID()}")
+            else -> null
         }
-        is DeepLinkAction.NewCameraChat -> {
-            DeepLinkCoordinator.setPendingChatAction(
-                DeepLinkCoordinator.ChatAction.OPEN_CAMERA,
+    }
+    remember(initialDeepLink) {
+        if (initialDeepLink is DeepLinkAction.CreateEnvironmentVariable) {
+            DeepLinkCoordinator.setPendingEnvVarCreate(
+                initialDeepLink.key,
+                initialDeepLink.value,
+                initialDeepLink.note,
             )
-            Routes.chat("__new__${java.util.UUID.randomUUID()}")
         }
-        is DeepLinkAction.NewChat -> Routes.chat("__new__${java.util.UUID.randomUUID()}")
-        else -> null
     }
     val startDestination = when {
         htmlShortcut != null -> {
@@ -579,14 +595,7 @@ fun AppNavigation(
         // same cold-start RESUMED-guard problem. Mount them directly too.
         initialDeepLink is DeepLinkAction.OpenTerminal ->
             Routes.terminal(initialDeepLink.initCommand)
-        initialDeepLink is DeepLinkAction.CreateEnvironmentVariable -> {
-            DeepLinkCoordinator.setPendingEnvVarCreate(
-                initialDeepLink.key,
-                initialDeepLink.value,
-                initialDeepLink.note,
-            )
-            Routes.ENV_VARS
-        }
+        initialDeepLink is DeepLinkAction.CreateEnvironmentVariable -> Routes.ENV_VARS
         initialDeepLink is DeepLinkAction.OpenPermissionSettings -> Routes.PERMISSIONS
         // [fork/sweep-glass] Same cold-start fix for `minis://session/<id>`.
         // The NavHost used to start on HQ_HOME and rely on a LaunchedEffect
