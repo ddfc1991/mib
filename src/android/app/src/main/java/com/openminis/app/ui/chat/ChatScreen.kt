@@ -2984,7 +2984,11 @@ fun ChatScreen(
     // [fork/mibot-v2] Under Mibot the shared sky backdrop shows through.
     val mibotChatOn = com.openminis.app.ui.theme.LocalMibotActive.current
     Scaffold(
-        containerColor = ChatColors.background,
+        // [fork/sweep-glass] The page is a veil, not a slab. An opaque fill
+        // here hid the shared backdrop, so the frosted top bar and composer
+        // below had nothing to refract and the whole chat read as flat next
+        // to the HQ tabs.
+        containerColor = if (mibotChatOn) Color.Transparent else ChatColors.background,
         contentWindowInsets = WindowInsets(0),
         // [T-port-sched-pill] The top bar slot is the app bar plus, below it,
         // the scheduled-task pill, so the list (padded by the Scaffold) starts
@@ -6383,7 +6387,20 @@ fun ChatScreen(
                                     }
                             } else Modifier,
                         )
+                        // [fork/sweep-glass] The composer is the most-seen
+                        // surface in the app; give it the same frosted pane as
+                        // the HQ tab bar instead of a hand-painted opaque
+                        // fill. The two-pass native shadow below only runs on
+                        // the non-glass path.
+                        .then(
+                            if (mibotChatOn) Modifier.frosted(
+                                RoundedCornerShape(20.dp),
+                                com.openminis.app.ui.glass.FrostLevel.Bar,
+                                elevation = 6.dp,
+                            ) else Modifier,
+                        )
                         .drawBehind {
+                            if (mibotChatOn) return@drawBehind
                             val radiusPx = 20.dp.toPx()
                             val canvas = drawContext.canvas.nativeCanvas
                             // Pass 1: symmetric ambient halo — small blur, low alpha.
