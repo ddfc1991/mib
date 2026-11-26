@@ -304,35 +304,21 @@ fun AppNavigation(
     // Handle initial deep link after composition
     LaunchedEffect(initialDeepLink) {
         when (initialDeepLink) {
-            is DeepLinkAction.OpenTerminal -> {
-                navController.safeNavigate(Routes.terminal(initialDeepLink.initCommand))
+            is DeepLinkAction.OpenTerminal,
+            is DeepLinkAction.CreateEnvironmentVariable,
+            is DeepLinkAction.OpenPermissionSettings -> {
+                // [fork/sweep-glass] Mounted directly as startDestination
+                // below. The old post-composition navigate() hit the same
+                // RESUMED guard that made session/settings links look dead.
             }
             is DeepLinkAction.OpenSession -> {
-                // T-double-chat-fix: on process-death recreation NavController
-                // auto-restores [SESSION_LIST, chat/<id>] AND MainActivity
-                // synthesizes an OpenSession deep-link from saved state. A
-                // bare navigate() pushed a SECOND chat entry, forcing the
-                // user to press back twice. launchSingleTop collapses the
-                // duplicate; popUpTo(SESSION_LIST, saveState=true) +
-                // restoreState=true preserves chat-screen state across the
-                // hop. When the synthesized deep-link is a no-op (chat
-                // already on top) launchSingleTop short-circuits.
-                navController.safeNavigate(Routes.chat(initialDeepLink.sessionId)) {
-                    popUpTo(Routes.SESSION_LIST) {
-                        inclusive = false
-                        saveState = true
-                    }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            }
-            is DeepLinkAction.CreateEnvironmentVariable -> {
-                DeepLinkCoordinator.setPendingEnvVarCreate(
-                    initialDeepLink.key,
-                    initialDeepLink.value,
-                    initialDeepLink.note,
-                )
-                navController.safeNavigate(Routes.ENV_VARS)
+                // [fork/sweep-glass] Cold-start session links are now mounted
+                // directly as the NavHost start destination (see below). The
+                // old post-composition safeNavigate hit the same RESUMED guard
+                // that swallowed minis://settings links: the user tapped a
+                // session link and the app silently stayed on HQ home.
+                // Runtime links (onNewIntent) still go through
+                // MainActivity.handleDeepLink, so nothing is lost here.
             }
             // T183: any settings screen reachable by route string.
             // [destiny/v7-deeplink] Handled by startDestination below: the
@@ -343,9 +329,6 @@ fun AppNavigation(
             // guard dropped the call, and minis://settings/voice (and
             // every other settings link) silently landed on home.
             is DeepLinkAction.OpenSettingsScreen -> {}
-            is DeepLinkAction.OpenPermissionSettings -> {
-                navController.safeNavigate(Routes.PERMISSIONS)
-            }
             // OpenHtmlPreview is handled by setting startDestination
             // (see below) so the NavHost mounts directly into the right
             // chat — no safeNavigate dance, no sessions-list flash.
@@ -592,6 +575,26 @@ fun AppNavigation(
         // link landed on the home screen instead. No navigation needed now,
         // so no timing window can drop it.
         initialDeepLink is DeepLinkAction.OpenSettingsScreen -> initialDeepLink.route
+        // [fork/sweep-glass] Terminal / env-var / permission links had the
+        // same cold-start RESUMED-guard problem. Mount them directly too.
+        initialDeepLink is DeepLinkAction.OpenTerminal ->
+            Routes.terminal(initialDeepLink.initCommand)
+        initialDeepLink is DeepLinkAction.CreateEnvironmentVariable -> {
+            DeepLinkCoordinator.setPendingEnvVarCreate(
+                initialDeepLink.key,
+                initialDeepLink.value,
+                initialDeepLink.note,
+            )
+            Routes.ENV_VARS
+        }
+        initialDeepLink is DeepLinkAction.OpenPermissionSettings -> Routes.PERMISSIONS
+        // [fork/sweep-glass] Same cold-start fix for `minis://session/<id>`.
+        // The NavHost used to start on HQ_HOME and rely on a LaunchedEffect
+        // navigate that was dropped before the entry became RESUMED, so a
+        // session deep link silently landed on the home tab. Mount the chat
+        // directly; the session-repair path in ChatScreen then sees the real
+        // id and can rebuild a missing parent row before any message write.
+        initialDeepLink is DeepLinkAction.OpenSession -> Routes.chat(initialDeepLink.sessionId)
         // [destiny/v7-full] The 56-screen design spec IS the app UI now.
         // The original native chat scaffold stays reachable as 「原功能」.
         // [fork/openbots] Hermes HQ 为主默认;V7 设计规格经 More/入口可达。
