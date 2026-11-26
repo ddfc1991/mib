@@ -612,25 +612,33 @@ private fun SettingsSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 20.dp),
+            .padding(top = 18.dp),
     ) {
-        // Section header
+        // [fork/sweep-glass] Section header matches the More tab: 13sp
+        // semi-bold label on the 22dp page line, no uppercase transform.
+        // The old 11sp all-caps label was the last piece of the iOS-Form
+        // language on this screen.
         Text(
-            text = title.uppercaseForDisplay(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium,
-            letterSpacing = 0.5.sp,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            text = title,
+            fontSize = AppTokens.body2,
+            fontWeight = FontWeight.SemiBold,
+            color = AppTokens.current.ink2,
+            modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 7.dp, bottom = 7.dp),
         )
 
-        // Section card
+        // [fork/sweep-glass] One frosted pane per group (18dp corner, lit
+        // rim, 2dp lift) — the exact treatment the More tab uses. The solid
+        // `surfaceContainerLow` fill here was what made the settings hub read
+        // as a different app from the tabs above it.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(color = MaterialTheme.colorScheme.surfaceContainerLow),
+                .frosted(
+                    RoundedCornerShape(18.dp),
+                    com.openminis.app.ui.glass.FrostLevel.Card,
+                    elevation = 2.dp,
+                ),
         ) {
             content()
         }
@@ -671,25 +679,26 @@ private fun SettingsItem(
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Colored circle icon (matching iOS settings style)
+            // [fork/sweep-glass] Same icon chip as the More tab: one accent
+            // tint for every entry, rounded square instead of a coloured
+            // circle. `iconColor` stays in the signature for source
+            // compatibility but no longer splits the page into four palettes.
             Box(
                 modifier = Modifier
                     .size(30.dp)
-                    .background(
-                        color = iconColor,
-                        shape = CircleShape,
-                    ),
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(AppTokens.current.accent.copy(alpha = 0.20f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp),
+                    tint = AppTokens.current.accent,
+                    modifier = Modifier.size(17.dp),
                 )
             }
 
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(12.dp))
 
             // Title + subtitle
             Column(
@@ -698,14 +707,16 @@ private fun SettingsItem(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = AppTokens.body,
+                    fontWeight = FontWeight.Medium,
+                    color = AppTokens.current.ink,
                 )
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = AppTokens.body2,
+                        color = AppTokens.current.ink2,
+                        maxLines = 1,
                     )
                 }
             }
@@ -715,12 +726,12 @@ private fun SettingsItem(
                 Spacer(Modifier.width(8.dp))
             }
 
-            // Chevron
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp),
+            // [fork/sweep-glass] Same chevron glyph as More, so entering a
+            // settings page from the tab bar doesn't switch arrow shape.
+            Text(
+                "\u203A",
+                fontSize = 17.sp,
+                color = AppTokens.current.ink3,
             )
         }
 
