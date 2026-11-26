@@ -87,6 +87,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.openminis.app.ui.components.MinisTextButton
+import com.openminis.app.ui.glass.FrostLevel
+import com.openminis.app.ui.glass.frosted
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,7 +119,22 @@ fun FileBrowserScreen(
 
     Scaffold(
         topBar = {
+            // [fork/sweep-glass] The file browser is first reached from the
+            // HQ More tab, so its bar has to be the same frosted pane as the
+            // tab bar — a bare translucent bar let list rows bleed through
+            // the title while scrolling.
             TopAppBar(
+                modifier = Modifier.then(
+                    if (com.openminis.app.ui.theme.LocalMibotActive.current) {
+                        Modifier.frosted(androidx.compose.ui.graphics.RectangleShape, FrostLevel.Bar)
+                    } else Modifier,
+                ),
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (com.openminis.app.ui.theme.LocalMibotActive.current) Color.Transparent
+                    else MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = if (com.openminis.app.ui.theme.LocalMibotActive.current) Color.Transparent
+                    else MaterialTheme.colorScheme.surfaceContainer,
+                ),
                 title = { Text(stringResource(R.string.filebrowser_title)) },
                 navigationIcon = {
                     IconButton(onClick = handleBack) {
@@ -405,7 +422,9 @@ private fun BreadcrumbCapsule(
             style = MaterialTheme.typography.labelLarge,
             fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isCurrent) {
-                MaterialTheme.colorScheme.onSecondaryContainer
+                com.openminis.app.ui.theme.AppTokens.current.ink
+            } else if (com.openminis.app.ui.theme.LocalMibotActive.current) {
+                com.openminis.app.ui.theme.AppTokens.current.accent
             } else {
                 MaterialTheme.colorScheme.primary
             },
@@ -418,13 +437,24 @@ private fun BreadcrumbCapsule(
                     },
                 )
                 .widthIn(max = 180.dp)
-                .background(
-                    if (isCurrent) {
-                        MaterialTheme.colorScheme.secondaryContainer
+                .then(
+                    if (com.openminis.app.ui.theme.LocalMibotActive.current) {
+                        Modifier.frosted(
+                            shape,
+                            FrostLevel.Card,
+                            tint = if (isCurrent) com.openminis.app.ui.theme.AppTokens.current.accent.copy(alpha = 0.10f)
+                            else androidx.compose.ui.graphics.Color.Transparent,
+                        )
                     } else {
-                        MaterialTheme.colorScheme.surfaceContainerHigh
-                    },
-                    shape,
+                        Modifier.background(
+                            if (isCurrent) {
+                                MaterialTheme.colorScheme.secondaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainerHigh
+                            },
+                            shape,
+                        )
+                    }
                 )
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         )

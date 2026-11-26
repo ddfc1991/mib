@@ -182,6 +182,8 @@ import androidx.compose.ui.unit.sp
 import com.openminis.app.R
 import com.openminis.app.data.db.ChatSessionEntity
 import com.openminis.app.data.db.FolderEntity
+import com.openminis.app.ui.glass.FrostLevel
+import com.openminis.app.ui.glass.frosted
 import com.openminis.app.ui.theme.ChatColors
 import com.openminis.app.ui.theme.minisFabColor
 import com.openminis.app.data.repository.ChatRepository
@@ -1459,13 +1461,29 @@ fun SessionListScreen(
                                 .padding(top = 8.dp, start = 24.dp, end = 24.dp)
                                 .widthIn(max = 320.dp)
                                 .height(48.dp)
-                                .shadow(8.dp, RoundedCornerShape(24.dp))
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                                .border(
-                                    0.5.dp,
-                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                    RoundedCornerShape(24.dp),
+                                .then(
+                                    // [fork/sweep-glass] This is the session
+                                    // list's little "island": blur the page
+                                    // behind it instead of painting another
+                                    // opaque slab. The old border is folded
+                                    // into Frost's lit rim.
+                                    if (com.openminis.app.ui.theme.LocalMibotActive.current) {
+                                        Modifier.frosted(
+                                            RoundedCornerShape(24.dp),
+                                            FrostLevel.Bar,
+                                            elevation = 8.dp,
+                                        )
+                                    } else {
+                                        Modifier
+                                            .shadow(8.dp, RoundedCornerShape(24.dp))
+                                            .clip(RoundedCornerShape(24.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                                            .border(
+                                                0.5.dp,
+                                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                                RoundedCornerShape(24.dp),
+                                            )
+                                    }
                                 )
                                 .padding(start = 10.dp, end = 8.dp),
                         ) {
@@ -3160,7 +3178,19 @@ private fun SessionRow(
             // clip only ever shaped the ripple. Now the tint is the rounded
             // rect itself, matching the folder card's shape and leaving equal
             // gutters left and right.
-            .background(rowBackground ?: MaterialTheme.colorScheme.surface)
+            // [fork/sweep-glass] Unselected rows become individual glass
+            // tiles over the shared backdrop; selected/folder-member rows
+            // keep their explicit tint so selection stays unambiguous.
+            .then(
+                when {
+                    rowBackground != null -> Modifier.background(rowBackground!!)
+                    com.openminis.app.ui.theme.LocalMibotActive.current -> Modifier.frosted(
+                        RoundedCornerShape(16.dp),
+                        FrostLevel.Card,
+                    )
+                    else -> Modifier.background(MaterialTheme.colorScheme.surface)
+                }
+            )
             .then(
                 if (onLongClick != null) {
                     Modifier

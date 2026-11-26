@@ -35,9 +35,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,18 +67,34 @@ import com.openminis.app.ui.theme.AppTokens
  */
 object V7 {
     // 全 App 视觉统一：V7 不再自带铜色体系，全部 alias 到统一 token。
-    val Bg = AppTokens.dark.bg
-    val Bg2 = AppTokens.dark.surface
-    val Sf = AppTokens.dark.surface
-    val Sf2 = AppTokens.dark.surface2
-    val Ln = AppTokens.dark.border.copy(alpha = 0.35f)
-    val Tx = AppTokens.dark.ink
-    val Tx2 = AppTokens.dark.ink2
-    val Tx3 = AppTokens.dark.ink3
-    val Cu = AppTokens.dark.accent
-    val Ok = AppTokens.dark.success
-    val Wa = AppTokens.dark.warn
-    val Er = AppTokens.dark.danger
+    // [fork/sweep-glass] These used to be static `AppTokens.dark.*`, so a
+    // light-theme user still got dark-theme ink, hairlines and accent across
+    // the whole V7/Destiny surface. Read the live palette instead; the call
+    // sites are all @Composable and keep their existing `V7.Tx` spelling.
+    val Bg: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.bg
+    val Bg2: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.surface
+    val Sf: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.surface
+    val Sf2: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.surface2
+    val Ln: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.border.copy(alpha = 0.35f)
+    val Tx: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink
+    val Tx2: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink2
+    val Tx3: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink3
+    val Cu: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.accent
+    val Ok: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.success
+    val Wa: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.warn
+    val Er: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.danger
 
     private val Tones = listOf(
         Color(0xFF2B2A33), Color(0xFF26332F), Color(0xFF3A2E25),
@@ -96,30 +114,42 @@ object V7 {
  */
 @Composable
 fun V7MaterialWrap(content: @Composable () -> Unit) {
+    // [fork/sweep-glass] This wrapper used to force `darkColorScheme` and
+    // `LocalMibotDark = true`, so every screen it hosted stayed dark even
+    // when the user picked the light theme — and Frost drew a dark pane
+    // under light-theme text. Follow the live mode instead.
+    val dark = com.openminis.app.ui.theme.LocalMibotDark.current
+    val p = AppTokens.current
     MaterialTheme(
-        colorScheme = darkColorScheme(
-            background = V7.Bg,
-            surface = V7.Sf,
-            surfaceVariant = V7.Sf2,
-            primary = V7.Cu,
-            onPrimary = V7.Bg,
-            onBackground = V7.Tx,
-            onSurface = V7.Tx,
-            onSurfaceVariant = V7.Tx2,
-            outlineVariant = V7.Ln,
-            error = V7.Er,
-        ),
+        colorScheme = if (dark) {
+            darkColorScheme(
+                background = p.bg,
+                surface = p.surface,
+                surfaceVariant = p.surface2,
+                primary = p.accent,
+                onPrimary = p.onAccent,
+                onBackground = p.ink,
+                onSurface = p.ink,
+                onSurfaceVariant = p.ink2,
+                outlineVariant = p.border,
+                error = p.danger,
+            )
+        } else {
+            lightColorScheme(
+                background = p.bg,
+                surface = p.surface,
+                surfaceVariant = p.surface2,
+                primary = p.accent,
+                onPrimary = p.onAccent,
+                onBackground = p.ink,
+                onSurface = p.ink,
+                onSurfaceVariant = p.ink2,
+                outlineVariant = p.border,
+                error = p.danger,
+            )
+        },
     ) {
-        // [v7-real-contrast] Legacy screens paint their cards through
-        // Modifier.frosted(), which decides dark/light from LocalMibotDark — NOT
-        // from MaterialTheme. Re-binding only colorScheme left a white frosted
-        // card under white onSurface text (unreadable roster rows). Publish the
-        // dark flag too so the frosted tokens match the scheme above.
-        CompositionLocalProvider(
-            com.openminis.app.ui.theme.LocalMibotDark provides true,
-        ) {
-            Box(Modifier.fillMaxSize().background(V7.Bg)) { content() }
-        }
+        Box(Modifier.fillMaxSize().background(p.bg)) { content() }
     }
 }
 

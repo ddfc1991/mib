@@ -77,6 +77,7 @@ import com.openminis.app.BuildConfig
 import com.openminis.app.R
 import com.openminis.app.ui.components.openExternalUrl
 import com.openminis.app.i18n.uppercaseForDisplay
+import com.openminis.app.ui.glass.frosted
 import com.openminis.app.ui.theme.AppTokens
 import com.mibot.ui.theme.MikaIcons
 

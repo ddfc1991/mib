@@ -68,6 +68,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openminis.app.sandbox.TerminalSession
 import com.openminis.app.terminal.MinisOpenUrlBroker
+import com.openminis.app.ui.glass.FrostLevel
+import com.openminis.app.ui.glass.frosted
 import com.openminis.app.ui.terminal.canvas.TerminalNativeViewCompose
 import com.openminis.app.ui.terminal.canvas.TerminalInputView
 import com.openminis.app.ui.terminal.canvas.rememberTerminalInputController
@@ -202,7 +204,15 @@ fun TerminalScreen(
     // imePadding does the right thing without any custom tracking.
     val accessoryBarHeightDp = 40.dp
 
-    Box(modifier = Modifier.fillMaxSize().background(TerminalBg)) {
+    // [fork/sweep-glass] Keep the ANSI canvas near-black for contrast, but
+    // let the shared backdrop breathe through it under the HQ skin so the
+    // frosted bars below have something to refract.
+    val terminalGlass = com.openminis.app.ui.theme.LocalMibotActive.current
+    Box(
+        modifier = Modifier.fillMaxSize().background(
+            if (terminalGlass) Color.Black.copy(alpha = 0.94f) else TerminalBg,
+        ),
+    ) {
         // Main content: top bar + canvas. imePadding() lifts the canvas
         // above the keyboard so it's never covered.
         Column(
@@ -254,7 +264,12 @@ fun TerminalScreen(
                 .align(Alignment.TopStart)
                 .windowInsetsPadding(WindowInsets.systemBars)
                 .height(52.dp)
-                .background(TerminalBg),
+                .then(
+                    if (terminalGlass) Modifier.frosted(
+                        androidx.compose.ui.graphics.RectangleShape,
+                        FrostLevel.Bar,
+                    ) else Modifier.background(TerminalBg),
+                ),
         ) {
             TerminalTopBar(
                 onClose = {
@@ -334,7 +349,7 @@ private fun TerminalTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(TerminalBg)
+            .background(if (com.openminis.app.ui.theme.LocalMibotActive.current) Color.Transparent else TerminalBg)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -431,8 +446,17 @@ private fun KeyboardAccessoryBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(AccessoryBg),
+            .then(
+                if (com.openminis.app.ui.theme.LocalMibotActive.current) {
+                    Modifier.frosted(
+                        RoundedCornerShape(16.dp),
+                        FrostLevel.Bar,
+                        elevation = 4.dp,
+                    )
+                } else {
+                    Modifier.clip(RoundedCornerShape(12.dp)).background(AccessoryBg)
+                }
+            ),
     ) {
         Row(
             modifier = Modifier
@@ -481,7 +505,9 @@ private fun QuickCommandButton(
     isActive: Boolean = false,
     onClick: () -> Unit,
 ) {
-    val bg = if (isActive) AccButtonActive else AccButtonBg
+    val bg = if (!isActive) AccButtonBg
+    else if (com.openminis.app.ui.theme.LocalMibotActive.current) com.openminis.app.ui.theme.AppTokens.current.accent
+    else AccButtonActive
     val fg = if (isActive) Color.White else TerminalGreen
     Row(
         modifier = Modifier

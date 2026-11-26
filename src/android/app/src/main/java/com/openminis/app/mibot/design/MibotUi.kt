@@ -135,22 +135,41 @@ object MibotTokens {
     // [fork/mibot-v5] Identity colours (avatars, tags): low-saturation, mid
     // lightness so they sit quietly on both porcelain and graphite. The UI
     // accent itself is MaterialTheme.colorScheme.primary (deep cinnabar).
-    val Slate = AppTokens.dark.ink2
-    val Sky = AppTokens.dark.ink2
-    val Brick = AppTokens.dark.warn
-    val Green = AppTokens.dark.success
-    val Purple = AppTokens.dark.ink3
-    val Red = AppTokens.dark.danger
-    val Teal = AppTokens.dark.accent
-    val Amber = AppTokens.dark.warn
-    val Taupe = AppTokens.dark.ink2
-    val Rose = AppTokens.dark.danger
-    val Navy = AppTokens.dark.ink2
-    val Steel = AppTokens.dark.ink2
+    // [fork/sweep-glass] Identity colours used to come from AppTokens.dark,
+    // so a light-theme user got light-grey text on a white card. Read the
+    // live palette; the semantic mapping keeps each chip distinguishable
+    // without carrying a second colour system.
+    val Slate: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink2
+    val Sky: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink2
+    val Brick: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.warn
+    val Green: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.success
+    val Purple: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink3
+    val Red: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.danger
+    val Teal: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.accent
+    val Amber: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.warn
+    val Taupe: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink3
+    val Rose: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.danger
+    val Navy: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink2
+    val Steel: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.ink3
 
-    val Ok = AppTokens.dark.success
-    val Warn = AppTokens.dark.warn
-    val Err = AppTokens.dark.danger
+    val Ok: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.success
+    val Warn: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.warn
+    val Err: Color
+        @Composable @ReadOnlyComposable get() = AppTokens.current.danger
 
     // [destiny/ui-unify] 以下全部改为从唯一真源 AppTokens.current 取色。
     // 过去这里读 LocalMibotDark + FrostTokens + MaterialTheme 三处真源，
