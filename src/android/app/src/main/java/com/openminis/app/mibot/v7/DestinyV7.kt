@@ -102,6 +102,8 @@ object V7 {
         Color(0xFF3A2B2B), Color(0xFF293238),
     )
 
+    @Composable
+    @ReadOnlyComposable
     fun tone(key: String): Color {
         val n = key.removePrefix("c").toIntOrNull() ?: 0
         return if (n in 1..Tones.size) Tones[n - 1] else Sf2

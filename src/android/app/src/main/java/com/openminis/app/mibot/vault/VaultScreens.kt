@@ -78,14 +78,6 @@ internal fun categoryIcon(cat: String): ImageVector = when (cat) {
     else -> Icons.Outlined.Key
 }
 
-internal fun categoryColor(cat: String) = when (cat) {
-    "AI 服务" -> MibotTokens.Brick
-    "邮箱" -> MibotTokens.Red
-    "云服务器" -> MibotTokens.Green
-    "社交" -> MibotTokens.Purple
-    else -> MibotTokens.Steel
-}
-
 @Composable
 internal fun permLabel(p: VaultPermission): Pair<String, ChipKind> = when (p) {
     VaultPermission.AUTO -> t("自动使用", "Auto") to ChipKind.OK

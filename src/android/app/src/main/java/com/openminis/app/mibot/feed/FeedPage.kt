@@ -57,6 +57,9 @@ import kotlinx.coroutines.delay
 
 private data class KindStyle(val glyph: LineGlyph, val color: Color, val zh: String, val en: String)
 
+// [fork/sweep-glass] Feed identity colours follow the live AppTokens palette;
+// every call site is a @Composable row, so resolve them inside composition.
+@Composable
 private fun kindStyle(kind: String): KindStyle = when (kind) {
     FeedKind.TASK_RESULT -> KindStyle(LineIcons.CalendarCheck, MibotTokens.Sky, "定时任务", "Scheduled task")
     FeedKind.KEY_ACQUIRED -> KindStyle(LineIcons.KeyRound, MibotTokens.Amber, "保险库", "Vault")

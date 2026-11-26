@@ -63,7 +63,6 @@ import com.openminis.app.ui.glass.LocalGlassBottomInset
 import org.json.JSONObject
 import java.io.File
 
-private val avatarColors = listOf(MibotTokens.Brick, MibotTokens.Sky, MibotTokens.Green, MibotTokens.Purple, MibotTokens.Amber, MibotTokens.Teal)
 
 private fun avatarFile(ctx: Context, id: String) = File(ctx.filesDir, "mibot/avatars/$id.png")
 

@@ -66,9 +66,17 @@ import com.openminis.app.mibot.v7.V7Button
 import com.openminis.app.mibot.v7.V7Tag
 import com.openminis.app.ui.glass.LocalGlassBottomInset
 
-internal val GroupAvatarColors = listOf(MibotTokens.Brick, MibotTokens.Sky, MibotTokens.Green, MibotTokens.Purple, MibotTokens.Amber, MibotTokens.Teal)
-
-internal fun avatarColorFor(id: String) = GroupAvatarColors[(id.hashCode() and 0x7fffffff) % GroupAvatarColors.size]
+// [fork/sweep-glass] Avatar identity colours now come from the live palette,
+// so this helper must read them inside composition instead of caching them at
+// class load time (the old top-level list froze dark-theme colours forever).
+@Composable
+internal fun avatarColorFor(id: String): Color {
+    val colors = listOf(
+        MibotTokens.Brick, MibotTokens.Sky, MibotTokens.Green,
+        MibotTokens.Purple, MibotTokens.Amber, MibotTokens.Teal,
+    )
+    return colors[(id.hashCode() and 0x7fffffff) % colors.size]
+}
 
 @Composable
 internal fun InitialAvatar(name: String, colorKey: String, size: Dp = 32.dp) {
