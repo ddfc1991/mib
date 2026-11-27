@@ -104,8 +104,9 @@ cd src/android
 3. 截图 + `uiautomator dump`，两份都留：`screencap -p` 与 `uiautomator dump /sdcard/ui.xml`
 4. 证据放到 `artifacts/final-check/<批次>/`，文件名带序号和状态（参考 `v3/`）
 
-adb 位置：`E:\Apps\ApkStart\installed\resources\runtime\platform-tools\adb.exe`（端口 5037）。
-ApkStart 自带模拟器走 5044，两套 adb server 互不干扰，别混用。
+本机 `adb` 在 PATH（chocolatey，端口 5037）。ApkStart 自带模拟器走 5044
+（`$env:ANDROID_ADB_SERVER_PORT="5044"`），两套 adb server 互不干扰，别混用。
+脚本里旧路径 `E:\Apps\ApkStart\...\adb.exe` 已失效，统一用 PATH 里的 `adb`。
 
 最近一批证据：`artifacts/final-check/v3/`（本机，未入库；11/26，deep-link 冷启动、发消息前后 UI、明暗 More/设置）。
 
