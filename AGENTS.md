@@ -132,6 +132,9 @@ cd src/android
   （repair missing session row before message insert）修复，那批日志是修复前的，不要重复排查。
 - **provider 定制文件**：`src/android/app/provider-customization.properties` 不入库，从
   `.example` 复制即可；留空能编译，只有对应功能运行时报错。
+- **CI 签名可能不是固定 key**：`build` 远端若没配 `MIBOT_KEYSTORE_B64`，产物用 runner 的
+  debug key（`signing.txt` 里 `CN=Android Debug`）。这种包无法覆盖安装用户机上已有的
+  Mibot，验证请走 CI 模拟器；需要覆盖安装就得给 build repo 配 keystore secrets。
 
 ## 8. 当前状态
 

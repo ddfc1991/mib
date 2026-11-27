@@ -1,11 +1,13 @@
 param(
     [Parameter(Mandatory = $true)][string]$RunId,
-    [string]$OutDir = "E:\omega\artifacts\final-check"
+    [string]$OutDir = "E:\omega\artifacts\final-check",
+    [string]$Adb = "adb"
 )
 
 $ErrorActionPreference = 'Stop'
-$adb = "E:\Apps\ApkStart\installed\resources\runtime\platform-tools\adb.exe"
+# adb is on PATH (chocolatey). Override with -Adb if your setup differs.
 $env:ANDROID_ADB_SERVER_PORT = "5037"
+$adb = $Adb
 
 # Authenticated GitHub API helper (git credential manager holds the PAT).
 $credText = "protocol=https`nhost=github.com`n`n" | & git -c credential.helper=manager credential fill
