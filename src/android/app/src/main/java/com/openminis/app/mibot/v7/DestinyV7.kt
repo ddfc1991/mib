@@ -63,23 +63,25 @@ import com.openminis.app.ui.navigation.Routes
  * screens look like the HTML spec regardless of the app's own theme switch.
  */
 object V7 {
-    val Bg = Color(0xFF0A0A0B)
-    val Bg2 = Color(0xFF0F0F11)
-    val Sf = Color(0xFF17171A)
-    val Sf2 = Color(0xFF1F1F23)
-    val Ln = Color(0x15FFFFFF)
-    val Tx = Color(0xFFF2F0EB)
-    val Tx2 = Color(0xFF9E9C97)
-    val Tx3 = Color(0xFF67655F)
-    val Cu = Color(0xFFC8926A)
-    val Ok = Color(0xFF63B87F)
-    val Wa = Color(0xFFC9A24D)
-    val Er = Color(0xFFD2604F)
+    // [destiny/visual] B 晨瓷（暖瓷毛玻璃）——从 Hark build-36 蒸馏。
+    // 只换色 token，结构与组件不动（DestinyZones 的四区导航完全复用）。
+    val Bg = Color(0xFFFAF6EF)      // 暖米白（瓷底）
+    val Bg2 = Color(0xFFF3ECE1)     // 瓷底次层
+    val Sf = Color(0xFFFFFCF6)      // 卡片（瓷面）
+    val Sf2 = Color(0xFFF0E8DB)     // 卡内浅层 / 徽章底
+    val Ln = Color(0x1F2B2620)      // 发丝线（暖黑 12%）
+    val Tx = Color(0xFF2B2620)      // 墨文（暖黑）
+    val Tx2 = Color(0xFF8A8178)     // 次文
+    val Tx3 = Color(0xFFB5AC9F)     // 三级文 / chevron
+    val Cu = Color(0xFFC2571F)      // 陶土（唯一强调）
+    val Ok = Color(0xFF3FA45B)      // 绿（状态点）
+    val Wa = Color(0xFFC98A2E)      // 琥珀（提醒）
+    val Er = Color(0xFFD64545)      // 红（错误）
 
     private val Tones = listOf(
-        Color(0xFF2B2A33), Color(0xFF26332F), Color(0xFF3A2E25),
-        Color(0xFF252F3A), Color(0xFF332C39), Color(0xFF2E3327),
-        Color(0xFF3A2B2B), Color(0xFF293238),
+        Color(0xFFEDE3D4), Color(0xFFE7E9DE), Color(0xFFF0E3D6),
+        Color(0xFFE3E8EE), Color(0xFFEAE3EE), Color(0xFFE8EADD),
+        Color(0xFFF0E0DE), Color(0xFFE1E8EA),
     )
 
     fun tone(key: String): Color {
@@ -95,12 +97,13 @@ object V7 {
 @Composable
 fun V7MaterialWrap(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = darkColorScheme(
+        // [destiny/visual] B 晨瓷是浅底，内嵌真实页面必须走 light scheme。
+        colorScheme = androidx.compose.material3.lightColorScheme(
             background = V7.Bg,
             surface = V7.Sf,
             surfaceVariant = V7.Sf2,
             primary = V7.Cu,
-            onPrimary = V7.Bg,
+            onPrimary = Color.White,
             onBackground = V7.Tx,
             onSurface = V7.Tx,
             onSurfaceVariant = V7.Tx2,
@@ -110,11 +113,10 @@ fun V7MaterialWrap(content: @Composable () -> Unit) {
     ) {
         // [v7-real-contrast] Legacy screens paint their cards through
         // Modifier.frosted(), which decides dark/light from LocalMibotDark — NOT
-        // from MaterialTheme. Re-binding only colorScheme left a white frosted
-        // card under white onSurface text (unreadable roster rows). Publish the
-        // dark flag too so the frosted tokens match the scheme above.
+        // from MaterialTheme. Publish the flag so frosted tokens match the
+        // light scheme above (a dark frosted card would swallow ink text).
         CompositionLocalProvider(
-            com.openminis.app.ui.theme.LocalMibotDark provides true,
+            com.openminis.app.ui.theme.LocalMibotDark provides false,
         ) {
             Box(Modifier.fillMaxSize().background(V7.Bg)) { content() }
         }
