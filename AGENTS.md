@@ -72,9 +72,10 @@ git push build HEAD:refs/heads/feat/omega-bot
 2. **smoke** — API 30 / 31 模拟器跑 `.github/ci/smoke.sh`，截图作为 artifact。
 3. **audit** — API 31 跑 `.github/ci/v7_audit.sh`，逐个点开 29 个入口并产出 `audit.tsv`。
 
-下载并安装 CI 产物：`scripts/capture-ci-artifact.ps1 -RunId <run>`（模板，按当轮改坐标和截图名；
-用 git credential manager 里的 PAT 调 GitHub API，再装到 `emulator-5554`）。
-单张模拟器截图：`scripts/emu-screenshot.ps1`。
+下载 CI 产物：`scripts/capture-ci-artifact.ps1 -RunId <run>`。
+默认下载 `minis-debug-apk` 并装到 `emulator-5554` 做明暗双截图；拿 smoke/audit 用
+`-ArtifactName v7-audit-api31 -DownloadOnly`（按当轮改坐标和截图名）。
+脚本用 git credential manager 里的 PAT 调 GitHub API。单张模拟器截图：`scripts/emu-screenshot.ps1`。
 
 ### 4.3 必须本机构建时
 
@@ -149,13 +150,25 @@ cd src/android
 - `406342b` 全站玻璃扫尾（半透明 page veil + 玻璃设置分组）
 - `a0e1d0c` 聊天：插入消息前修复缺失的 session 行
 
-本轮交接额外提交：`docs/design-preview/` 入库、`artifacts/` 加入 `.gitignore`、本文件。
+本轮交接额外提交：`docs/design-preview/` 入库、`artifacts/` 加入 `.gitignore`、本文件、
+helper 脚本，以及修掉过期的 CI audit 基线。
+
+`feat/omega-bot` 已推到 `origin` 与 `build` 两个远端。
+
+CI 记录（build repo `ddfc1991/omega-opencode-build`）：
+
+- run `45927569571` @ `914cdd9`：build ✅、smoke API 30 ✅、smoke API 31 ✅；
+  V7 audit ⏳ 跑满 60 min 后被 timeout 取消。根因是脚本还在找已经不存在的
+  「群聊 / 设置」底栏 tab（见 `75f41ac` 的 dedupe），28 个入口全 MISSING。
+- `4df94b8` 把 audit 基线对齐当前 `HqTabBar` 五个 tab，设置改从「更多」进入，
+  只取 `MibotSettingsScreen.kt` 里静态副标题的 17 行，audit timeout 提到 90 min。
+- run `45934814669` @ `4df94b8` 为重跑，结果以它为准。
 
 下一步建议：
 
-1. `git push build HEAD:refs/heads/feat/omega-bot` 跑一次完整三件套（build + smoke + audit）。
+1. 等 run `45934814669` 结束，拉 `v7-audit-api31` / smoke 产物复核（脚本见 `scripts/capture-ci-artifact.ps1`）。
 2. OpenCode 客户端（`com.openminis.app.opencode`）还缺多会话与深链的端到端回归。
-3. 8 个提交稳定后合回 `origin/feat/opencode-client`。
+3. CI 全绿后合回 `origin/feat/opencode-client` 或开 PR。
 
 ## 9. 外部参考
 

@@ -1,7 +1,9 @@
 param(
     [Parameter(Mandatory = $true)][string]$RunId,
     [string]$OutDir = "E:\omega\artifacts\final-check",
-    [string]$Adb = "adb"
+    [string]$Adb = "adb",
+    [string]$ArtifactName = "minis-debug-apk",
+    [switch]$DownloadOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,23 +15,29 @@ $adb = $Adb
 $credText = "protocol=https`nhost=github.com`n`n" | & git -c credential.helper=manager credential fill
 $cred = @{}
 $credText | ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { $cred[$Matches[1]] = $Matches[2] } }
-$h = @{'User-Agent'='opencode'; 'Authorization'="Bearer $($cred.password)"}
+$h = @{ 'User-Agent' = 'opencode'; 'Authorization' = "Bearer $($cred.password)" }
 
-# Wait for the APK artifact on this run.
-$apkArtifact = $null
+# Wait for the requested artifact on this run.
+$artifact = $null
 for ($i = 0; $i -lt 60; $i++) {
     $a = Invoke-RestMethod -Uri "https://api.github.com/repos/ddfc1991/omega-opencode-build/actions/runs/$RunId/artifacts?per_page=100" -Headers $h
-    $apkArtifact = $a.artifacts | Where-Object { $_.name -eq 'minis-debug-apk' } | Select-Object -First 1
-    if ($apkArtifact) { break }
+    $artifact = $a.artifacts | Where-Object { $_.name -eq $ArtifactName } | Select-Object -First 1
+    if ($artifact) { break }
     Start-Sleep -Seconds 30
 }
-if (-not $apkArtifact) { throw "No minis-debug-apk artifact for run $RunId" }
+if (-not $artifact) { throw "No $ArtifactName artifact for run $RunId" }
 
-$zip = Join-Path $OutDir "apk-$RunId.zip"
-$extract = Join-Path $OutDir "apk-$RunId"
-Invoke-WebRequest -Uri $apkArtifact.archive_download_url -Headers $h -OutFile $zip
+$zip = Join-Path $OutDir "$ArtifactName-$RunId.zip"
+$extract = Join-Path $OutDir "$ArtifactName-$RunId"
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+Invoke-WebRequest -Uri $artifact.archive_download_url -Headers $h -OutFile $zip
 Expand-Archive -Force -Path $zip -DestinationPath $extract
+Write-Output "downloaded: $ArtifactName -> $extract"
+
+if ($DownloadOnly) { exit 0 }
+
 $apk = Join-Path $extract "minis-debug.apk"
+if (-not (Test-Path $apk)) { throw "$ArtifactName has no minis-debug.apk; pass -DownloadOnly" }
 $hash = (Get-FileHash -Algorithm SHA256 -Path $apk).Hash
 Write-Output "APK=$apk SHA256=$hash"
 
