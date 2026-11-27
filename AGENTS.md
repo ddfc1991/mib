@@ -166,8 +166,9 @@ CI 记录（build repo `ddfc1991/omega-opencode-build`）：
   证据在 `artifacts/final-check/v5/`（本机，未入库）：audit.tsv 20 行全 OK，
   smoke 两侧 `crash.txt` 均为 0 字节、logcat 无 `FATAL EXCEPTION`。
 
-远端状态：`origin` 与 `build` 的 `feat/omega-bot` 都停在 `4df94b8`；
-本地多一个仅文档/注释的提交，未推，避免再触发一轮 CI。
+远端状态：`origin/feat/omega-bot` = `438c926`（含最终交接文档）；
+`build/feat/omega-bot` = `4df94b8`（CI 实测的代码提交，之后两个提交只改文档/注释，
+所以没有再推 build，避免多跑一轮）。
 
 下一步建议：
 
