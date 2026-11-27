@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Omega · 手机版展示图</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:radial-gradient(circle at 50% 30%,#1C2028,#0A0B0E 70%);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:40px; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  .wrap { position:relative; }
+  /* 手机外框 */
+  .phone {
+    position:relative; width:390px; height:800px; border-radius:52px; overflow:hidden;
+    border:12px solid #0A0A0C;
+    box-shadow:0 40px 90px rgba(0,0,0,.8),0 0 0 2px #2A2C32,0 0 0 3px #000,inset 0 0 0 2px #000;
+    background:#08080A; display:flex; flex-direction:column;
+  }
+  /* 侧键 */
+  .phone::before,.phone::after{content:"";position:absolute;width:3px;background:#2A2C32;border-radius:2px;left:-15px;}
+  .phone::before{top:150px;height:34px;} .phone::after{top:200px;height:54px;}
+  .btn-r{position:absolute;right:-15px;top:190px;width:3px;height:70px;background:#2A2C32;border-radius:2px;}
+  /* 灵动岛 */
+  .island{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:110px;height:30px;background:#000;border-radius:16px;z-index:50;}
+  /* iframe 塞入真实原型 */
+  .phone iframe{position:absolute;inset:0;width:100%;height:100%;border:none;transform:scale(1);transform-origin:top left;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="phone">
+      <div class="btn-r"></div>
+      <div class="island"></div>
+      <iframe src="hq-interactive.html"></iframe>
+    </div>
+  </div>
+</body>
+</html>

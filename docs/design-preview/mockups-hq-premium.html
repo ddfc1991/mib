@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Omega · Hermes HQ 精修版</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    background:#08080A; padding:34px 24px 52px; color:#E8E8EC;
+  }
+  .page-title { font-size:22px; font-weight:600; letter-spacing:-.3px; margin-bottom:6px; }
+  .page-sub { font-size:12px; color:#6E6E76; margin-bottom:8px; line-height:1.7; max-width:980px; }
+  .tags { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px; }
+  .tags span { font-size:11px; color:#A0A0A8; background:#121215; border:1px solid #222226; padding:5px 11px; border-radius:20px; }
+  .row { display:flex; gap:30px; flex-wrap:wrap; justify-content:center; }
+  .card { width:330px; }
+  .card .label { font-size:14px; font-weight:600; margin-bottom:4px; letter-spacing:-.1px; }
+  .card .desc { font-size:11px; color:#76767E; margin-bottom:16px; line-height:1.6; min-height:34px; }
+
+  /* ============ 手机壳 ============ */
+  .phone {
+    position:relative; width:330px; height:700px; border-radius:38px; overflow:hidden;
+    border:6px solid #151518; box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.03);
+    display:flex; flex-direction:column; background:#08080A;
+  }
+  .phone::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(120% 55% at 50% -8%,rgba(120,140,180,.07),transparent 62%);
+  }
+  .statusbar { height:40px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 24px; font-size:12px; font-weight:600; letter-spacing:.2px; position:relative; z-index:1; }
+  .statusbar .icons { display:flex; gap:5px; font-size:11px; opacity:.75; }
+  .topbar { height:50px; flex:none; display:flex; align-items:center; gap:12px; padding:0 18px; border-bottom:1px solid #1A1A1E; position:relative; z-index:1; }
+  .topbar .back { font-size:19px; opacity:.5; }
+  .topbar .tt { font-size:15px; font-weight:600; letter-spacing:-.2px; flex:1; }
+  .topbar .more { font-size:17px; opacity:.4; }
+  .chat { flex:1; padding:6px 14px 0; display:flex; flex-direction:column; gap:12px; overflow:hidden; position:relative; z-index:1; }
+  .daydivider { text-align:center; font-size:10px; letter-spacing:.6px; color:#55555D; margin:8px 0 2px; }
+
+  /* ============ Pebble 表情头像（HQ 标志，降饱和） ============ */
+  .peb { width:30px; height:30px; flex:none; position:relative; border-radius:50%; }
+  .peb .eyes { position:absolute; top:34%; left:0; right:0; display:flex; justify-content:center; gap:22%; }
+  .peb .eyes i { width:3px; height:4px; border-radius:50%; background:rgba(0,0,0,.5); display:block; }
+  .peb .mouth { position:absolute; bottom:22%; left:38%; width:24%; height:5px; border-bottom:1.5px solid rgba(0,0,0,.45); border-radius:0 0 50% 50%; }
+  .peb.o { background:linear-gradient(145deg,#D68A4A,#B96A32); }
+  .peb.r { background:linear-gradient(145deg,#B96B5A,#9A4C42); border-radius:48% 52% 44% 56% / 56% 44% 56% 44%; }
+  .peb.p { background:linear-gradient(145deg,#9183C6,#6F61A8); border-radius:42% 58% 52% 48% / 48% 44% 56% 52%; }
+  .peb.b { background:linear-gradient(145deg,#6A96C6,#4A76A8); border-radius:58% 42% 46% 54% / 52% 58% 42% 48%; }
+  .peb.g { background:linear-gradient(145deg,#5AA88A,#3F866C); border-radius:50% 50% 50% 50% / 62% 62% 38% 38%; }
+  .peb.y { background:linear-gradient(145deg,#C6AC52,#A68C36); border-radius:46% 54% 50% 50% / 54% 46% 54% 46%; }
+
+  .msg { display:flex; gap:9px; align-items:flex-end; }
+  .msg.user { justify-content:flex-end; }
+  .bubble { max-width:228px; padding:10px 13px; font-size:13px; line-height:1.62; letter-spacing:.05px; }
+  .bubble.bot { border-radius:15px 15px 15px 4px; background:#121215; border:1px solid #202024; color:#DADAE0; box-shadow:0 1px 2px rgba(0,0,0,.3); }
+  .bubble.user { border-radius:15px 15px 4px 15px; background:#171D28; border:1px solid #26344A; color:#C7D6EE; }
+  .bubble .name { font-size:9.5px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:#7A7A84; margin-bottom:5px; }
+  .bubble .code { font-family:"SF Mono",Consolas,monospace; font-size:10.5px; padding:7px 9px; border-radius:6px; margin:7px 0; background:#0A0A0C; color:#8FA8C8; border:1px solid #1C1C20; }
+
+  /* ============ 毛玻璃输入栏（HQ 标志，更细腻） ============ */
+  .composer {
+    flex:none; margin:10px 13px 14px; padding:9px 11px; border-radius:23px;
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.09);
+    backdrop-filter:blur(22px) saturate(1.1); -webkit-backdrop-filter:blur(22px) saturate(1.1);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 6px 24px rgba(0,0,0,.35);
+    position:relative; z-index:1;
+  }
+  .composer .ph { flex:1; font-size:12.5px; color:#5E5E66; }
+  .composer .ci { font-size:14px; color:#888890; opacity:.7; }
+  .composer .send { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:13px; background:#2E3D54; color:#C9D8EE; border:1px solid #3C4E68; }
+
+  /* ============ 底部 5-tab ============ */
+  .tabbar { height:50px; flex:none; display:flex; align-items:center; justify-content:space-around; border-top:1px solid #1A1A1E; background:#08080A; position:relative; z-index:1; }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:9px; color:#5E5E66; }
+  .tab .ti { font-size:15px; line-height:1; }
+  .tab.on { color:#8FB0D8; }
+  .tab.on::after { content:""; width:3px; height:3px; border-radius:50%; background:#8FB0D8; margin-top:1px; }
+  .navbar { height:4px; width:98px; border-radius:4px; background:#3A3A40; margin:0 auto 9px; opacity:.7; position:relative; z-index:1; }
+
+  /* ============ Bots / More 页元素 ============ */
+  .bigtitle { font-size:26px; font-weight:600; letter-spacing:-.7px; padding:10px 18px 2px; position:relative; z-index:1; }
+  .subtitle { font-size:11px; color:#5E5E66; padding:0 18px; margin-bottom:4px; position:relative; z-index:1; }
+  .pebble-row { display:flex; gap:16px; padding:12px 18px 16px; position:relative; z-index:1; }
+  .pebble-row .it { text-align:center; }
+  .pebble-row .peb { width:44px; height:44px; margin:0 auto; }
+  .pebble-row .pl { font-size:9px; color:#6E6E76; margin-top:6px; }
+  .content { flex:1; overflow:hidden; padding:4px 14px; position:relative; z-index:1; }
+  .listrow { display:flex; align-items:center; gap:11px; padding:10px 11px; border-radius:12px; margin-bottom:6px; background:#101012; border:1px solid #1C1C20; }
+  .listrow .tx { flex:1; min-width:0; }
+  .listrow .t1 { font-size:13px; font-weight:600; color:#DEDEE4; }
+  .listrow .t2 { font-size:10px; color:#64646C; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .listrow .tm { font-size:9px; color:#55555D; flex:none; }
+  .status-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:#5AA88A; margin-right:4px; }
+  .gateway { display:flex; align-items:center; gap:11px; padding:12px; border-radius:12px; margin:8px 14px 14px; background:linear-gradient(135deg,#12161D,#0E1014); border:1px solid #232A35; position:relative; z-index:1; }
+  .gateway .gi { width:34px; height:34px; border-radius:9px; display:grid; place-items:center; font-size:15px; background:#1C2532; color:#9DB6D4; flex:none; }
+  .gateway .g1 { font-size:12.5px; font-weight:600; color:#DEDEE4; }
+  .gateway .g2 { font-size:10px; color:#64646C; margin-top:3px; }
+  .group { border-radius:12px; overflow:hidden; margin-bottom:14px; background:#101012; border:1px solid #1C1C20; }
+  .group .gt { font-size:9.5px; color:#5E5E66; padding:10px 13px 5px; letter-spacing:.6px; text-transform:uppercase; }
+  .mrow { display:flex; align-items:center; gap:10px; padding:9px 13px; }
+  .mrow .mi { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; font-size:12px; background:#1A1A1E; color:#98A8BC; flex:none; }
+  .mrow .mt { font-size:12px; color:#D2D2D8; flex:1; }
+  .mrow .ar { color:#45454D; font-size:12px; }
+  .hr { height:1px; background:#1A1A1E; margin-left:51px; }
+</style>
+</head>
+<body>
+  <div class="page-title">Omega · Hermes HQ 精修版</div>
+  <div class="page-sub">保留 HQ 全部骨架：OLED 黑底、5 种 pebble 表情头像、毛玻璃胶囊、5-tab。只把高饱和亮色压成低饱和质感色，用明度差和细线分层，收窄字距、放缓字重。</div>
+  <div class="tags"><span>保留 pebble 表情头像</span><span>保留毛玻璃</span><span>保留 5-tab</span><span>配色降饱和</span><span>细线分层</span><span>排版收紧</span></div>
+  <div class="row">
+
+    <!-- ========== 聊天页 ========== -->
+    <div class="card">
+      <div class="label">聊天页 · 精修后</div>
+      <div class="desc">用户气泡改为深蓝灰而非亮蓝；bot 卡靠明度差分层；头像保留表情但降饱和并加柔和渐变。</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+        <div class="topbar"><span class="back">‹</span><span class="tt">Omega</span><span class="more">···</span></div>
+        <div class="chat">
+          <div class="daydivider">今天 09:24</div>
+          <div class="msg">
+            <div class="peb o"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div>
+            <div class="bubble bot"><div class="name">Hermes</div>先走 A——我做完 4 屏 SVG 给你，你网页端导入。要我现在把剩下 3 屏也做完，一起打包给你吗？</div>
+          </div>
+          <div class="msg user"><div class="bubble user">A，全部做完一起给我。</div></div>
+          <div class="msg">
+            <div class="peb p"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div>
+            <div class="bubble bot"><div class="name">Research</div>已接上。查 Figma 与 SVG 进度：<div class="code">321/321 · bots.svg ✓</div>19 个文件已就绪，可网页端导入。</div>
+          </div>
+        </div>
+        <div class="composer"><span class="ci">＋</span><span class="ph">发消息、@ 提及文件或命令…</span><span class="ci">◉</span><div class="send">↑</div></div>
+        <div class="tabbar">
+          <div class="tab on"><span class="ti">◉</span>聊天</div>
+          <div class="tab"><span class="ti">⬡</span>机器人</div>
+          <div class="tab"><span class="ti">≡</span>会话</div>
+          <div class="tab"><span class="ti">◫</span>任务</div>
+          <div class="tab"><span class="ti">◷</span>更多</div>
+        </div>
+        <div class="navbar"></div>
+      </div>
+    </div>
+
+    <!-- ========== Bots 页 ========== -->
+    <div class="card">
+      <div class="label">Bots 页 · 精修后</div>
+      <div class="desc">顶排 pebble 头像保留多样形状与表情，颜色统一降饱和；列表靠背景明度差分层，去掉粗描边。</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+        <div class="bigtitle">机器人</div><div class="subtitle">Mac mini · 9 个 bot 在线</div>
+        <div class="pebble-row">
+          <div class="it"><div class="peb o"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="pl">Omega</div></div>
+          <div class="it"><div class="peb r"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="pl">Deploys</div></div>
+          <div class="it"><div class="peb p"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="pl">Research</div></div>
+          <div class="it"><div class="peb b"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="pl">Inbox</div></div>
+          <div class="it"><div class="peb g"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="pl">Writing</div></div>
+        </div>
+        <div class="content">
+          <div class="listrow"><div class="peb o"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="tx"><div class="t1">Omega</div><div class="t2">本能全能 · 随时可分 bot 干活</div></div><div class="tm"><span class="status-dot"></span>在线</div></div>
+          <div class="listrow"><div class="peb p"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="tx"><div class="t1">Research</div><div class="t2">研究、查资料、整理信息</div></div><div class="tm">就绪</div></div>
+          <div class="listrow"><div class="peb g"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="tx"><div class="t1">Writing</div><div class="t2">写作、润色、改稿</div></div><div class="tm">就绪</div></div>
+          <div class="listrow"><div class="peb y"><span class="eyes"><i></i><i></i></span><span class="mouth"></span></div><div class="tx"><div class="t1">Finance</div><div class="t2">账目、报表、行情</div></div><div class="tm">就绪</div></div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><span class="ti">◉</span>聊天</div>
+          <div class="tab on"><span class="ti">⬡</span>机器人</div>
+          <div class="tab"><span class="ti">≡</span>会话</div>
+          <div class="tab"><span class="ti">◫</span>任务</div>
+          <div class="tab"><span class="ti">◷</span>更多</div>
+        </div>
+        <div class="navbar"></div>
+      </div>
+    </div>
+
+    <!-- ========== 更多页 ========== -->
+    <div class="card">
+      <div class="label">更多页 · 精修后</div>
+      <div class="desc">Gateway 状态卡用冷蓝渐变和细描边，取代原先亮色块；菜单分组靠背景明度差，克制而清晰。</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+        <div class="bigtitle">更多</div>
+        <div class="gateway">
+          <div class="gi">✦</div>
+          <div style="flex:1"><div class="g1">Mac mini</div><div class="g2"><span class="status-dot"></span>已连接 · 9 个 bot</div></div>
+          <span style="color:#45454D">›</span>
+        </div>
+        <div class="content">
+          <div class="group"><div class="gt">系统</div>
+            <div class="mrow"><div class="mi">✦</div><div class="mt">机器人</div><span class="ar">›</span></div><div class="hr"></div>
+            <div class="mrow"><div class="mi">⚙</div><div class="mt">设置</div><span class="ar">›</span></div><div class="hr"></div>
+            <div class="mrow"><div class="mi">★</div><div class="mt">模型</div><span class="ar">›</span></div>
+          </div>
+          <div class="group"><div class="gt">消息与数据</div>
+            <div class="mrow"><div class="mi">◉</div><div class="mt">群聊</div><span class="ar">›</span></div><div class="hr"></div>
+            <div class="mrow"><div class="mi">▣</div><div class="mt">文件库</div><span class="ar">›</span></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><span class="ti">◉</span>聊天</div>
+          <div class="tab"><span class="ti">⬡</span>机器人</div>
+          <div class="tab"><span class="ti">≡</span>会话</div>
+          <div class="tab"><span class="ti">◫</span>任务</div>
+          <div class="tab on"><span class="ti">◷</span>更多</div>
+        </div>
+        <div class="navbar"></div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

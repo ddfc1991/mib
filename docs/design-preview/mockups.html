@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Omega UI 改版方向对比</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: #101114;
+    padding: 32px 24px 48px;
+    color: #fff;
+  }
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .page-sub { font-size: 13px; color: #8b8d95; margin-bottom: 28px; }
+  .row { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+  .card { width: 360px; }
+  .card > .label {
+    font-size: 15px; font-weight: 700; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card > .label .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .card > .desc { font-size: 12px; color: #8b8d95; margin-bottom: 14px; line-height: 1.5; min-height: 36px; }
+
+  /* ===== 手机外壳 ===== */
+  .phone {
+    position: relative; width: 360px; height: 760px; border-radius: 42px;
+    overflow: hidden; border: 8px solid #1c1d22;
+    box-shadow: 0 18px 50px rgba(0,0,0,.55);
+    display: flex; flex-direction: column;
+  }
+  .statusbar {
+    height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 26px; font-size: 13px; font-weight: 600;
+  }
+  .statusbar .icons { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+  .topbar {
+    height: 56px; flex: none; display: flex; align-items: center; gap: 14px; padding: 0 20px;
+  }
+  .topbar .tt { font-size: 18px; font-weight: 700; flex: 1; }
+  .topbar .ic { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; font-size: 17px; }
+  .chat { flex: 1; overflow: hidden; padding: 8px 16px 0; display: flex; flex-direction: column; gap: 14px; }
+  .daydivider { text-align: center; font-size: 11px; opacity: .5; margin: 6px 0; }
+
+  .msg { display: flex; gap: 9px; align-items: flex-end; }
+  .msg.user { justify-content: flex-end; }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 11px; flex: none;
+    display: grid; place-items: center; font-size: 15px; font-weight: 700; color: #fff;
+  }
+  .bubble {
+    max-width: 248px; padding: 11px 14px; font-size: 13.5px; line-height: 1.55;
+  }
+  .bubble.bot { border-radius: 16px 16px 16px 5px; }
+  .bubble.user { border-radius: 16px 16px 5px 16px; }
+  .bubble .name { font-size: 11px; font-weight: 700; opacity: .7; margin-bottom: 4px; }
+  .bubble .code {
+    font-family: "SF Mono", Consolas, monospace; font-size: 11px; padding: 8px 10px;
+    border-radius: 8px; margin: 8px 0; line-height: 1.5; white-space: nowrap;
+  }
+  .composer {
+    flex: none; margin: 10px 14px 16px; padding: 10px 12px; border-radius: 26px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .composer .ph { flex: 1; font-size: 13px; opacity: .5; }
+  .composer .send { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; color: #fff; }
+  .navbar { height: 4px; width: 110px; border-radius: 4px; margin: 0 auto 12px; opacity: .6; }
+
+  /* ===== 1 深色高级感 Linear/Raycast ===== */
+  .s1 .phone { background: #0A0A0C; }
+  .s1 .statusbar, .s1 .topbar, .s1 .bubble.bot { color: #EDEDF0; }
+  .s1 .topbar { border-bottom: 1px solid #1E1E24; }
+  .s1 .topbar .ic { color: #9A9AA4; }
+  .s1 .bubble.bot { background: #141418; border: 1px solid #23232B; }
+  .s1 .bubble.user { background: #7C6BF5; color: #fff; }
+  .s1 .bubble .code { background: #000; color: #B9A9FF; }
+  .s1 .composer { background: #141418; border: 1px solid #2A2A33; color: #EDEDF0; }
+  .s1 .composer .send { background: #7C6BF5; }
+  .s1 .navbar { background: #EDEDF0; }
+
+  /* ===== 2 明亮清爽 Notion/ChatGPT ===== */
+  .s2 .phone { background: #F7F7F8; }
+  .s2 .statusbar, .s2 .topbar, .s2 .bubble.bot { color: #1C1C1E; }
+  .s2 .topbar { border-bottom: 1px solid #ECECEF; }
+  .s2 .topbar .ic { color: #6E6E76; }
+  .s2 .bubble.bot { background: #FFFFFF; border: 1px solid #EBEBEF; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+  .s2 .bubble.user { background: #2E7CF6; color: #fff; }
+  .s2 .bubble .code { background: #F1F3F7; color: #2E5FA8; }
+  .s2 .composer { background: #FFFFFF; border: 1px solid #E4E4EA; color: #1C1C1E; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  .s2 .composer .send { background: #2E7CF6; }
+  .s2 .navbar { background: #1C1C1E; }
+
+  /* ===== 3 玻璃拟态升级 ===== */
+  .s3 .phone {
+    background: linear-gradient(160deg, #1a1033 0%, #0d1b2a 45%, #10121c 100%);
+  }
+  .s3 .phone::before {
+    content: ""; position: absolute; width: 320px; height: 320px; border-radius: 50%;
+    background: #7C4DFF; filter: blur(90px); opacity: .45; top: -60px; left: -80px;
+  }
+  .s3 .phone::after {
+    content: ""; position: absolute; width: 280px; height: 280px; border-radius: 50%;
+    background: #00B0FF; filter: blur(90px); opacity: .3; bottom: 60px; right: -90px;
+  }
+  .s3 .statusbar, .s3 .topbar, .s3 .bubble.bot { color: #F4F2FF; position: relative; z-index: 1; }
+  .s3 .topbar .ic { color: #C9C2E8; }
+  .s3 .bubble.bot {
+    background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.18);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  }
+  .s3 .bubble.user {
+    background: linear-gradient(135deg, #7C4DFF, #448AFF); color: #fff;
+    box-shadow: 0 4px 18px rgba(124,77,255,.5);
+  }
+  .s3 .bubble .code { background: rgba(0,0,0,.35); color: #C9B6FF; }
+  .s3 .composer {
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    color: #F4F2FF; position: relative; z-index: 1;
+    box-shadow: 0 6px 24px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .s3 .composer .send { background: linear-gradient(135deg, #7C4DFF, #448AFF); }
+  .s3 .navbar { background: #F4F2FF; }
+
+  /* ===== 4 中性极简 ===== */
+  .s4 .phone { background: #FAFAFA; }
+  .s4 .statusbar, .s4 .topbar, .s4 .bubble.bot { color: #111; }
+  .s4 .topbar { border-bottom: 1px solid #E8E8E8; }
+  .s4 .topbar .ic { color: #888; }
+  .s4 .bubble.bot { background: transparent; border: none; padding-left: 0; padding-right: 0; }
+  .s4 .bubble.bot .name { color: #999; }
+  .s4 .bubble.user { background: #111; color: #fff; border-radius: 14px; }
+  .s4 .bubble .code { background: #EFEFEF; color: #333; }
+  .s4 .composer { background: transparent; border: 1px solid #DDD; color: #111; border-radius: 14px; }
+  .s4 .composer .send { background: #111; }
+  .s4 .avatar { background: #E6E6E6 !important; color: #333; }
+  .s4 .navbar { background: #111; }
+</style>
+</head>
+<body>
+  <div class="page-title">Omega UI 改版 · 4 个设计方向</div>
+  <div class="page-sub">基于真实聊天页结构：顶部栏 + pebble 头像消息气泡 + 毛玻璃输入栏。选中方向后我直接改 Colors.kt / HqTheme.kt 等源码。</div>
+  <div class="row">
+
+    <!-- 1 深色高级感 -->
+    <div class="card s1">
+      <div class="label"><span class="dot" style="background:#7C6BF5"></span>① 深色高级感</div>
+      <div class="desc">深墨底 + 低饱和紫点缀 + 细描边。克制、专业，Linear / Raycast 质感。</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+        <div class="topbar"><span class="ic">‹</span><span class="tt">Omega</span><span class="ic">···</span></div>
+        <div class="chat">
+          <div class="daydivider">今天 09:24</div>
+          <div class="msg">
+            <div class="avatar" style="background:#FF9500">H</div>
+            <div class="bubble bot"><div class="name">Hermes</div>先走 A——我做完 4 屏 SVG 给你，你网页端导入。要我现在把剩下 3 屏也做完，一起打包给你吗？</div>
+          </div>
+          <div class="msg user"><div class="bubble user">A，全部做完一起给我。</div></div>
+          <div class="msg">
+            <div class="avatar" style="background:#A78BFA">R</div>
+            <div class="bubble bot"><div class="name">Research</div>已接上。查 Figma 与 SVG 进度：<div class="code">321/321 · bots.svg ✓</div>=== 我的 SVG 进度 ===<br>19 个文件已就绪。</div>
+          </div>
+        </div>
+        <div class="composer"><span style="opacity:.7">＋</span><span class="ph">发消息、@ 提及文件或命令…</span><span>◉</span><div class="send">↑</div></div>
+        <div class="navbar"></div>
+      </div>
+    </div>
+
+    <!-- 2 明亮清爽 -->
+    <div class="card s2">
+      <div class="label"><span class="dot" style="background:#2E7CF6"></span>② 明亮清爽</div>
+      <div class="desc">浅灰白底 + 友好蓝 + 大圆角卡片。轻快、亲和，Notion / ChatGPT 风。</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+        <div class="topbar"><span class="ic">‹</span><span class="tt">Omega</span><span class="ic">···</span></div>
+        <div class="chat">
+          <div class="daydivider">今天 09:24</div>
+          <div class="msg">
+            <div class="avatar" style="background:#FF9500">H</div>
+            <div class="bubble bot"><div class="name">Hermes</div>先走 A——我做完 4 屏 SVG 给你，你网页端导入。要我现在把剩下 3 屏也做完，一起打包给你吗？</div>
+          </div>
+          <div class="msg user"><div class="bubble user">A，全部做完一起给我。</div></div>
+          <div class="msg">
+            <div class="avatar" style="background:#A78BFA">R</div>
+            <div class="bubble bot"><div class="name">Research</div>已接上。查 Figma 与 SVG 进度：<div class="code">321/321 · bots.svg ✓</div>=== 我的 SVG 进度 ===<br>19 个文件已就绪。</div>
+          </div>
+        </div>
+        <div class="composer"><span style="opacity:.7">＋</span><span class="ph">发消息、@ 提及文件或命令…</span><span>◉</span><div class="send">↑</div></div>
+        <div class="navbar"></div>
+      </div>
+    </div>
+
+    <!-- 3 玻璃拟态 -->
+    <div class="card s3">
+      <div class="label"><span class="dot" style="background:#7C4DFF"></span>③ 玻璃拟态升级</div>
+      <div class="desc">保留毛玻璃并强化：半透明层叠 + 紫蓝光晕 + 发光边。科技感最强。</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+        <div class="topbar"><span class="ic">‹</span><span class="tt">Omega</span><span class="ic">···</span></div>
+        <div class="chat">
+          <div class="daydivider">今天 09:24</div>
+          <div class="msg">
+            <div class="avatar" style="background:#FF9500">H</div>
+            <div class="bubble bot"><div class="name">Hermes</div>先走 A——我做完 4 屏 SVG 给你，你网页端导入。要我现在把剩下 3 屏也做完，一起打包给你吗？</div>
+          </div>
+          <div class="msg user"><div class="bubble user">A，全部做完一起给我。</div></div>
+          <div class="msg">
+            <div class="avatar" style="background:#A78BFA">R</div>
+            <div class="bubble bot"><div class="name">Research</div>已接上。查 Figma 与 SVG 进度：<div class="code">321/321 · bots.svg ✓</div>=== 我的 SVG 进度 ===<br>19 个文件已就绪。</div>
+          </div>
+        </div>
+        <div class="composer"><span style="opacity:.8">＋</span><span class="ph">发消息、@ 提及文件或命令…</span><span>◉</span><div class="send">↑</div></div>
+        <div class="navbar"></div>
+      </div>
+    </div>
+
+    <!-- 4 中性极简 -->
+    <div class="card s4">
+      <div class="label"><span class="dot" style="background:#555"></span>④ 中性极简</div>
+      <div class="desc">纯黑白灰，几乎无彩色，靠排版和留白出效果。编辑感、最克制。</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+        <div class="topbar"><span class="ic">‹</span><span class="tt">Omega</span><span class="ic">···</span></div>
+        <div class="chat">
+          <div class="daydivider">今天 09:24</div>
+          <div class="msg">
+            <div class="avatar">H</div>
+            <div class="bubble bot"><div class="name">Hermes</div>先走 A——我做完 4 屏 SVG 给你，你网页端导入。要我现在把剩下 3 屏也做完，一起打包给你吗？</div>
+          </div>
+          <div class="msg user"><div class="bubble user">A，全部做完一起给我。</div></div>
+          <div class="msg">
+            <div class="avatar">R</div>
+            <div class="bubble bot"><div class="name">Research</div>已接上。查 Figma 与 SVG 进度：<div class="code">321/321 · bots.svg ✓</div>=== 我的 SVG 进度 ===<br>19 个文件已就绪。</div>
+          </div>
+        </div>
+        <div class="composer"><span style="opacity:.6">＋</span><span class="ph">发消息、@ 提及文件或命令…</span><span>◉</span><div class="send">↑</div></div>
+        <div class="navbar"></div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

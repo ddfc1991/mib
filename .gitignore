@@ -165,3 +165,7 @@ src/android/app/libs/rclone.aar
 deps/aot/*.S
 deps/aot/.build/
 deps/aot/.build-iphonesimulator/
+
+# Local verification evidence (APK downloads, dex dumps, screenshots, logs).
+# ~2.4 GB on the handoff machine; keep it on disk, never in git.
+/artifacts/

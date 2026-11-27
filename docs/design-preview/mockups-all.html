@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Omega UI 改版 · 全页面设计方向对比</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: #101114; padding: 30px 20px 48px; color: #fff;
+  }
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .page-sub { font-size: 12px; color: #8b8d95; margin-bottom: 26px; line-height: 1.6; }
+  .section { margin-bottom: 40px; }
+  .section-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; padding-left: 10px; border-left: 4px solid #7C6BF5; }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; justify-content: flex-start; }
+  .card { width: 300px; }
+  .card > .label { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+  .card > .label .dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* 手机壳 */
+  .phone {
+    position: relative; width: 300px; height: 620px; border-radius: 34px; overflow: hidden;
+    border: 7px solid #1c1d22; box-shadow: 0 14px 40px rgba(0,0,0,.5);
+    display: flex; flex-direction: column;
+  }
+  .statusbar { height: 38px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 11px; font-weight: 600; }
+  .statusbar .icons { display: flex; gap: 5px; font-size: 10px; }
+
+  .bigtitle { font-size: 26px; font-weight: 700; padding: 8px 18px 4px; }
+  .subtitle { font-size: 11px; padding: 0 18px; opacity: .55; margin-bottom: 4px; }
+  .content { flex: 1; overflow: hidden; padding: 6px 16px; }
+
+  /* pebble 头像 */
+  .pebble-row { display: flex; gap: 18px; padding: 12px 18px 18px; overflow: hidden; }
+  .pebble { width: 48px; height: 48px; border-radius: 17px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 20px; flex: none; }
+  .pebble-label { font-size: 9px; opacity: .55; text-align: center; margin-top: 5px; }
+
+  /* 列表行 */
+  .listrow { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 13px; margin-bottom: 8px; }
+  .listrow .av { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 17px; flex: none; }
+  .listrow .tx { flex: 1; min-width: 0; }
+  .listrow .tx .t1 { font-size: 13px; font-weight: 600; }
+  .listrow .tx .t2 { font-size: 10.5px; opacity: .55; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .listrow .tm { font-size: 9.5px; opacity: .45; flex: none; }
+
+  /* 设置菜单组 */
+  .group { border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+  .group .gt { font-size: 10px; opacity: .5; padding: 10px 14px 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .menurow { display: flex; align-items: center; gap: 11px; padding: 10px 14px; }
+  .menurow .mi { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 14px; color: #fff; flex: none; }
+  .menurow .mt { font-size: 12.5px; flex: 1; }
+  .menurow .ar { opacity: .35; font-size: 13px; }
+  .divider { height: 1px; margin-left: 55px; opacity: .08; }
+
+  /* gateway 卡 */
+  .gateway { display: flex; align-items: center; gap: 11px; padding: 13px; border-radius: 14px; margin: 6px 16px 16px; }
+  .gateway .gi { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; background: #000; color: #fff; flex: none; }
+  .gateway .gt1 { font-size: 13px; font-weight: 600; }
+  .gateway .gt2 { font-size: 10px; opacity: .55; margin-top: 3px; }
+  .gateway .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #30D158; margin-right: 5px; }
+
+  /* 底部 tab bar */
+  .tabbar { height: 52px; flex: none; display: flex; align-items: center; justify-content: space-around; border-top-width: 1px; border-top-style: solid; }
+  .tabbar .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; }
+  .tabbar .tab .ti { font-size: 17px; }
+  .navbar { height: 4px; width: 100px; border-radius: 4px; margin: 0 auto 10px; opacity: .55; }
+
+  /* ===== 主题变量 ===== */
+  .s1 .phone { background:#0A0A0C; color:#EDEDF0; }
+  .s1 .listrow,.s1 .group,.s1 .gateway { background:#141418; border:1px solid #23232B; }
+  .s1 .divider { background:#fff; }
+  .s1 .tabbar { border-color:#1E1E24; background:#0A0A0C; color:#7C6BF5; }
+  .s1 .navbar { background:#EDEDF0; }
+  .s1 .subtitle,.s1 .pebble-label,.s1 .listrow .t2,.s1 .group .gt,.s1 .gateway .gt2,.s1 .tm { color:#8B8B95; }
+
+  .s2 .phone { background:#F7F7F8; color:#1C1C1E; }
+  .s2 .listrow,.s2 .group,.s2 .gateway { background:#FFFFFF; border:1px solid #EBEBEF; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+  .s2 .divider { background:#000; }
+  .s2 .tabbar { border-color:#ECECEF; background:#FFFFFF; color:#2E7CF6; }
+  .s2 .navbar { background:#1C1C1E; }
+  .s2 .subtitle,.s2 .pebble-label,.s2 .listrow .t2,.s2 .group .gt,.s2 .gateway .gt2,.s2 .tm { color:#8E8E93; }
+
+  .s3 .phone { background:linear-gradient(160deg,#1a1033,#0d1b2a 45%,#10121c); color:#F4F2FF; }
+  .s3 .phone::before { content:""; position:absolute; width:260px; height:260px; border-radius:50%; background:#7C4DFF; filter:blur(80px); opacity:.4; top:-50px; left:-60px; }
+  .s3 .listrow,.s3 .group,.s3 .gateway { background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .s3 .divider { background:#fff; }
+  .s3 .tabbar { border-color:rgba(255,255,255,.15); background:rgba(255,255,255,.06); color:#B9A9FF; backdrop-filter:blur(12px); }
+  .s3 .navbar { background:#F4F2FF; }
+  .s3 .subtitle,.s3 .pebble-label,.s3 .listrow .t2,.s3 .group .gt,.s3 .gateway .gt2,.s3 .tm { color:#B9B2D6; }
+
+  .s4 .phone { background:#FAFAFA; color:#111; }
+  .s4 .listrow,.s4 .group,.s4 .gateway { background:transparent; border:none; border-bottom:1px solid #EEE; border-radius:0; box-shadow:none; }
+  .s4 .divider { background:#000; }
+  .s4 .tabbar { border-color:#DDD; background:#FAFAFA; color:#111; }
+  .s4 .navbar { background:#111; }
+  .s4 .subtitle,.s4 .pebble-label,.s4 .listrow .t2,.s4 .group .gt,.s4 .gateway .gt2,.s4 .tm { color:#999; }
+</style>
+</head>
+<body>
+  <div class="page-title">Omega UI 改版 · 全页面 × 4 种设计方向</div>
+  <div class="page-sub">基于真实源码结构绘制：Bots 列表（顶排 pebble + 分组列表）、会话列表、更多/设置页。选定方向后我直接改 Colors.kt / HqTheme.kt 等源码。</div>
+
+  <!-- ========== Bots 页 ========== -->
+  <div class="section">
+    <div class="section-title">① Bots 列表页（大标题 + 顶排 pebble + 分组列表）</div>
+    <div class="row">
+      <div class="card s1">
+        <div class="label"><span class="dot" style="background:#7C6BF5"></span>深色高级感</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">机器人 ⌄</div><div class="subtitle">Mac mini</div>
+          <div class="pebble-row">
+            <div><div class="pebble" style="background:#FF9500">Ω</div><div class="pebble-label">Omega</div></div>
+            <div><div class="pebble" style="background:#FF6B4A">D</div><div class="pebble-label">Deploys</div></div>
+            <div><div class="pebble" style="background:#A78BFA">R</div><div class="pebble-label">Research</div></div>
+            <div><div class="pebble" style="background:#3B82F6">I</div><div class="pebble-label">Inbox</div></div>
+          </div>
+          <div class="content">
+            <div class="listrow"><div class="av" style="background:#FF9500">Ω</div><div class="tx"><div class="t1">Omega</div><div class="t2">本能全能 · 随时可分 bot 干活</div></div><div class="tm">在线</div></div>
+            <div class="listrow"><div class="av" style="background:#A78BFA">R</div><div class="tx"><div class="t1">Research</div><div class="t2">研究、查资料、整理信息</div></div><div class="tm">就绪</div></div>
+            <div class="listrow"><div class="av" style="background:#10B981">W</div><div class="tx"><div class="t1">Writing</div><div class="t2">写作、润色、改稿</div></div><div class="tm">就绪</div></div>
+            <div class="listrow"><div class="av" style="background:#FFCC00">F</div><div class="tx"><div class="t1">Finance</div><div class="t2">账目、报表、行情</div></div><div class="tm">就绪</div></div>
+          </div>
+          <div class="tabbar"><div class="tab"><span class="ti">◉</span>聊天</div><div class="tab" style="color:#7C6BF5"><span class="ti">⬡</span>机器人</div><div class="tab"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s2">
+        <div class="label"><span class="dot" style="background:#2E7CF6"></span>明亮清爽</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">机器人 ⌄</div><div class="subtitle">Mac mini</div>
+          <div class="pebble-row">
+            <div><div class="pebble" style="background:#FF9500">Ω</div><div class="pebble-label">Omega</div></div>
+            <div><div class="pebble" style="background:#FF6B4A">D</div><div class="pebble-label">Deploys</div></div>
+            <div><div class="pebble" style="background:#A78BFA">R</div><div class="pebble-label">Research</div></div>
+            <div><div class="pebble" style="background:#3B82F6">I</div><div class="pebble-label">Inbox</div></div>
+          </div>
+          <div class="content">
+            <div class="listrow"><div class="av" style="background:#FF9500">Ω</div><div class="tx"><div class="t1">Omega</div><div class="t2">本能全能 · 随时可分 bot 干活</div></div><div class="tm">在线</div></div>
+            <div class="listrow"><div class="av" style="background:#A78BFA">R</div><div class="tx"><div class="t1">Research</div><div class="t2">研究、查资料、整理信息</div></div><div class="tm">就绪</div></div>
+            <div class="listrow"><div class="av" style="background:#10B981">W</div><div class="tx"><div class="t1">Writing</div><div class="t2">写作、润色、改稿</div></div><div class="tm">就绪</div></div>
+            <div class="listrow"><div class="av" style="background:#FFCC00">F</div><div class="tx"><div class="t1">Finance</div><div class="t2">账目、报表、行情</div></div><div class="tm">就绪</div></div>
+          </div>
+          <div class="tabbar"><div class="tab"><span class="ti">◉</span>聊天</div><div class="tab" style="color:#2E7CF6"><span class="ti">⬡</span>机器人</div><div class="tab"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s3">
+        <div class="label"><span class="dot" style="background:#7C4DFF"></span>玻璃拟态升级</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">机器人 ⌄</div><div class="subtitle">Mac mini</div>
+          <div class="pebble-row">
+            <div><div class="pebble" style="background:linear-gradient(135deg,#FF9500,#FF6B4A)">Ω</div><div class="pebble-label">Omega</div></div>
+            <div><div class="pebble" style="background:#FF6B4A">D</div><div class="pebble-label">Deploys</div></div>
+            <div><div class="pebble" style="background:#A78BFA">R</div><div class="pebble-label">Research</div></div>
+            <div><div class="pebble" style="background:#3B82F6">I</div><div class="pebble-label">Inbox</div></div>
+          </div>
+          <div class="content">
+            <div class="listrow"><div class="av" style="background:#FF9500">Ω</div><div class="tx"><div class="t1">Omega</div><div class="t2">本能全能 · 随时可分 bot 干活</div></div><div class="tm">在线</div></div>
+            <div class="listrow"><div class="av" style="background:#A78BFA">R</div><div class="tx"><div class="t1">Research</div><div class="t2">研究、查资料、整理信息</div></div><div class="tm">就绪</div></div>
+            <div class="listrow"><div class="av" style="background:#10B981">W</div><div class="tx"><div class="t1">Writing</div><div class="t2">写作、润色、改稿</div></div><div class="tm">就绪</div></div>
+            <div class="listrow"><div class="av" style="background:#FFCC00">F</div><div class="tx"><div class="t1">Finance</div><div class="t2">账目、报表、行情</div></div><div class="tm">就绪</div></div>
+          </div>
+          <div class="tabbar"><div class="tab"><span class="ti">◉</span>聊天</div><div class="tab" style="color:#B9A9FF"><span class="ti">⬡</span>机器人</div><div class="tab"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s4">
+        <div class="label"><span class="dot" style="background:#555"></span>中性极简</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">机器人 ⌄</div><div class="subtitle">Mac mini</div>
+          <div class="pebble-row">
+            <div><div class="pebble" style="background:#DDD;color:#333">Ω</div><div class="pebble-label">Omega</div></div>
+            <div><div class="pebble" style="background:#DDD;color:#333">D</div><div class="pebble-label">Deploys</div></div>
+            <div><div class="pebble" style="background:#DDD;color:#333">R</div><div class="pebble-label">Research</div></div>
+            <div><div class="pebble" style="background:#DDD;color:#333">I</div><div class="pebble-label">Inbox</div></div>
+          </div>
+          <div class="content">
+            <div class="listrow"><div class="av" style="background:#333">Ω</div><div class="tx"><div class="t1">Omega</div><div class="t2">本能全能 · 随时可分 bot 干活</div></div><div class="tm">在线</div></div>
+            <div class="listrow"><div class="av" style="background:#555">R</div><div class="tx"><div class="t1">Research</div><div class="t2">研究、查资料、整理信息</div></div><div class="tm">就绪</div></div>
+            <div class="listrow"><div class="av" style="background:#777">W</div><div class="tx"><div class="t1">Writing</div><div class="t2">写作、润色、改稿</div></div><div class="tm">就绪</div></div>
+            <div class="listrow"><div class="av" style="background:#999">F</div><div class="tx"><div class="t1">Finance</div><div class="t2">账目、报表、行情</div></div><div class="tm">就绪</div></div>
+          </div>
+          <div class="tabbar"><div class="tab"><span class="ti">◉</span>聊天</div><div class="tab" style="color:#111;font-weight:700"><span class="ti">⬡</span>机器人</div><div class="tab"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 会话列表页 ========== -->
+  <div class="section">
+    <div class="section-title">② 会话列表页（最近对话）</div>
+    <div class="row">
+      <div class="card s1">
+        <div class="label"><span class="dot" style="background:#7C6BF5"></span>深色高级感</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">会话</div>
+          <div class="content">
+            <div class="listrow"><div class="av" style="background:#A78BFA">R</div><div class="tx"><div class="t1">Figma 与 SVG 进度</div><div class="t2">已接上。19 个文件已就绪…</div></div><div class="tm">刚刚</div></div>
+            <div class="listrow"><div class="av" style="background:#10B981">W</div><div class="tx"><div class="t1">润色产品介绍文案</div><div class="t2">第三段语气可以再轻一点</div></div><div class="tm">09:12</div></div>
+            <div class="listrow"><div class="av" style="background:#FF6B4A">D</div><div class="tx"><div class="t1">部署检查</div><div class="t2">构建通过，等待上线确认</div></div><div class="tm">昨天</div></div>
+            <div class="listrow"><div class="av" style="background:#3B82F6">I</div><div class="tx"><div class="t1">整理收件箱</div><div class="t2">已归档 32 封</div></div><div class="tm">周二</div></div>
+            <div class="listrow"><div class="av" style="background:#FFCC00">F</div><div class="tx"><div class="t1">本月账目汇总</div><div class="t2">生成报表完成</div></div><div class="tm">周一</div></div>
+          </div>
+          <div class="tabbar"><div class="tab" style="color:#7C6BF5"><span class="ti">◉</span>聊天</div><div class="tab"><span class="ti">⬡</span>机器人</div><div class="tab"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s2">
+        <div class="label"><span class="dot" style="background:#2E7CF6"></span>明亮清爽</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">会话</div>
+          <div class="content">
+            <div class="listrow"><div class="av" style="background:#A78BFA">R</div><div class="tx"><div class="t1">Figma 与 SVG 进度</div><div class="t2">已接上。19 个文件已就绪…</div></div><div class="tm">刚刚</div></div>
+            <div class="listrow"><div class="av" style="background:#10B981">W</div><div class="tx"><div class="t1">润色产品介绍文案</div><div class="t2">第三段语气可以再轻一点</div></div><div class="tm">09:12</div></div>
+            <div class="listrow"><div class="av" style="background:#FF6B4A">D</div><div class="tx"><div class="t1">部署检查</div><div class="t2">构建通过，等待上线确认</div></div><div class="tm">昨天</div></div>
+            <div class="listrow"><div class="av" style="background:#3B82F6">I</div><div class="tx"><div class="t1">整理收件箱</div><div class="t2">已归档 32 封</div></div><div class="tm">周二</div></div>
+            <div class="listrow"><div class="av" style="background:#FFCC00">F</div><div class="tx"><div class="t1">本月账目汇总</div><div class="t2">生成报表完成</div></div><div class="tm">周一</div></div>
+          </div>
+          <div class="tabbar"><div class="tab" style="color:#2E7CF6"><span class="ti">◉</span>聊天</div><div class="tab"><span class="ti">⬡</span>机器人</div><div class="tab"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s3">
+        <div class="label"><span class="dot" style="background:#7C4DFF"></span>玻璃拟态升级</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">会话</div>
+          <div class="content">
+            <div class="listrow"><div class="av" style="background:#A78BFA">R</div><div class="tx"><div class="t1">Figma 与 SVG 进度</div><div class="t2">已接上。19 个文件已就绪…</div></div><div class="tm">刚刚</div></div>
+            <div class="listrow"><div class="av" style="background:#10B981">W</div><div class="tx"><div class="t1">润色产品介绍文案</div><div class="t2">第三段语气可以再轻一点</div></div><div class="tm">09:12</div></div>
+            <div class="listrow"><div class="av" style="background:#FF6B4A">D</div><div class="tx"><div class="t1">部署检查</div><div class="t2">构建通过，等待上线确认</div></div><div class="tm">昨天</div></div>
+            <div class="listrow"><div class="av" style="background:#3B82F6">I</div><div class="tx"><div class="t1">整理收件箱</div><div class="t2">已归档 32 封</div></div><div class="tm">周二</div></div>
+            <div class="listrow"><div class="av" style="background:#FFCC00">F</div><div class="tx"><div class="t1">本月账目汇总</div><div class="t2">生成报表完成</div></div><div class="tm">周一</div></div>
+          </div>
+          <div class="tabbar"><div class="tab" style="color:#B9A9FF"><span class="ti">◉</span>聊天</div><div class="tab"><span class="ti">⬡</span>机器人</div><div class="tab"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s4">
+        <div class="label"><span class="dot" style="background:#555"></span>中性极简</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">会话</div>
+          <div class="content">
+            <div class="listrow"><div class="av" style="background:#555">R</div><div class="tx"><div class="t1">Figma 与 SVG 进度</div><div class="t2">已接上。19 个文件已就绪…</div></div><div class="tm">刚刚</div></div>
+            <div class="listrow"><div class="av" style="background:#777">W</div><div class="tx"><div class="t1">润色产品介绍文案</div><div class="t2">第三段语气可以再轻一点</div></div><div class="tm">09:12</div></div>
+            <div class="listrow"><div class="av" style="background:#555">D</div><div class="tx"><div class="t1">部署检查</div><div class="t2">构建通过，等待上线确认</div></div><div class="tm">昨天</div></div>
+            <div class="listrow"><div class="av" style="background:#777">I</div><div class="tx"><div class="t1">整理收件箱</div><div class="t2">已归档 32 封</div></div><div class="tm">周二</div></div>
+            <div class="listrow"><div class="av" style="background:#999">F</div><div class="tx"><div class="t1">本月账目汇总</div><div class="t2">生成报表完成</div></div><div class="tm">周一</div></div>
+          </div>
+          <div class="tabbar"><div class="tab" style="color:#111;font-weight:700"><span class="ti">◉</span>聊天</div><div class="tab"><span class="ti">⬡</span>机器人</div><div class="tab"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 更多/设置页 ========== -->
+  <div class="section">
+    <div class="section-title">③ 更多 / 设置页（Gateway 卡 + 分组菜单）</div>
+    <div class="row">
+      <div class="card s1">
+        <div class="label"><span class="dot" style="background:#7C6BF5"></span>深色高级感</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">更多</div>
+          <div class="gateway"><div class="gi">✦</div><div style="flex:1"><div class="gt1">Mac mini</div><div class="gt2"><span class="dot"></span>已连接 · 9 个机器人</div></div><span style="opacity:.4">›</span></div>
+          <div class="content">
+            <div class="group"><div class="gt">系统</div>
+              <div class="menurow"><div class="mi" style="background:#7C6BF5">✦</div><div class="mt">机器人</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:#5A5A66">⚙</div><div class="mt">设置</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:#7C6BF5">★</div><div class="mt">模型</div><span class="ar">›</span></div>
+            </div>
+            <div class="group"><div class="gt">消息与数据</div>
+              <div class="menurow"><div class="mi" style="background:#40C8E0">◉</div><div class="mt">群聊</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:#7C6BF5">▣</div><div class="mt">文件库</div><span class="ar">›</span></div>
+            </div>
+          </div>
+          <div class="tabbar"><div class="tab"><span class="ti">◉</span>聊天</div><div class="tab"><span class="ti">⬡</span>机器人</div><div class="tab" style="color:#7C6BF5"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s2">
+        <div class="label"><span class="dot" style="background:#2E7CF6"></span>明亮清爽</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">更多</div>
+          <div class="gateway"><div class="gi">✦</div><div style="flex:1"><div class="gt1">Mac mini</div><div class="gt2"><span class="dot"></span>已连接 · 9 个机器人</div></div><span style="opacity:.4">›</span></div>
+          <div class="content">
+            <div class="group"><div class="gt">系统</div>
+              <div class="menurow"><div class="mi" style="background:#2E7CF6">✦</div><div class="mt">机器人</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:#8E8E93">⚙</div><div class="mt">设置</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:#2E7CF6">★</div><div class="mt">模型</div><span class="ar">›</span></div>
+            </div>
+            <div class="group"><div class="gt">消息与数据</div>
+              <div class="menurow"><div class="mi" style="background:#40C8E0">◉</div><div class="mt">群聊</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:#2E7CF6">▣</div><div class="mt">文件库</div><span class="ar">›</span></div>
+            </div>
+          </div>
+          <div class="tabbar"><div class="tab"><span class="ti">◉</span>聊天</div><div class="tab"><span class="ti">⬡</span>机器人</div><div class="tab" style="color:#2E7CF6"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s3">
+        <div class="label"><span class="dot" style="background:#7C4DFF"></span>玻璃拟态升级</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">更多</div>
+          <div class="gateway"><div class="gi">✦</div><div style="flex:1"><div class="gt1">Mac mini</div><div class="gt2"><span class="dot"></span>已连接 · 9 个机器人</div></div><span style="opacity:.4">›</span></div>
+          <div class="content">
+            <div class="group"><div class="gt">系统</div>
+              <div class="menurow"><div class="mi" style="background:linear-gradient(135deg,#7C4DFF,#448AFF)">✦</div><div class="mt">机器人</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:rgba(255,255,255,.2)">⚙</div><div class="mt">设置</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:linear-gradient(135deg,#7C4DFF,#448AFF)">★</div><div class="mt">模型</div><span class="ar">›</span></div>
+            </div>
+            <div class="group"><div class="gt">消息与数据</div>
+              <div class="menurow"><div class="mi" style="background:#40C8E0">◉</div><div class="mt">群聊</div><span class="ar">›</span></div><div class="divider"></div>
+              <div class="menurow"><div class="mi" style="background:linear-gradient(135deg,#7C4DFF,#448AFF)">▣</div><div class="mt">文件库</div><span class="ar">›</span></div>
+            </div>
+          </div>
+          <div class="tabbar"><div class="tab"><span class="ti">◉</span>聊天</div><div class="tab"><span class="ti">⬡</span>机器人</div><div class="tab" style="color:#B9A9FF"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+      <div class="card s4">
+        <div class="label"><span class="dot" style="background:#555"></span>中性极简</div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ◔ ▰</span></div>
+          <div class="bigtitle">更多</div>
+          <div class="gateway"><div class="gi" style="background:#111;color:#fff">✦</div><div style="flex:1"><div class="gt1">Mac mini</div><div class="gt2"><span class="dot"></span>已连接 · 9 个机器人</div></div><span style="opacity:.4">›</span></div>
+          <div class="content">
+            <div class="group"><div class="gt">系统</div>
+              <div class="menurow"><div class="mi" style="background:#333">✦</div><div class="mt">机器人</div><span class="ar">›</span></div>
+              <div class="menurow"><div class="mi" style="background:#555">⚙</div><div class="mt">设置</div><span class="ar">›</span></div>
+              <div class="menurow"><div class="mi" style="background:#333">★</div><div class="mt">模型</div><span class="ar">›</span></div>
+            </div>
+            <div class="group"><div class="gt">消息与数据</div>
+              <div class="menurow"><div class="mi" style="background:#666">◉</div><div class="mt">群聊</div><span class="ar">›</span></div>
+              <div class="menurow"><div class="mi" style="background:#444">▣</div><div class="mt">文件库</div><span class="ar">›</span></div>
+            </div>
+          </div>
+          <div class="tabbar"><div class="tab"><span class="ti">◉</span>聊天</div><div class="tab"><span class="ti">⬡</span>机器人</div><div class="tab" style="color:#111;font-weight:700"><span class="ti">◷</span>更多</div></div>
+          <div class="navbar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
