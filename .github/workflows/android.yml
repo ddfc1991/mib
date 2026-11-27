@@ -227,7 +227,7 @@ jobs:
     name: V7 screen audit (API ${{ matrix.api }})
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:

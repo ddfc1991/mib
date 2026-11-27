@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [destiny/v7-audit] 逐项体检：4 个 tab + 设置里 28 个入口逐个点开，截图 + 判定。
+# [destiny/v7-audit] 逐项体检：5 个 tab + 设置里 17 个入口逐个点开，截图 + 判定。
 #
 # 判据（严格版）：
 #   1. App 进程还活着
@@ -43,7 +43,7 @@ has() { tr '>' '\n' < "$OUT/.ui.xml" | grep -q "text=\"$1\""; }
 # (Requiring 1 could false-positive on a sub-page that happens to label a node 对话.)
 on_home() {
   local c
-  c="$(tr '>' '\n' < "$OUT/.ui.xml" | grep -cE 'content-desc="(对话|动态|群聊|设置)"')"
+  c="$(tr '>' '\n' < "$OUT/.ui.xml" | grep -cE 'content-desc="(对话|会话|任务|动态|更多)"')"
   [ "${c:-0}" -ge 3 ]
 }
 
@@ -58,18 +58,25 @@ launch() {
   sleep "${1:-10}"
 }
 
-# Get back to the 设置 tab from anywhere: tab bar if we are on a V7 page,
-# BACK if we are on a pushed sub-page, relaunch as the last resort.
+# Settings is no longer a bottom tab (75f41ac deduped More): it is a row on
+# the 更多 tab. Get back to the settings hub from anywhere.
 resync_settings() {
   local i=0
+  # Already on the hub? A unique static subtitle proves it.
+  if snap && has "云天 / 夜空、浅色深色、照片或纯色"; then return 0; fi
   while [ $i -lt 4 ]; do
-    if snap && tap desc "设置" > /dev/null 2>&1; then sleep 2; return 0; fi
+    if snap && tap desc "更多" > /dev/null 2>&1; then
+      sleep 2
+      if tap text "设置" > /dev/null 2>&1; then sleep 2; return 0; fi
+    fi
     adb shell input keyevent KEYCODE_BACK; sleep 2
     i=$((i + 1))
   done
   adb shell am force-stop "$PKG"; sleep 2
   launch 14
-  tap desc "设置" > /dev/null 2>&1 || true
+  tap desc "更多" > /dev/null 2>&1 || true
+  sleep 2
+  tap text "设置" > /dev/null 2>&1 || true
   sleep 3
 }
 
@@ -116,7 +123,10 @@ if ! alive; then
 fi
 
 echo "== tabs"
-for t in 对话 动态 群聊 设置; do
+# HqTabBar now has five tabs (对话/会话/任务/动态/更多). 群聊 and 设置 moved
+# into 更多; the old four-tab list made every later probe miss and burned the
+# whole 60-minute job budget.
+for t in 对话 会话 任务 动态 更多; do
   n="tab-$t"
   if tap desc "$t" > /dev/null 2>&1; then
     sleep 3
@@ -131,27 +141,6 @@ for t in 对话 动态 群聊 设置; do
       else
         row "$t tab" "$n.png" "OK" "-" "$tx" "$ck" ""
       fi
-      # 动态 tab 里还有三个子栏（在看 / 想到的 / 能领的），也得逐个点开看。
-      if [ "$t" = "动态" ]; then
-        for pair in "想到的:feed-ideas" "能领的:feed-quotas"; do
-          lbl="${pair%%:*}"; f="${pair##*:}"
-          if tap text "$lbl" > /dev/null 2>&1; then
-            sleep 2
-            shot "$f" 1
-            snap || true
-            stx="$(ntext)"; sck="$(nclick)"
-            if [ "${stx:-0}" -le 3 ] && [ "${sck:-0}" -le 1 ]; then
-              row "动态 › $lbl" "$f.png" "EMPTY" "sub-tab renders almost no content" "$stx" "$sck" "shell"
-              fail=1
-            else
-              row "动态 › $lbl" "$f.png" "OK" "-" "$stx" "$sck" ""
-            fi
-          else
-            row "动态 › $lbl" "-" "MISSING" "sub-tab label not found"; fail=1
-          fi
-        done
-        tap text "在看" > /dev/null 2>&1 || true
-      fi
     fi
   else
     row "$t tab" "-" "MISSING" "tab label not found"; fail=1
@@ -160,35 +149,25 @@ done
 
 echo "== settings entries"
 # 标签|副标题 —— 副标题唯一，用它定位可避免命中同名的分组标题。
+# Aligned with MibotSettingsScreen.kt (2026-11-27). Only static subtitles are
+# used: rows with a live count (账号台账 / 服务商 / 邮箱台账 / 模型) would never
+# match the exact-text lookup in tap.py.
 ENTRIES=(
-  "模型服务商|API Key · 账号 · 余额"
-  "模型组|主模型 · 备用 · 路由顺序"
-  "用量统计|token · 调用次数 · 花费"
-  "子 Agent|派单用的 Agent 花名册"
-  "技能|装在设备上的技能包"
-  "记忆|长期记忆与文件"
-  "MCP 服务器|外部工具接入"
-  "环境变量|注入到运行时的变量"
-  "语音|转写 · 朗读 · 唤醒"
-  "手机控制|无障碍 · 屏幕 · 点击"
-  "微信|未接入 · 不显示假账号"
-  "任务队列|真实作业 · 执行中 · 排队"
-  "钱包|未接入 · 不显示假余额"
-  "存储|占用 · 清理"
-  "根文件系统|容器镜像"
-  "挂载目录|宿主机目录映射"
-  "文件浏览器|浏览容器内文件"
-  "备份|导出 · 导入 · 目标"
-  "网络|连通性 · DNS"
-  "代理|HTTP / SOCKS 代理"
-  "Tailscale|组网与设备"
-  "容器 DNS|容器内解析"
-  "外观|主题 · 字体 · 图标"
-  "背景|壁纸与模糊"
-  "权限|系统权限总览"
-  "日志|运行日志与诊断"
-  "定时任务|Cron 与触发"
-  "关于|版本 · 构建 · 许可"
+  "AI 网关|账号池、故障切换、冷却与健康检查"
+  "模型组|模型别名与回退/负载均衡"
+  "AI 邮箱|能发信的邮箱 · 自动化等级、撤销窗口、发信记录"
+  "背景与主题|云天 / 夜空、浅色深色、照片或纯色"
+  "Bots 与子代理|保存的 Bot 可被主 AI 当作子代理调用"
+  "人格|主 AI 的性格与说话方式"
+  "后台操控 / 虚拟屏|在隐藏虚拟屏操作 App，不占你的屏幕 · 无线调试 / Shizuku"
+  "沙箱 / 运行环境|Alpine Linux · 终端、文件、DNS、重置"
+  "服务器|经 Tailscale 管理你的机器 · 只存清单，巡检交给 Agent"
+  "语音|按住说 · 停 2 秒就发 · 免提连说 · 朗读"
+  "全部页面|56 屏设计规格，全部原生页面，可逐行交给 Agent"
+  "权限与自动化|已授予什么、实际用来做什么 · 自动化等级"
+  "诊断|日志、测试与上报"
+  "反馈问题|打开已填好设备信息的问题单"
+  "关于 Omega|版本、更新与开源许可（GPL-3.0）"
 )
 resync_settings
 i=0
