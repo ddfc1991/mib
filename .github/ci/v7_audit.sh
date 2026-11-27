@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [destiny/v7-audit] 逐项体检：5 个 tab + 设置里 17 个入口逐个点开，截图 + 判定。
+# [destiny/v7-audit] 逐项体检：5 个 tab + 设置里 15 个入口逐个点开，截图 + 判定。
 #
 # 判据（严格版）：
 #   1. App 进程还活着

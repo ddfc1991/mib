@@ -161,14 +161,19 @@ CI 记录（build repo `ddfc1991/omega-opencode-build`）：
   V7 audit ⏳ 跑满 60 min 后被 timeout 取消。根因是脚本还在找已经不存在的
   「群聊 / 设置」底栏 tab（见 `75f41ac` 的 dedupe），28 个入口全 MISSING。
 - `4df94b8` 把 audit 基线对齐当前 `HqTabBar` 五个 tab，设置改从「更多」进入，
-  只取 `MibotSettingsScreen.kt` 里静态副标题的 17 行，audit timeout 提到 90 min。
-- run `45934814669` @ `4df94b8` 为重跑，结果以它为准。
+  只取 `MibotSettingsScreen.kt` 里静态副标题的 15 行，audit timeout 提到 90 min。
+- run `45934814669` @ `4df94b8`：**全绿**。build ✅、smoke API 30/31 ✅、audit ✅。
+  证据在 `artifacts/final-check/v5/`（本机，未入库）：audit.tsv 20 行全 OK，
+  smoke 两侧 `crash.txt` 均为 0 字节、logcat 无 `FATAL EXCEPTION`。
+
+远端状态：`origin` 与 `build` 的 `feat/omega-bot` 都停在 `4df94b8`；
+本地多一个仅文档/注释的提交，未推，避免再触发一轮 CI。
 
 下一步建议：
 
-1. 等 run `45934814669` 结束，拉 `v7-audit-api31` / smoke 产物复核（脚本见 `scripts/capture-ci-artifact.ps1`）。
+1. 把 `feat/omega-bot` 合回 `origin/feat/opencode-client` 或开 PR（CI 已全绿）。
 2. OpenCode 客户端（`com.openminis.app.opencode`）还缺多会话与深链的端到端回归。
-3. CI 全绿后合回 `origin/feat/opencode-client` 或开 PR。
+3. 需要覆盖安装真机时，给 build repo 配 `MIBOT_KEYSTORE_B64` 等签名 secrets。
 
 ## 9. 外部参考
 
